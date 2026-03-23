@@ -1,0 +1,54 @@
+# Data files - too large for git
+*.csv
+*.xlsx
+*.xls
+*.rds
+*.RDS
+*.feather
+*.zip
+*.gz
+*.tar
+*.nc
+*.nc4
+
+# Shapefiles and geospatial
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.sbn
+*.sbx
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# Images and outputs
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.docx
+*.pptx
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep the tex source and markdown
+!*.tex
+!*.md
