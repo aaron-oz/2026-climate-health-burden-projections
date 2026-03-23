@@ -177,57 +177,11 @@ Note: Samuel also computes `paf2` without the floor, but uses `paf` (floored) in
 
 ---
 
-## MINOR ISSUES
+## NON-ISSUES (verified as equivalent)
 
-### 8. Temperature zone truncation
-
-**Burkart reference:**
-- Zones outside 6-28°C are truncated: `temp[meanTempCat<6, meanTempCat := 6][meanTempCat>28, meanTempCat := 28]`
-- Daily temperatures are truncated to the min/max of the modeled range within each zone
-
-**Colombia script:**
-- Zones 29, 30, 31 are remapped to 28 (lines 205-210 of script 11)
-- Daily temperatures are similarly capped to curve boundaries (lines 228-233)
-
-**Impact:** Equivalent approach, correctly implemented. The only difference is that Colombia can have zones up to 31°C (very hot lowlands) which Burkart never sees in the nine-country training data. Capping at 28 is the correct conservative approach.
-
----
-
-### 9. Population weighting approach
-
-**Burkart reference:**
-- Uses population rasters from WorldPop resampled to the ERA5 grid
-- Pixel-level population weighting is done within the temperature collapse step: population is summed by (zone, daily_temp, draw) combination
-- The `pr` (proportion) is computed as `pop / sum(pop)` within each (draw, year, location)
-
-**Colombia script:**
-- Uses WorldPop population grids mapped to a 0.25° grid over Colombia
-- Computes `pr = pixel_pop / department_pop` as the population weight for each pixel within a department
-- PAFs are computed as `sum(pr × (RR-1)/RR)` across pixels within a department
-
-**Impact:** Conceptually equivalent. The Colombia implementation correctly population-weights the PAF across pixels within each department. The main difference is spatial resolution (0.25° grid vs ERA5's native 0.25° grid — essentially the same).
-
----
-
-### 10. SEV calculation details
-
-**Burkart reference:**
-```r
-sevs[, sev := ifelse(rrMax<=1 | rr<=1, 0, pr * (rr - 1)/(rrMax-1))]
-```
-- Computed per draw, then reshaped to wide with 1000 draw columns
-- `pr` is recalculated within risk category (heat/cold/all) for SEV calculation
-- Three SEV types: heat, cold, and "all" (non-optimal)
-
-**Colombia script:**
-```r
-sev = ifelse(rr_max <=1 | rr_mean<=1, 0, pr_zona * (rr_mean - 1)/(rr_max-1))
-```
-- Uses the same formula but on summary statistics
-- Computed at the zone-department-year level
-- Weighted average across zones within department
-
-**Impact:** Same formula, different uncertainty handling (consistent with issue #1). The SEV values will be point estimates without uncertainty intervals.
+- **Temperature zone truncation**: Both implementations cap zones to 6–28°C and truncate daily temperatures to curve boundaries. Samuel's remapping of zones 29–31 → 28 is correct.
+- **Population weighting**: Both use pixel-level population proportions summed within locations. Equivalent approach at similar spatial resolution.
+- **SEV formula**: Same formula in both. Samuel's use of summary statistics rather than draws is a downstream consequence of critical issue #1, not a separate problem.
 
 ---
 
@@ -242,9 +196,6 @@ sev = ifelse(rr_max <=1 | rr_mean<=1, 0, pr_zona * (rr_mean - 1)/(rr_max-1))
 | 5 | PAF floored at zero | Moderate | Removes protective effects for external causes | Low |
 | 6 | TMREL averaged across years | Moderate | Loses temporal signal | Low |
 | 7 | No garbage code redistribution | Moderate | Underestimates cause-specific deaths | High (global) |
-| 8 | Temperature zone truncation | Minor | None — correctly handled | None |
-| 9 | Population weighting | Minor | None — equivalent approach | None |
-| 10 | SEV calculation | Minor | Consistent with #1 | Fixed by #1 |
 
 ## RECOMMENDED FIX ORDER
 
