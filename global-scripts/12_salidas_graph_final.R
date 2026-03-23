@@ -1,15 +1,15 @@
-# Mortalidad causas relacionadas con temperatura 2010-2019
-# salidas finales, mapas y figuras
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 11/05/2023
-# Institucion: Banco Mundial
+# Mortality from temperature-related causes 2010-2019
+# Final outputs, maps, and figures
+# Author: Jean Carlo Pineda Lozano
+# Date created: 11/05/2023
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
-# instalar paquetes necesarios
+# install required packages
 packages <- c("tidyverse", "gtsummary", "flextable", "officer", "sf", "rnaturalearthdata", "classInt")
 to_install <- packages[!packages %in% installed.packages()[, "Package"]]
 if (length(to_install)) { 
@@ -17,7 +17,7 @@ if (length(to_install)) {
 }
 
 
-# cargar librerias
+# load libraries
 library(tidyverse)
 library(flextable)
 library(gtsummary)
@@ -45,16 +45,16 @@ library(reshape2)
 library(readxl)
 
 
-# cargue de datos ---------------------------------------------------------
+# data loading ---------------------------------------------------------
 
-# cargue de base de datos apmp
+# load database apmp
 carga_atribuible <- readRDS("Bases/Estimaciones carga/avpp_atribuibles.rds")
 shape_colombia <- st_read("Bases/Ambientales/Shapes/MGN_DPTO_POLITICO.shp")
 df_pob <- readRDS("Bases/Proyecciones poblacionales/Proyecciones_poblacion_depto_2010_2050_postcovid.rds") %>% 
   rename(cod_depto = cod_dpto)
 
 
-# ajuste de datos ---------------------------------------------------------
+# data adjustment ---------------------------------------------------------
 pob_year_depto <- df_pob %>% filter(ano <= 2019) %>% 
   group_by(ano, cod_depto) %>% 
   summarise(poblacion = sum(poblacion))
@@ -66,23 +66,23 @@ shape_colombia <- shape_colombia %>%
 
 # st_write(shape_colombia, "Bases/Ambientales/Shapes/shape_departamentos.shp")
 
-# construccion de capas ---------------------------------------------------
+# layer construction ---------------------------------------------------
 
-# muertes por departamento atribuibles al calor, frio y total
-#muertes frio
+# deaths by department attributable to heat, cold, and total
+#cold deaths
 death_cold_all_causes <- carga_atribuible %>% 
   group_by(cod_depto) %>% 
   summarise(muertes_cold = round(sum(muertes_cold)))
   
 write.csv(death_cold_all_causes, "Salidas/Capas mapas/Murtes_frio.csv")
 
-# muertes calor
-death_heat_all_causes <- carga_atribuible %>% 
+# heat deaths
+death_heat_all_causes <- carga_atribuible %>%
   group_by(cod_depto) %>% 
   summarise(muertes_heat = round(sum(muertes_heat)))
 write.csv(death_heat_all_causes, "Salidas/Capas mapas/Murtes_calor.csv")
 
-# muertes temp no optima
+# non-optimal temperature deaths
 death_non_optim_all_causes <- carga_atribuible %>% 
   group_by(cod_depto) %>% 
   summarise(muertes_non_optimal_temp = sum(muertes_non_optimal_temp))
@@ -90,20 +90,20 @@ write.csv(death_heat_all_causes, "Salidas/Capas mapas/Murtes_non_optimal.csv")
 
 
 
-#AVPP frio
+#YLLs cold
 avpp_cold_all_causes <- carga_atribuible %>% 
   group_by(cod_depto) %>% 
   summarise(avpp_cold = round(sum(avpp_cold)))
 
 write.csv(avpp_cold_all_causes, "Salidas/Capas mapas/avpp_frio.csv")
 
-# AVPP calor
+# YLLs heat
 avpp_heat_all_causes <- carga_atribuible %>% 
   group_by(cod_depto) %>% 
   summarise(avpp_heat = round(sum(avpp_heat)))
 write.csv(avpp_heat_all_causes, "Salidas/Capas mapas/avpp_calor.csv")
 
-# AVPP temp no optima
+# YLLs non-optimal temperature
 avpp_non_optim_all_causes <- carga_atribuible %>% 
   group_by(cod_depto) %>% 
   summarise(avpp_non_optimal_temp = round(sum(avpp_non_optimal_temp)))
@@ -111,8 +111,8 @@ write.csv(avpp_non_optim_all_causes, "Salidas/Capas mapas/avpp_non_optimal.csv")
 
 
 
-# tasas mortalidad
-#muertes frio
+# mortality rates
+#cold deaths
 tasas_cold_all_causes <- carga_atribuible %>% 
   group_by(ano, cod_depto) %>% 
   summarise(muertes_cold = round(sum(muertes_cold))) %>% 
@@ -124,7 +124,7 @@ tasas_cold_all_causes <- carga_atribuible %>%
 
 write.csv(tasas_cold_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_frio.csv")
 
-# muertes calor
+# heat deaths
 tasas_heat_all_causes <- carga_atribuible %>% 
   group_by(ano, cod_depto) %>% 
   summarise(muertes_heat = round(sum(muertes_heat))) %>% 
@@ -137,7 +137,7 @@ tasas_heat_all_causes <- carga_atribuible %>%
 write.csv(tasas_heat_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_calor.csv")
 
 
-# muertes temp no optima
+# non-optimal temperature deaths
 tasas_non_optim_all_causes <- carga_atribuible %>% 
   group_by(ano, cod_depto) %>% 
   summarise(muertes_non_optimal_temp = round(sum(muertes_non_optimal_temp))) %>% 
@@ -151,30 +151,30 @@ write.csv(tasas_non_optim_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_non_
 
 
 
-#  mapa muertes frio ----------------------------------------------------
+#  cold deaths map ----------------------------------------------------
   
   union <- left_join(shape_colombia, death_cold_all_causes)
   
-  #Paleta de colores
-  numclass <- 4 #numero de categorias
-  colores <- brewer.pal(numclass,"Blues")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 4 #number of categories
+  colores <- brewer.pal(numclass,"Blues")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$muertes_cold
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
   
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -188,7 +188,7 @@ write.csv(tasas_non_optim_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_non_
                          na.value = 'white', labels = c("0-1","2-195","196-1667","1668-99523"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -208,9 +208,9 @@ write.csv(tasas_non_optim_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_non_
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
   g2
   
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 4, name = 'Blues')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#EFF3FF")) +
@@ -224,7 +224,7 @@ write.csv(tasas_non_optim_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_non_
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -236,31 +236,31 @@ write.csv(tasas_non_optim_all_causes, "Salidas/Capas mapas/Tasas_mortalidad_non_
  
   
   
-#  mapa muertes calor ----------------------------------------------------
+#  heat deaths map ----------------------------------------------------
 
 union <- left_join(shape_colombia, death_heat_all_causes)
   
 
-  #Paleta de colores
-  numclass <- 5 #numero de categorias
-  colores <- brewer.pal(numclass,"YlOrRd")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 5 #number of categories
+  colores <- brewer.pal(numclass,"YlOrRd")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$muertes_heat
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
 
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -273,7 +273,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
                          na.value = 'white', labels = c("0-5", "6-112", "113-689", "690-6944"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -293,9 +293,9 @@ union <- left_join(shape_colombia, death_heat_all_causes)
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
     
   g2
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 5, name = 'YlOrRd')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#FFFFB2")) +
@@ -309,7 +309,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -323,30 +323,30 @@ union <- left_join(shape_colombia, death_heat_all_causes)
   # 
   
 
-#  mapa muertes non optimaltemp ----------------------------------------------------
+#  non-optimal temperature deaths map ----------------------------------------------------
   
   union <- left_join(shape_colombia, death_non_optim_all_causes)
   
-  #Paleta de colores
-  numclass <- 4 #numero de categorias
-  colores <- brewer.pal(numclass,"BuPu")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 4 #number of categories
+  colores <- brewer.pal(numclass,"BuPu")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$muertes_non_optimal_temp
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
   
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -360,7 +360,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
                          na.value = 'white', labels = c("0-4","5-675","676-2466","2467-99523"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -380,9 +380,9 @@ union <- left_join(shape_colombia, death_heat_all_causes)
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
   g2
   
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 4, name = 'BuPu')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#EDF8FB")) +
@@ -396,7 +396,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -411,30 +411,30 @@ union <- left_join(shape_colombia, death_heat_all_causes)
   
   
   
-#  mapa tasas mortalidad frio ----------------------------------------------------
+#  cold mortality rate map ----------------------------------------------------
   
   union <- left_join(shape_colombia, tasas_cold_all_causes)
   
-  #Paleta de colores
-  numclass <- 5 #numero de categorias
-  colores <- brewer.pal(numclass,"Blues")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 5 #number of categories
+  colores <- brewer.pal(numclass,"Blues")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$tasa
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
   
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -448,7 +448,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
                          na.value = 'white', labels = c("0.0-0.4","0.5-5.4","5.5-17.9","18.0-136.4"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -468,9 +468,9 @@ union <- left_join(shape_colombia, death_heat_all_causes)
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
   g2
   
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 4, name = 'Blues')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#EFF3FF")) +
@@ -484,7 +484,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -497,31 +497,31 @@ union <- left_join(shape_colombia, death_heat_all_causes)
   
   
   
-#  mapa tasas mortalidad calor ----------------------------------------------------
+#  heat mortality rate map ----------------------------------------------------
   
   union <- left_join(shape_colombia, tasas_heat_all_causes)
   
   
-  #Paleta de colores
-  numclass <- 5 #numero de categorias
-  colores <- brewer.pal(numclass,"YlOrRd")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 5 #number of categories
+  colores <- brewer.pal(numclass,"YlOrRd")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$tasa
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
   
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -535,7 +535,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
                                                         "3.5-17.7"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -555,9 +555,9 @@ union <- left_join(shape_colombia, death_heat_all_causes)
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
   
   g2
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 5, name = 'YlOrRd')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#FFFFB2")) +
@@ -571,7 +571,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -588,30 +588,30 @@ union <- left_join(shape_colombia, death_heat_all_causes)
   
   
   
-#  mapa tasas non optimal temp ----------------------------------------------------
+#  non-optimal temperature rate map ----------------------------------------------------
   
   union <- left_join(shape_colombia, tasas_non_optim_all_causes)
   
-  #Paleta de colores
-  numclass <- 4 #numero de categorias
-  colores <- brewer.pal(numclass,"BuPu")#generación de según el objeto anterior colores
+  #Color palette
+  numclass <- 4 #number of categories
+  colores <- brewer.pal(numclass,"BuPu")#generate colors based on the previous object
   
-  #determinación de los umbrales entre categorias (método cuantil)
+  #determine thresholds between categories (quantile method)
   var <- union$tasa
   brks <- classIntervals(var, n=numclass, style = "quantile") #otros Style:"fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih" or "headtails"
   brks <- brks$brks
   print(brks)
   
-  #determinar que color corresponde a cada valor de densidad
+  #determine which color corresponds to each density value
   codigos_num <- findInterval(var,brks, all.inside = T)
   codigos_color <- colores[codigos_num]
   
-  #Se agrega la nueva columna con los intervalos a representar
+  #Add the new column with the intervals to represent
   
   union <- mutate(union,
                   COD_ORDINAL=codigos_num)
   
-  #ubicamos la fila de san Andres # para el caso departamental
+  #locate the San Andres row # for the departmental case
   union_sai <- union %>% filter(cod_depto == 88)
   union_col <- union %>% filter(cod_depto != 88)
   
@@ -626,7 +626,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
                                                         "5.67-18.3","18.4-136.4"),
                          guide = "legend") +
     #scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
-    annotation_scale(location = "br", width_hint = 0.5) +#libreria ggspatial
+    annotation_scale(location = "br", width_hint = 0.5) +#ggspatial library
     annotation_north_arrow(location = "br", which_north = "true", 
                            pad_x = unit(0.1, "in"), pad_y = unit(0.2, "in"), # 0.2 # 0.3
                            style = north_arrow_fancy_orienteering) +
@@ -646,9 +646,9 @@ union <- left_join(shape_colombia, death_heat_all_causes)
     labs(x = 'Longitud', y = 'Latitud', caption = "World Bank 2023") 
   g2
   
-  num = union_sai$COD_ORDINAL #escriba aquí en valor de intervalo al que pertenece san Andres
+  num = union_sai$COD_ORDINAL #enter here the interval value that San Andres belongs to
   a <- brewer.pal(n = 4, name = 'BuPu')
-  a[num] #el resultado en la consola se pega en dos lineas abajo en el campo fill
+  a[num] #the console result is pasted two lines below in the fill field
   
   g3 <- ggplot() +
     geom_sf(data = union_sai, fill = aes(fill = "#EDF8FB")) +
@@ -662,7 +662,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
           legend.position = 'none',
           plot.title = element_text(hjust = 0.5, size = 7, face = "bold"))
   
-  ###ggdraw, cowplot libreria
+  ###ggdraw, cowplot library
   gg_inset <- ggdraw() +
     draw_plot(g2) +
     # draw_plot(g1, x = 0.72, y = 0.76, width = 0.28, height = 0.19) +
@@ -674,7 +674,7 @@ union <- left_join(shape_colombia, death_heat_all_causes)
   
   
   
-# tablas y graficas grupos de edad ----------------------------------------
+# tables and plots by age group ----------------------------------------
 
 carga_edad <- carga_atribuible %>% 
     mutate(gru_ed1 = case_when(
@@ -701,12 +701,12 @@ carga_edad <- carga_atribuible %>%
 
 carga_edad$gru_ed1 <- factor(carga_edad$gru_ed1, 
                              levels = c("<5", "5-14","15-49", "50-69", "70+"))
-  # tabla muertes frio, calor por edad
+  # cold and heat deaths table by age
 
-# Función para eliminar la notación científica y agregar separadores
+# Function to remove scientific notation and add separators
 marks_no_sci <- function(x) format(x, big.mark = ".", decimal.mark = ",", scientific = FALSE)
 
-# Frio
+# Cold
 ggplot(carga_edad, aes(x = sexo, y = muertes_cold, fill = gru_ed1)) + 
     geom_bar(stat = "identity")+
   # scale_fill_manual(values = c("#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"))+
@@ -720,7 +720,7 @@ ggplot(carga_edad, aes(x = sexo, y = muertes_cold, fill = gru_ed1)) +
 
 # ggsave(filename = "Muertes frio edad 2010-2019.jpeg", plot = last_plot(), path = "Salidas")
 
-# calor
+# Heat
 ggplot(carga_edad, aes(x = sexo, y = muertes_heat, fill = gru_ed1)) + 
   geom_bar(stat = "identity")+
   scale_fill_brewer(palette = "Oranges") +
@@ -734,7 +734,7 @@ ggplot(carga_edad, aes(x = sexo, y = muertes_heat, fill = gru_ed1)) +
 # ggsave(filename = "Muertes calor edad 2010-20199.jpeg", plot = last_plot(), path = "Salidas")
 
 
-# resumen -----------------------------------------------------------------
+# summary -----------------------------------------------------------------
 
 carga_atribuible %>% 
   group_by(c_muerte) %>% 
@@ -742,9 +742,9 @@ carga_atribuible %>%
             avpp_cold = sum(avpp_cold)) %>% 
   arrange(avpp_heat)
 
-#poblacion por año
+#population by year
 pob_year <- df_pob %>% filter(ano <= 2019) %>% group_by(ano) %>% summarise(poblacion = sum(poblacion))
-#tasas nacionales
+#national rates
 carga_ano <- carga_atribuible %>% 
   group_by(ano) %>% 
   summarise(muertes_non_optimal_temp = sum(muertes_non_optimal_temp),

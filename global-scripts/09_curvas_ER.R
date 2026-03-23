@@ -1,8 +1,8 @@
-# Muertes atribuibles a la temperatura 2010-2019
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 20/04/2023
-# fecha de modificacion: 20/04/2023
-# Institucion: Banco Mundial
+# Deaths attributable to temperature 2010-2019
+# Author: Jean Carlo Pineda Lozano
+# Date created: 20/04/2023
+# Date modified: 20/04/2023
+# Institution: World Bank
 
 library(readxl)
 library(tidyr)
@@ -11,10 +11,10 @@ library(dplyr)
 library(tidyverse)
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
-#c cargue de datos
+# data loading
 list_bases <- list.files(path = "Bases/Burkart/ERF",
                          pattern = ".csv$", full.names = TRUE)
 list_curves <- lapply(list_bases, read_csv)
@@ -25,7 +25,7 @@ names(list_curves) <- c("curve_erc", "curve_miocardiopatia_miocarditis", "curve_
                         "curve_relacion_transporte", "curve_accidentes_trafico", "curve_ivri",
                         "curve_epoc")
 
-#promedio y limites 
+#mean and limits
 list_curves_mean <- lapply(list_curves, function(x)
   x %>% 
     mutate(max = apply(x[,c(3:1002)], 1, quantile, probs = c(0.99)),
@@ -34,7 +34,7 @@ list_curves_mean <- lapply(list_curves, function(x)
            mean = rowMeans(x[,c(3:1002)])
       ))
 
-#medidas de resumen y exponenciar
+#summary measures and exponentiate
 list_curves_mean <- lapply(list_curves_mean, function(x)
   x %>% 
     select(c(annual_temperature, daily_temperature, mean, lower, upper, max)) %>% 
@@ -43,14 +43,14 @@ list_curves_mean <- lapply(list_curves_mean, function(x)
            lower = exp(lower),
            upper = exp(upper)))
 
-# guardar curvas individualmente
+# save curves individually
 names_curves <- names(list_curves_mean)
 for (i in names_curves) {
   write.csv(list_curves_mean[[i]], file = paste0("Bases/Ambientales/Curvas ER/", i, ".csv"), 
             row.names = F)
 }
 
-# nombre de la causa de muerte
+# cause of death name
 list_curves_mean$curve_erc$c_muerte <- "erc"
 list_curves_mean$curve_miocardiopatia_miocarditis$c_muerte <- "miocardiopatia_miocarditis"
 list_curves_mean$curve_cardiopatía_hipertensiva$c_muerte <- "cardiopatía_hipertensiva"
@@ -69,7 +69,7 @@ list_curves_mean$curve_accidentes_trafico$c_muerte <- "accidentes_trafico"
 list_curves_mean$curve_ivri$c_muerte <- "ivri"
 list_curves_mean$curve_epoc$c_muerte <- "epoc"
 
-# unificar curvas en un solo df
+# combine curves into a single df
 list_curves_mean$inj_non_disaster_curve_samples <- NULL
 df_curves <- bind_rows(list_curves_mean)
 
@@ -77,7 +77,7 @@ saveRDS(df_curves, "Bases/Ambientales/Curvas ER/curves_all_causes.rds")
 
 
 
-# graficas ----------------------------------------------------------------
+# plots ----------------------------------------------------------------
 df_curves_plot <- df_curves %>% 
   filter(annual_temperature %in% c(6, 14, 28)) %>% 
   select(c_muerte, annual_temperature, daily_temperature, mean) %>% 
@@ -105,11 +105,11 @@ for (i in seq_along(lista_c_muerte)) {
           axis.title.x = element_text(face="bold", vjust=1.5, colour="black", size=rel(1)),
           axis.title.y = element_text(face="bold", vjust=1.5, colour="black", size=rel(1)),
           axis.text = element_text(colour = "black")) +
-    ggtitle(paste("Curva ", lista_c_muerte[i])) #Configuro un título por grupo
+    ggtitle(paste("Curva ", lista_c_muerte[i])) #Set a title per group
   
   print (grafico_curvas)
   
-  # guardar gráfica como .jpeg
+  # save plot as .jpeg
   ggsave(grafico_curvas,
          file=paste("Salidas/Grafico curvas ER ", lista_c_muerte[i], ".jpeg", sep=''))
   

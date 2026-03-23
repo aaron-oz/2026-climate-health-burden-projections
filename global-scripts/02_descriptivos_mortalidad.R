@@ -1,14 +1,14 @@
-# Mortalidad causas relacionadas con temperatura 2010-2020
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 1/12/2022
-# Institucion: Banco Mundial
+# Temperature-related causes of mortality 2010-2020
+# Author: Jean Carlo Pineda Lozano
+# Date created: 1/12/2022
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# Clear memory
 rm(list = ls()); invisible(gc())
 
-# instalar paquetes necesarios
+# Install required packages
 packages <- c("tidyverse", "gtsummary", "flextable", "officer")
 to_install <- packages[!packages %in% installed.packages()[, "Package"]]
 if (length(to_install)) { 
@@ -16,7 +16,7 @@ if (length(to_install)) {
 }
 
 
-# cargar librerias
+# Load libraries
 library(tidyverse)
 library(flextable)
 library(gtsummary)
@@ -24,12 +24,12 @@ library(officer)
 library(ggplot2)
 library("RColorBrewer")
 
-# ajuste de datos mortalidad ---------------------------------------------------------
+# Mortality data adjustments ---------------------------------------------------------
 
-# cargue de base de datos global
+# Load global dataset
 df_mortalidad_estudio <- readRDS("Bases/Bases mortalidad estudio depto residencia/df_mortalidad_estudio_desagregada.rds")
 
-# Ajuste grupo de edad
+# Adjust age group
 df_mortalidad_estudio$gru_ed1 <- factor(df_mortalidad_estudio$gru_ed1,
                                 levels = c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29",
                                            "30-34", "35-39", "40-44", "45-49", "50-54",
@@ -37,7 +37,7 @@ df_mortalidad_estudio$gru_ed1 <- factor(df_mortalidad_estudio$gru_ed1,
                                            ">80"))
 df_mortalidad_estudio$ano <- as.character(df_mortalidad_estudio$ano)
 
-#mayusculas
+#Title case
 df_mortalidad_estudio$nom_dptore <- str_to_title(df_mortalidad_estudio$nom_dptore, 
                                                locale = "latin1")
 df_mortalidad_estudio$nom_dptore[df_mortalidad_estudio$nom_dptore == "Archipiélago De San Andrés, Providencia Y"] <- "San Andrés"
@@ -65,10 +65,10 @@ df_mortalidad_estudio <- df_mortalidad_estudio %>%
 
 
 
-# tablas ------------------------------------------------------------------
+# Tables ------------------------------------------------------------------
 
 
-# configuracion tablas
+# Table configuration
 set_gtsummary_theme(list(
   "tbl_summary-arg:missing_text" = "Sin datos"
 ))
@@ -78,7 +78,7 @@ set_gtsummary_theme(theme_gtsummary_mean_sd())
 
 
 
-# Tabla descriptiva global ------------------------------------------------
+# Global descriptive table ------------------------------------------------
 tab_desc <- df_mortalidad_estudio %>% 
   tbl_summary(
     include = c(ano, sexo, gru_ed1, nom_dptore, c_muerte),
@@ -97,7 +97,7 @@ tab_desc <- tab_desc %>%
   autofit()
 
 
-# tabla descriptiva Cardiorrespiratorias ----------------------------
+# Cardiorespiratory descriptive table ----------------------------
 cardiorrespiratorias <- c("Cardiopatía isquémica", "ACV", "Miocardiopatía miocarditis",
   "Cardiopatía hipertensiva","IVRI", "EPOC")
 
@@ -120,7 +120,7 @@ tab_desc_cardiorrespiratorias <- tab_desc_cardiorrespiratorias %>%
   as_flex_table()%>% 
   autofit()
 
-# tabla descriptiva metabolicas ----------------------------
+# Metabolic descriptive table ----------------------------
 
 tab_desc_metabolicas <- df_mortalidad_estudio %>% 
   filter(grepl(pattern = "dm|erc",x = c_muerte, ignore.case = T)) %>% 
@@ -139,12 +139,12 @@ tab_desc_metabolicas
 tab_desc_metabolicas <- tab_desc_metabolicas %>% 
   as_flex_table()%>% 
   autofit()
-# tabla descriptiva Causas externas ----------------------------
+# External causes descriptive table ----------------------------
 causas_externas1 <- c("Homicidio", "Suicidio", "Ahogamiento", "Desastres", "Lesiones mecánicas")
 causas_externas2 <- c("Accidentes tráfico", "Relación transporte", "No intencionales", 
                       "Relacionadas animales")
 
-#causas externas 1
+#External causes 1
 tab_desc_causas_externas1 <- df_mortalidad_estudio %>% 
   filter(grepl(pattern = paste0(causas_externas1, collapse = "|"),
                x = c_muerte, ignore.case = T)) %>% 
@@ -160,7 +160,7 @@ tab_desc_causas_externas1 <- df_mortalidad_estudio %>%
 
 tab_desc_causas_externas1
 
-#causas externas 2
+#External causes 2
 tab_desc_causas_externas2 <- df_mortalidad_estudio %>% 
   filter(grepl(pattern = paste0(causas_externas2, collapse = "|"),
                x = c_muerte, ignore.case = T)) %>% 
@@ -184,7 +184,7 @@ tab_desc_causas_externas2 <- tab_desc_causas_externas2 %>%
   as_flex_table()%>% 
   autofit()
 
-# guardar tablas ----------------------------------------------------------
+# Save tables ----------------------------------------------------------
 save_as_docx(
   "Tabla descriptiva mortalidad todas las causas" = tab_desc,
   "Tabla descriptiva causas cardiorespiratorias" = tab_desc_cardiorrespiratorias,
@@ -198,7 +198,7 @@ save_as_docx(
 
 
 
-# graficas ----------------------------------------------------------------
+# Plots ----------------------------------------------------------------
 
 df_c_muerte <- df_mortalidad_estudio %>% 
   group_by(ano, c_muerte) %>% 
@@ -251,7 +251,7 @@ ggsave(filename = "Grafico causa externa.jpg", plot = last_plot(), path = "Salid
 
 
 
-# Graficas proyeccion mortalidad ------------------------------------------
+# Mortality projection plots ------------------------------------------
 
 df_proyect_mort <- read_rds("Bases/Proyecciones mortalidad/Proyeccion_mortalidad_edad_agrupada.rds")
 

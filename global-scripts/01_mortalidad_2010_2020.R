@@ -1,15 +1,15 @@
-# Mortalidad causas relacionadas con temperatura 2010-2020
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 24/11/2022
-# fecha de modificacion: 3/3/2023
-# Institucion: Banco Mundial
+# Temperature-related causes of mortality 2010-2020
+# Author: Jean Carlo Pineda Lozano
+# Date created: 24/11/2022
+# Date modified: 3/3/2023
+# Institution: World Bank
 
 
 
-# configuracion -----------------------------------------------------------
+# configuration -----------------------------------------------------------
 
 
-# Cargue de paquetes
+# Load packages
 
 library(readxl)
 library(tidyr)
@@ -19,14 +19,14 @@ library(tidyverse)
 library(dlookr)
 library(missRanger)
 
-# limpiar memoria
+# Clear memory
 rm(list = ls()); invisible(gc())
 
 
 
-# cargue de datos ---------------------------------------------------------
+# Data loading ---------------------------------------------------------
 
-# mortalidad obtenida EEVV DANE: https://microdatos.dane.gov.co/index.php/catalog/MICRODATOS/about_collection/22/?per_page=10
+# Mortality data from DANE vital statistics (EEVV): https://microdatos.dane.gov.co/index.php/catalog/MICRODATOS/about_collection/22/?per_page=10
 df_mort_2010 <- read_excel("Bases/Mortalidad cruda/nofetal2010.xlsx")
 df_mort_2011 <- read_excel("Bases/Mortalidad cruda/defu2011.xlsx")
 df_mort_2012 <- read_excel("Bases/Mortalidad cruda/defu2012.xlsx")
@@ -47,12 +47,12 @@ list_mortalidad <- list(df_mort_2010, df_mort_2011, df_mort_2012, df_mort_2013,
 list_mortalidad <- lapply(list_mortalidad, clean_names)
 
 
-# depuracion de datos -----------------------------------------------------
+# Data cleaning -----------------------------------------------------
 
 
 names(list_mortalidad) <- paste0("df_mort_", 2010:2021)
 
-#seleccion de variables
+#Variable selection
 list_var <- c("ano", "cod_dpto", "cod_munic", "codptore", "codmunre", "area_res", "sexo",
               "gru_ed1", "c_bas1")
 list_mort_select =list(
@@ -78,31 +78,31 @@ for(x in names(list_mort_select)){
   mort_select[[x]] <- select (list_mortalidad[[x]], any_of(list_mort_select[[x]]))
 }
 
-#unificar nombres
+#Unify names
 mort_select <- lapply(mort_select, function(x){
   names(x) <- list_var
   x
 })
 
 
-# primera observacion no tiene datos
+# First observation has no data
 mort_select$df_mort_2014 <- mort_select$df_mort_2014[-1,]
 mort_select$df_mort_2013 <- mort_select$df_mort_2013[-1,]
 
-# recodificar fecha
+# Recode date
 mort_select$df_mort_2010$ano <- 2010
 mort_select$df_mort_2011$ano <- 2011
 mort_select$df_mort_2012$ano <- 2012
 mort_select$df_mort_2013$ano <- 2013
 
-# variables numericas
+# Numeric variables
 mort_select <- lapply(mort_select, function(x)
   x %>% 
     mutate(
       across(starts_with(c("ano", "cod_dpto", "codptore", "gru_ed1")), ~as.numeric(.x))))
 
 
-# recodificar grupo de edad
+# Recode age group
 mort_select = lapply(mort_select, function(x)
   x %>%
     mutate(
@@ -123,7 +123,7 @@ mort_select = lapply(mort_select, function(x)
     ))
 
 
-# recodificar sexo
+# Recode sex
 mort_select = lapply(mort_select, function(x)
   x %>%
     mutate(
@@ -133,7 +133,7 @@ mort_select = lapply(mort_select, function(x)
         TRUE ~ NA_character_)
     ))
 
-# ajuste area de residencia
+# Adjust area of residence
 mort_select = lapply(mort_select, function(x)
   x %>%
     mutate(
@@ -145,7 +145,7 @@ mort_select = lapply(mort_select, function(x)
         TRUE ~ "NA"),
     ))
 
-# variables categoricas
+# Categorical variables
 mort_select <- lapply(mort_select, function(x)
   x %>% 
     mutate(
@@ -154,7 +154,7 @@ mort_select <- lapply(mort_select, function(x)
 
 
 
-#unificar serie en una sola base
+#Combine series into a single dataset
 
 mortalidad <- bind_rows(mort_select$df_mort_2010, mort_select$df_mort_2011, mort_select$df_mort_2012,
                         mort_select$df_mort_2013, mort_select$df_mort_2014, mort_select$df_mort_2015,
@@ -167,7 +167,7 @@ mortalidad <-mortalidad %>%
   mutate(cod_munic = paste0(cod_dpto, cod_munic),
          cod_munic = as.numeric(cod_munic))
 
-#NAs en codptore y codmunre, se transforman en caracteres para luego volverlos NAs, dado el error:
+#NAs in codptore and codmunre, converted to characters and then back to NAs, due to the error:
 # "NAs are not allowed in subscripted assignments"
 
 mortalidad$codptore[is.na(mortalidad$codptore)] <- "na"
@@ -182,7 +182,7 @@ mortalidad <-mortalidad %>%
 mortalidad$codptore[mortalidad$codptore == "na"] <- NA
 mortalidad$codptore <- as.numeric(mortalidad$codptore)
 
-# na en dpto residencia se toma depto ocurrencia
+# NA in residence department, use occurrence department instead
 
 mortalidad <- mortalidad %>% 
   mutate(
@@ -192,7 +192,7 @@ mortalidad <- mortalidad %>%
       TRUE ~ codptore
     ))
 
-# agregar nombre departamento 
+# Add department name
 mortalidad <- mortalidad %>% 
   select(-c(cod_dpto, cod_munic, codmunre))
 
@@ -217,15 +217,15 @@ rm(df_mort_2010, df_mort_2011, df_mort_2012, df_mort_2013,
    list_mort_select, list_mortalidad, mort_select)
 
 # saveRDS(mortalidad, "Bases/mortalidad_2010_2021.rds")
-# imputacion de datos faltantes ---------------------------------------
+# Missing data imputation ---------------------------------------
 
-# cargue de base con depuracion previa
+# Load dataset with prior cleaning
 mortalidad <- readRDS("Bases/mortalidad_2010_2021.rds")
 
-#grafico de nas
+#Plot of NAs
 plot_na_pareto(mortalidad)
 
-# imputacion de datos, correrlo tarda aproximadamente 3 horas
+# Data imputation, running takes approximately 3 hours
 # mortalidad_imput <- missRanger(
 #   mortalidad,
 #   formula = .~.,
@@ -235,22 +235,22 @@ plot_na_pareto(mortalidad)
 # saveRDS(mortalidad_imput, "Bases/mortalidad_imput.rds")
 
 
-# ajustes base unificada --------------------------------------------------
-# base con datos imputados
+# Adjustments to unified dataset --------------------------------------------------
+# Dataset with imputed data
 mortalidad_imput <-  readRDS("Bases/mortalidad_imput.rds")
-# contar de nas
+# Count NAs
 colSums(is.na(mortalidad_imput))
 
-# agrupar muertes
+# Group deaths
 df_muertes_group <- mortalidad_imput %>% 
   group_by(ano, codptore, sexo, gru_ed1, c_bas1) %>% 
   summarise(muertes = n()) %>% 
   as.data.frame()
 
 
-# separacion por causa de muerte ------------------------------------------
+# Separation by cause of death ------------------------------------------
 
-# codigos CIE-10 para cada causa de muerte
+# ICD-10 codes for each cause of death
 
 cardiopatia_isquemica <- c("I20", "I21", "I22", "I23", "I24", "I25") # I20-I25,9
 acv <- c("G45", "G460", "G461", "G462", "G463", "G464", "G465", "G466", "G467", "G468", #G45-G46.8
@@ -299,7 +299,7 @@ relacionadas_animales <- c(paste0("W", 52:62), "W64", paste0("X", 20:29)) # W52.
   
 
 
-# cardiopatia isquemica
+# Ischemic heart disease
 df_cardiopatia_isquemica <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(cardiopatia_isquemica, collapse = "|"),
                 x = c_bas1, ignore.case = T)) %>% 
@@ -314,7 +314,7 @@ df_acv <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# miocardiopatia y miocarditis
+# Cardiomyopathy and myocarditis
 df_miocardiopatia_miocarditis <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(miocardiopatia_miocarditis, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -322,7 +322,7 @@ df_miocardiopatia_miocarditis <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Cardiopatía hipertensiva
+# Hypertensive heart disease
 df_cardiopatía_hipertensiva <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(cardiopatía_hipertensiva, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -330,7 +330,7 @@ df_cardiopatía_hipertensiva <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Infección de las vías respiratorias inferiores
+# Lower respiratory tract infection
 df_ivri <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(ivri, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -338,7 +338,7 @@ df_ivri <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Enfermedad pulmonar obstructiva crónica
+# Chronic obstructive pulmonary disease
 df_epoc <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(epoc, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -354,7 +354,7 @@ df_dm <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Enfermedad renal crónica
+# Chronic kidney disease
 df_erc <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(erc, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -362,7 +362,7 @@ df_erc <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Homicidio
+# Homicide
 df_homicidio <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(homicidio, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -370,7 +370,7 @@ df_homicidio <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# suicidio
+# Suicide
 df_suicidio <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(suicidio, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -378,7 +378,7 @@ df_suicidio <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# ahogamiento
+# Drowning
 df_ahogamiento <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(ahogamiento, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -386,7 +386,7 @@ df_ahogamiento <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# desastres
+# Disasters
 df_desastres <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(desastres, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -394,7 +394,7 @@ df_desastres <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# lesiones_mecanicas
+# Mechanical injuries
 df_lesiones_mecanicas <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(lesiones_mecanicas, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -402,7 +402,7 @@ df_lesiones_mecanicas <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# accidentes trafico
+# Traffic accidents
 df_accidentes_trafico <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(accidentes_trafico, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -410,7 +410,7 @@ df_accidentes_trafico <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Otras lesiones relacionadas con el transporte
+# Other transport-related injuries
 df_relacion_transporte <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(relacion_transporte, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -418,7 +418,7 @@ df_relacion_transporte <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Otras lesiones no intencionales
+# Other unintentional injuries
 df_no_intencionales <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(no_intencionales, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -426,7 +426,7 @@ df_no_intencionales <- df_muertes_group %>%
   group_by(ano, codptore, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-# Relacionadas con los animales
+# Animal-related
 df_relacionadas_animales <- df_muertes_group %>% 
   filter(grepl(pattern = paste0(relacionadas_animales, collapse = "|"),
                x = c_bas1, ignore.case = T))%>% 
@@ -457,7 +457,7 @@ names(list_mortalidad_estudio) <- names_vec
 
 
 
-# mortalidad no agrupada
+# Ungrouped mortality
 # mortalidad_imput <- mortalidad_imput %>% 
 #   filter(c_bas1 %in% df_mortalidad_estudio$c_bas1,
 #          ano <= 2019) %>% 
@@ -482,10 +482,10 @@ names(list_mortalidad_estudio) <- names_vec
 #     TRUE ~ NA_character_))
 #  
 
-# Exportar bases depuradas ----------------------------------------------------------
+# Export cleaned datasets ----------------------------------------------------------
 
 
-# funcion para exportar datos
+# Function to export data
 f_export_data = function(data, pathfile){
   
   #RDS
@@ -496,7 +496,7 @@ f_export_data = function(data, pathfile){
   writexl::write_xlsx(data, path = paste0(pathfile,".xlsx")) 
 }
 
-# exportacion
+# Export
 for (i in names_vec) {
   f_export_data(data = list_mortalidad_estudio[[i]], 
                 pathfile = paste0("Bases/Bases mortalidad estudio depto residencia/", 

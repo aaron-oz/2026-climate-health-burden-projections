@@ -1,4 +1,4 @@
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
 library(tidyverse)
@@ -6,7 +6,7 @@ library(sf)
 library(ggplot2)
 library(janitor)
 
-# cargue de datos ---------------------------------------------------------
+# data loading ---------------------------------------------------------
 
 
 
@@ -16,25 +16,25 @@ dep <- read_sf("Bases/Ambientales/Shapes/MGN_DPTO_POLITICO.shp")
 # plot(dep)
 st_crs(dep)
 
-# leer shape de pixeles unicos de temperatura
+# read shapefile of unique temperature pixels
 cent <- read_sf("Bases/Ambientales/Shapes/pixeles_unicos_reindex.shp")
 cent <- st_read("Bases/Ambientales/Shapes/pixeles_unicos_reindex.shp")
 st_crs(cent) # WGS 84
 # plot(st_geometry(cent))
 
-# transferir departamento
+# transfer department
 dep2 <- dep[, c(1,8:10)]
 identical(st_crs(cent), st_crs(dep2))
 dep2 <- st_transform(dep2, crs = st_crs(cent))
 
 cent2 <- st_join(cent, dep2, join = st_within)
 
-# transformar de puntos a grilla
+# transform from points to grid
 cellSize <- 0.25
 grid <- (st_bbox(cent2) + cellSize/2*c(-1,-1,1,1)) %>%
   st_make_grid(cellsize=c(cellSize, cellSize)) %>% st_sf()
 
-# plot de puntos y grilla
+# plot of points and grid
 ggplot() +
   geom_sf(data = dep2, fill = "transparent") +
   geom_sf(data = grid, fill = "transparent", color = "blue") +
@@ -43,43 +43,43 @@ ggplot() +
 
 st_write(grid, "Bases/Ambientales/Shapes/grilla_30km.shp")
 
-# pasar atributos de uno a otro
+# transfer attributes from one to another
 identical(st_crs(grid), st_crs(cent2)) # true
 grid2 <- st_join(grid, cent2, join = st_intersects)
 
-# intersección con departamentos
+# intersection with departments
 grid3 <- grid2 %>% st_filter(dep2, .predicate = st_intersects)
 
-  # plot de puntos y grilla
+  # plot of points and grid
   ggplot() +
     geom_sf(data = dep2, fill = "transparent") +
     geom_sf(data = grid3, fill = "transparent", color = "blue") +
     theme_bw()
 
-# leer base de poblacion 1km2 DANE
+# read DANE population dataset 1km2
 #pob <- st_read("/Users/samueldavid/Library/CloudStorage/OneDrive-Personal/BM/Flagship report/Carga temperatura/Datos/Poblacion/ShapefileGrid1km2_VihopeCNPV2018/Grid1km2_VihopeCNPV2018.shp")
 #pob <- read_sf("/Users/samueldavid/Library/CloudStorage/OneDrive-Personal/BM/Flagship report/Carga temperatura/Datos/Poblacion/ShapefileGrid1km2_VihopeCNPV2018/Grid1km2_VihopeCNPV2018.shp")
 
-#pob2 <- pob[,c(3,9:11)] # corto las variables que necesito
+#pob2 <- pob[,c(3,9:11)] # select the variables I need
 #st_crs(pob2) # WGS 84
-#plot(st_geometry(pob2)) #revisar que quede bien
+#plot(st_geometry(pob2)) #check that it looks correct
 
 # worldpop ----------------------------------------------------------------
 
 
 # 2010 --------------------------------------------------------------------
 
-# leer base csv de world pop 2010
+# read world pop csv dataset 2010
 wpop_2010 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2010_1km_Aggregated.csv")
 
 wpop_2010 <- wpop_2010 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2010) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2010)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2010)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2010, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2010, join = st_contains, left = TRUE) # slow
 Sys.time()
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -93,17 +93,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2010.csv", row.names = F)
 
 # 2011 --------------------------------------------------------------------
 
-# leer base csv de world pop 2011
+# read world pop csv dataset 2011
 wpop_2011 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2011_1km_Aggregated.csv")
 
 wpop_2011 <- wpop_2011 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2011) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2011)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2011)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2011, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2011, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -118,17 +118,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2011.csv", row.names = F)
 # 2012 --------------------------------------------------------------------
 
 
-# leer base csv de world pop 2012
+# read world pop csv dataset 2012
 wpop_2012 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2012_1km_Aggregated.csv")
 
 wpop_2012 <- wpop_2012 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2012) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2012)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2012)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2012, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2012, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -140,17 +140,17 @@ grid5 <- st_drop_geometry(grid5)
 write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2012.csv", row.names = F)
 
 # 2013 --------------------------------------------------------------------
-# leer base csv de world pop 2013
+# read world pop csv dataset 2013
 wpop_2013 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2013_1km_Aggregated.csv")
 
 wpop_2013 <- wpop_2013 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2013) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2013)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2013)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2013, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2013, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -165,17 +165,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2013.csv", row.names = F)
 
 # 2014 --------------------------------------------------------------------
 
-# leer base csv de world pop 2014
+# read world pop csv dataset 2014
 wpop_2014 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2014_1km_Aggregated.csv")
 
 wpop_2014 <- wpop_2014 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2014) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2014)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2014)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2014, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2014, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -190,17 +190,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2014.csv", row.names = F)
 
 # 2015 --------------------------------------------------------------------
 
-# leer base csv de world pop 2015
+# read world pop csv dataset 2015
 wpop_2015 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2015_1km_Aggregated.csv")
 
 wpop_2015 <- wpop_2015 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2015) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2015)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2015)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2015, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2015, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -214,17 +214,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2015.csv", row.names = F)
 
 # 2016 --------------------------------------------------------------------
 
-# leer base csv de world pop 2016
+# read world pop csv dataset 2016
 wpop_2016 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2016_1km_Aggregated.csv")
 
 wpop_2016 <- wpop_2016 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2016) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2016)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2016)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2016, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2016, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -237,17 +237,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2016.csv", row.names = F)
 
 # 2017 --------------------------------------------------------------------
 
-# leer base csv de world pop 2017
+# read world pop csv dataset 2017
 wpop_2017 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2017_1km_Aggregated.csv")
 
 wpop_2017 <- wpop_2017 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2017) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2017)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2017)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2017, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2017, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -262,17 +262,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2017.csv", row.names = F)
 
 # 2018 --------------------------------------------------------------------
 
-# leer base csv de world pop 2018
+# read world pop csv dataset 2018
 wpop_2018 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2018_1km_Aggregated.csv")
 
 wpop_2018 <- wpop_2018 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2018) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2018)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2018)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2018, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2018, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -286,17 +286,17 @@ write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2018.csv", row.names = F)
 
 # 2019 --------------------------------------------------------------------
 
-# leer base csv de world pop 2018
+# read world pop csv dataset 2018
 wpop_2019 <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2019_1km_Aggregated.csv")
 
 wpop_2019 <- wpop_2019 %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
 st_crs(wpop_2019) <- st_crs(grid3)
-identical(st_crs(grid3), st_crs(wpop_2019)) # verdad
+identical(st_crs(grid3), st_crs(wpop_2019)) # true
 
 # join
-grid4 <- st_join(grid3, wpop_2019, join = st_contains, left = TRUE) # demora
+grid4 <- st_join(grid3, wpop_2019, join = st_contains, left = TRUE) # slow
 
 grid5 <- grid4 %>% 
   group_by(indx_rg, geometry) %>% 
@@ -308,7 +308,7 @@ grid5 <- st_drop_geometry(grid5)
 write.csv(grid5,  "Bases/Ambientales/WorldPop/WorldPop_2019.csv", row.names = F)
 
 
-# plot de puntos y grilla
+# plot of points and grid
 ggplot() +
   geom_sf(data = grid5, aes(fill = sum_z)) +
   #  geom_sf(data = dp1, aes(fill = crp)) +
@@ -318,7 +318,7 @@ ggplot() +
                        na.value = 'white', guide = "legend")
 
 
-# agrupacion poblacion 2010-2019 ------------------------------------------
+# population aggregation 2010-2019 ------------------------------------------
 names_wp <- list.files("Bases/Ambientales/WorldPop/",
                        pattern = "^WorldPop_.+\\.csv$", full.names = T)
 list_wp <- lapply(names_wp, function(x) read.csv(x))
@@ -335,15 +335,15 @@ wp_2010_19 <- bind_rows(list_wp)
 write.csv(wp_2010_19, "Bases/Ambientales/WorldPop/WorldPop_2010_2019_pixel.csv")
 saveRDS(wp_2010_19, "Bases/Ambientales/WorldPop/WorldPop_2010_2019_pixel.rds")
 
-# Temperatura diaria por pixel 2010-2019
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 2/05/2023
-# fecha de modificacion: 2/05/2023
-# Institucion: Banco Mundial
+# Daily temperature per pixel 2010-2019
+# Author: Jean Carlo Pineda Lozano
+# Date created: 2/05/2023
+# Date modified: 2/05/2023
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
 library(readr)
@@ -351,18 +351,18 @@ library(tidyverse)
 library(openair)
 
 
-# depuracion de bases -----------------------------------------------------
+# data cleaning -----------------------------------------------------
 pix1 <- pix %>% 
   group_by(hour, index_right, dia, x, y) %>% 
   summarise(temperatura = mean(temp),
             DN = mean(DN)) 13_54
 
 
-lote_1$fecha <- lote_1$dia + 40178 # esta es la fecha numerica para 31/12/2009
+lote_1$fecha <- lote_1$dia + 40178 # this is the numeric date for 12/31/2009
 lote_1$coord <- paste0(lote_1$x, "-", lote_1$y)
 
 lote_1 <- lote_1 %>% 
-  mutate(temp = temp- 273.15, # se pasan de kelvin a Celsius
+  mutate(temp = temp- 273.15, # convert from Kelvin to Celsius
          fecha = as.Date(fecha, 
                          origin = "1899-12-30",
                          tz = "UTC")) %>% 
@@ -420,17 +420,17 @@ temp_w <- data.frame(cbind(lonlattime, lswt_vec_long))
 colnames(temp_w) <- c('long','lat','year','temp')
 head(temp_w)
 
-# filtrar para coordinadas Colombia
+# filter for Colombia coordinates
 temp_col <- temp_w %>%
   filter(lat > -4.29 & lat < 12.43 & long > -78.99 & long < -66.87)
 head(temp_col)
 
-# pasarlo a espacial
+# convert to spatial
 temp_col2 <- temp_col %>% 
   st_as_sf(coords = c("long", "lat"),
            crs= "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 
-identical(st_crs(temp_col2), st_crs(dep2)) # no 
+identical(st_crs(temp_col2), st_crs(dep2)) # no
 temp_col2 <- st_transform(temp_col2, crs = st_crs(dep2))
 
 st_write(temp_col2, "puntosproyecc.shp")
@@ -439,28 +439,28 @@ st_write(temp_col2, "puntosproyecc.shp")
 ggplot() +
   geom_sf(data = dep2, fill = "transparent") +
   geom_sf(data = temp_col2, fill = "transparent", color = "blue")
-# se ve que hay un punto cerca del norte de Bogota
+# we can see there is a point near the north of Bogota
 
 st_write(grid, "grilla_30km.shp")
 
 library(mapview)
-mapview(temp_col2) # el punto mas cercano de Bog es el de Zipaquira
+mapview(temp_col2) # the closest point to Bogota is the one in Zipaquira
 
 temp_col <- temp_col %>%
   filter(lat > -4.29 & lat < 12.43 & long > -78.99 & long < -66.87)
 head(temp_col)
 
-# filtrar unico punto
+# filter single point
 temp_bog <- temp_col %>%
   filter(lat > 4.9951 & lat < 5.00578 & long > -74.00683 & long < -73.99334)
 View(temp_bog)
 
-plot(temp_bog$year, temp_bog$temp) # tienen valores que tienen sentido
+plot(temp_bog$year, temp_bog$temp) # values make sense
 
 saveRDS(temp_bog, 'ptemp_bog_ssp119.rds')
 
 
-###### NC files para los otros
+###### NC files for the others
 
 our_nc_data <- nc_open("/Users/samueldosoriog/Library/CloudStorage/OneDrive-Personal/BM/Colombia/Flagship report/Carga temperatura/Datos/Temperatura/Proyecciones/NCDs/timeseries-annual-mean_cmip6-ssp370-2015-2100.nc")
 
@@ -497,11 +497,11 @@ temp_w <- data.frame(cbind(lonlattime, lswt_vec_long))
 colnames(temp_w) <- c('long','lat','year','temp')
 head(temp_w)
 
-# filtrar para coordinadas Colombia
+# filter for Colombia coordinates
 temp_bog <- temp_w %>%
   filter(lat > 4.9951 & lat < 5.00578 & long > -74.00683 & long < -73.99334)
 
-plot(temp_bog$year, temp_bog$temp) # tienen valores que tienen sentido
+plot(temp_bog$year, temp_bog$temp) # values make sense
 
 saveRDS(temp_bog, 'ptemp_bog_ssp370.rds')
 

@@ -1,46 +1,46 @@
-# Temperatura diaria 2010-2019
-# Autor: Jean Carlo Pineda Lozano, Samuel Osorio
-# fecha de creacion: 26/04/2023
-# fecha de modificacion: 28/04/2023
-# Institucion: Banco Mundial
+# Daily temperature 2010-2019
+# Author: Jean Carlo Pineda Lozano, Samuel Osorio
+# Date created: 26/04/2023
+# Date modified: 28/04/2023
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
-# librerias
+# libraries
 library(readr)
 library(tidyverse)
 
 
 
-# cargue de datos ---------------------------------------------------------
-# temperatura diaria
+# data loading ---------------------------------------------------------
+# daily temperature
 # df_temperatura <- read.csv("Bases/Ambientales/temperatura_dias_con_na.csv")
 df_temperatura <- readRDS("Bases/Ambientales/temperatura_diaria_pixel.rds")
 # poblacion <- readRDS("Bases/Ambientales/temperatura_diaria_pixel.rds") %>% filter(fecha == as.Date("2010-01-01"))
 poblacion <- readRDS("Bases/Ambientales/WorldPop/WorldPop_2010_2019_pixel.rds")
-#poblacion dane (para san andres)
+#DANE population (for San Andres)
 pob_depto_2010_2050 <- readRDS("Bases/Proyecciones poblacionales/Proyecciones_poblacion_depto_2010_2050_postcovid.rds")
 
-#curvas
+#curves
 curves_er <- readRDS("Bases/Ambientales/Curvas ER/curves_all_causes.rds")
 #rr max
 max_rr <- readRDS("Bases/Ambientales/Curvas ER/max_rr_zone.rds")
-#muertes
+#deaths
 mortalidad_dia <- readRDS("Bases/Mortalidad depurada/mortalidad_diaria_DANE_2010_2019_imput.rds")
 # TMREL
 df_tmrel <- read_csv("Bases/Burkart/tmrel_125_summaries.csv")
 
-#avpp totales
+#total YLLs
 avpp_totales <- readRDS("Bases/Estimaciones carga/avpp_totales.rds")
 
-#tablas de vida
+#life tables
 df_tv_global <- readRDS("Bases/Tablas de vida/Tablas_vida_DANE_2005_2050.rds")
 
-# ajuste datos ------------------------------------------------------------
-#poblacion
+# data adjustment ------------------------------------------------------------
+#population
 index_unique <- df_temperatura %>% 
   select(index_right, DPTO_CCDGO) %>% 
   distinct()
@@ -66,10 +66,10 @@ prop_pob_depto <- rbind(prop_pob_depto, prop_san_a)
 
 # poblacion <- sum(poblacion$pob)
 
-#eliminar objetos temporales
+#remove temporary objects
 rm(index_unique, pob_pixel, pob_depto, prop_san_a)
 
-#poblacion dane (para san andres)
+#DANE population (for San Andres)
 pob_san_a <- pob_depto_2010_2050 %>% 
   filter(cod_dpto == 88,
          ano <= 2019) %>% 
@@ -83,8 +83,8 @@ pob_san_a <- pob_depto_2010_2050 %>%
 avpp_totales$c_muerte[avpp_totales$c_muerte == "cardiopatía_hiperten"] <- "cardiopatia_hipertensiva"
 avpp_totales$c_muerte[avpp_totales$c_muerte == "miocardiopatia_miocar"] <- "miocardiopatia_miocarditis"
 
-# tablas de vida
-df_tv_global <- df_tv_global %>% 
+# life tables
+df_tv_global <- df_tv_global %>%
   mutate(gru_ed1 = case_when(
     age == 0 ~ "0-4",
     age == 1 ~ "0-4",
@@ -106,9 +106,9 @@ df_tv_global <- df_tv_global %>%
     age == 80 ~ ">80",
     TRUE ~ NA_character_),
     cod_depto = as.numeric(cod_depto)) %>% 
-  filter(cod_depto != 0, # se eliminan tablas nacionales para este cálculo
+  filter(cod_depto != 0, # national tables are excluded for this calculation
          ano <= 2019) %>%
-  filter(age != 0) %>% # no se tiene en cuenta edad 0, esta se incluye a quinquenio 0-4
+  filter(age != 0) %>% # age 0 is not considered separately, it is included in the 0-4 quinquennial group
   select(-age) %>% 
   distinct()
 
@@ -117,7 +117,7 @@ names(max_rr) <- c("zona", "c_muerte", "temperatura", "rr_max_temp", "rr_min_tem
 max_rr$zona <- as.character(max_rr$zona)
 max_rr$c_muerte[max_rr$c_muerte == "cardiopatía_hipertensiva"] <- "cardiopatia_hipertensiva"
 
-# temperatura
+# temperature
 
 names(df_temperatura) <- c("temperatura", "fecha", "index_right", "pob", "cod_depto")
 
@@ -140,7 +140,7 @@ df_temperatura <- left_join(df_temperatura, prop_pob_depto)
 df_temperatura$pob <- NULL
 # df_temperatura$ano <- NULL
 
-#curvas
+#curves
 names(curves_er) <- c("zona", "temperatura", "rr_mean", "rr_lower", "rr_upper", "rr_max", "c_muerte")
 curves_er$zona <- trimws(curves_er$zona, which = c("both"))
 curves_er$c_muerte <- trimws(curves_er$c_muerte, which = c("both"))
@@ -154,11 +154,11 @@ curves_er <- curves_er %>%
 
 # curves_er$rr_max <- NULL
 
-# mortalidad
+# mortality
 mortalidad_dia$c_muerte[mortalidad_dia$c_muerte == "cardiopatía_hiperten"] <- "cardiopatia_hipertensiva"
 mortalidad_dia$c_muerte[mortalidad_dia$c_muerte == "miocardiopatia_miocar"] <- "miocardiopatia_miocarditis"
 
-# quitar quienes residen en el extranjero
+# remove foreign residents
 mortalidad_dia <- mortalidad_dia %>% 
   filter(codptore != 75)
 
@@ -170,27 +170,27 @@ mortalidad_dia_unique <- mortalidad_dia %>%
 names(mortalidad_dia) <- c("fecha", "cod_depto", "sexo", "gru_ed1", "c_muerte", "muertes")
 names(mortalidad_dia_unique) <- c("cod_depto", "fecha", "c_muerte", "muertes")
 
-# agrupar temperaturas por año y zonas de acuerdo al promedio 2010-2019
+# group temperatures by year and zones according to the 2010-2019 average
 
 df_temp_periodo <- df_temperatura %>% 
   group_by(ano, index_right) %>% 
   summarise(zona = round(mean(temperatura, na.rm = T)))
 
-# riesgo diario -----------------------------------------------------------
+# daily risk -----------------------------------------------------------
 df_rr <- df_temperatura %>% 
   left_join(df_temp_periodo) %>% 
   mutate(temperatura = round(temperatura, 1),
          fecha = as.Date(fecha))
 
-# copiar y pegar 17 veces la base (una por cada causa de muerte) 
-df_rr <- map(seq_len(17), ~df_rr) %>% 
+# replicate the dataset 17 times (one per cause of death)
+df_rr <- map(seq_len(17), ~df_rr) %>%
   bind_rows()
 
-# poner cada causa de muerte el numero de filas necesario
+# assign each cause of death the necessary number of rows
 c_muerte <- sort(unique(curves_er$c_muerte))
 df_rr$c_muerte = rep(c_muerte, each = 5465046)
 
-#unir mortalidad y base de temperatura y zonas para acortar base solo a dias con muertes por cada causa
+#join mortality and temperature/zone dataset to filter to days with deaths only for each cause
 df_rr <- left_join(df_rr, mortalidad_dia_unique) %>% 
   filter(!is.na(muertes)) %>% 
   select(-muertes)
@@ -203,7 +203,7 @@ df_rr <- df_rr %>%
   mutate(temperatura = round(as.numeric(temperatura),1)) %>%
   mutate(zona = as.character(zona),
          zona = case_when(
-           zona == "29" ~ "28", # hay pixeles con zonas 29 y 30, que no existen en metodologia de GBD
+           zona == "29" ~ "28", # there are pixels with zones 29 and 30, which do not exist in the GBD methodology
            zona == "30" ~ "28",
            zona == "31" ~ "28",
            TRUE ~ zona
@@ -213,9 +213,9 @@ df_rr <- df_rr %>%
 
 curves_er_2 <- filter(curves_er, zona %in% df_rr$zona)
 
-# joint por causa de muerte y zona, si la temperatura está por encima de la temperatura donde hay RR 
-# en esa zona, asignar el RR más alto de la zona, pero si esta por debajo, asignar el RR más bajo
-# de la zona
+# join by cause of death and zone; if the temperature is above the temperature where there is RR
+# in that zone, assign the highest RR of the zone; if it is below, assign the lowest RR
+# of the zone
 
 curves_max <- curves_er %>%
   group_by(zona) %>%
@@ -239,7 +239,7 @@ df_rr <- left_join(df_rr, curves_er_2)
 # tmrel -------------------------------------------------------------------
 
 # TMREL
-# correr esta sentencia si se quieren usar los valores promedio entre 2010 y 2020
+# run this statement to use the average values between 2010 and 2020
 df_tmrel <- df_tmrel %>% 
   group_by(meanTempCat) %>% 
   summarise(tmrelMean = mean(tmrelMean),
@@ -248,14 +248,14 @@ df_tmrel <- df_tmrel %>%
   mutate(zona = as.character(meanTempCat)) %>% 
   select(-meanTempCat) 
 
-# copiar y pegar 17 veces la base (una por cada causa de muerte) 
-df_tmrel <- map(seq_len(17), ~df_tmrel) %>% 
+# replicate the dataset 17 times (one per cause of death)
+df_tmrel <- map(seq_len(17), ~df_tmrel) %>%
   bind_rows()
 
-# poner cada causa de muerte el numero de filas necesario
+# assign each cause of death the necessary number of rows
 df_tmrel$c_muerte = rep(c_muerte, each = 23)
 
-# redondear y hacer numéricos
+# round and convert to numeric
 df_tmrel <- df_tmrel %>% 
   mutate(
     across(where(is.numeric), ~round(.x, 1)))%>% 
@@ -276,7 +276,7 @@ df_rr <- df_rr %>%
   left_join(zona_rr)
 # saveRDS(df_rr, "Bases/Estimaciones carga/RR diario.rds")
 
-# base para los sevs ------------------------------------------------------
+# base for SEVs ------------------------------------------------------
 poblacion <- poblacion %>% 
   rename(index_right = indx_rg,
          pob = sum_z)
@@ -338,18 +338,18 @@ df_base_sevs <- left_join(df_base_sevs, pob_zona)
 df_base_sevs <- df_base_sevs %>% mutate(pr = pob/pob_depto,
                                         pr_zona = pob/pob_zona)
 
-#solo un año
+#single year only
 # df_base_sevs <- df_base_sevs %>% filter(ano == 2019)
 
-# copiar y pegar 17 veces la base (una por cada causa de muerte) 
-df_base_sevs <- map(seq_len(17), ~df_base_sevs) %>% 
+# replicate the dataset 17 times (one per cause of death)
+df_base_sevs <- map(seq_len(17), ~df_base_sevs) %>%
   bind_rows()
 
-# poner cada causa de muerte el numero de filas necesario
+# assign each cause of death the necessary number of rows
 c_muerte <- sort(unique(curves_er$c_muerte))
 df_base_sevs$c_muerte = rep(c_muerte, each = 5465046)
 
-# cruce con curvas er
+# join with ER curves
 df_base_sevs <- df_base_sevs %>% 
   mutate(temperatura = round(temperatura,1),
          zona = as.character(zona)) %>% 
@@ -364,7 +364,7 @@ df_base_sevs <- df_base_sevs %>%
 
 
 # paf ---------------------------------------------------------------------
-#paf ponderados por poblacion 
+#population-weighted PAFs
 # df_rr <- left_join(df_rr, prop_pob_depto)
 
 df_rr <- df_rr %>% 
@@ -376,10 +376,10 @@ df_rr <- df_rr %>%
       rr_mean >= 1 ~ pr*(rr_mean -1)/rr_mean,
       TRUE ~ pr* -1*((1/rr_mean)-1)/(1/rr_mean) #-((1/RR)-1)/(1/RR)
     ),
-    paf = ifelse(paf < 0, 0, paf)) # formula codigos gbd ifelse(x>=1, pr*(x-1)/x, pr*-1*((1/x)-1)/(1/x)))
+    paf = ifelse(paf < 0, 0, paf)) # GBD code formula ifelse(x>=1, pr*(x-1)/x, pr*-1*((1/x)-1)/(1/x)))
 
 
-#efecto
+#effect
 df_rr <- df_rr %>% 
   mutate(effect = case_when(
          temperatura < tmrelMean ~ "low_temperature",
@@ -389,12 +389,12 @@ df_rr <- df_rr %>%
 
 # saveRDS(df_rr, "Bases/Estimaciones carga/PAF_diario_pixel.rds")
 
-# los PAF se dividen en Heat y cold
+# PAFs are split into heat and cold
 coldPafs <- filter(df_rr, effect == "low_temperature")
 heatPafs <- filter(df_rr, effect == "high_temperature")
 
 
-#paf anual por deartamento
+#annual PAF by department
 # paf_year_depto_cold <- coldPafs %>%
 #   mutate(fecha = substr(fecha, 1, 4 )) %>%
 #   group_by(cod_depto, fecha, c_muerte) %>%
@@ -406,7 +406,7 @@ heatPafs <- filter(df_rr, effect == "high_temperature")
 #   group_by(cod_depto, fecha, c_muerte) %>%
 #   summarise(paf = sum(paf))
 
-# paf diario departamento
+# daily PAF by department
 
 paf_day_depto_cold <- coldPafs %>%
   group_by(cod_depto, fecha, c_muerte) %>%
@@ -419,10 +419,10 @@ paf_day_depto_heat <- heatPafs %>%
             paf2= sum(paf2))
 
 # sev ---------------------------------------------------------------------
-# calculo con base con rrmaximos por zona depto ano y causa de muerte
+# calculation using RR maximums by zone, department, year, and cause of death
 
-#codigo samuel
-# obtener poblacion expuesta a temperaturas diarias
+#Samuel's code
+# get exposed population to daily temperatures
 # sevs <- df_base_sevs %>%
 #   mutate(sev = ifelse(rr_max <=1 | rr_mean<=1, 0, pr_zona * (rr_mean - 1)/(rr_max-1)))%>%
 #   group_by(cod_depto, ano, c_muerte, zona) %>%
@@ -433,14 +433,14 @@ paf_day_depto_heat <- heatPafs %>%
 # sevs <- left_join(sevs, pob_depto)
 # sevs <- left_join(sevs, pob_zona)
 #   
-# # promedios ponderados entre zonas
+# # weighted averages across zones
 # sevs <- sevs %>%
 #   mutate(ppzonadep = pob_zona / pob_depto,
 #          sev2 = sev * ppzonadep) %>%
 #   group_by(cod_depto, c_muerte) %>%
 #   summarise(sev2 = sum(sev2))
 
-#anuales
+#annual
 base_pobtemp <- df_base_sevs %>%
   group_by(fecha, cod_depto, c_muerte, zona, temperatura) %>%
   summarise(pob_temp = sum(pob),
@@ -449,14 +449,14 @@ base_pobtemp <- df_base_sevs %>%
             rr_mean = mean(rr_mean),
             rr_max = mean(rr_max))
 
-# creo la variable de pesos
+# create the weights variable
 base_pobtemp <- base_pobtemp %>%
   mutate(pr_zona = pob_temp / pob_zona)
 
-# se guarda salida intermedia porque es muy pesado el procesamiento
+# save intermediate output because the processing is very heavy
 saveRDS(base_pobtemp,"Bases/Estimaciones carga/base_pobtemp.rds")
 
-# calculo los SEVs
+# calculate the SEVs
 sev <- base_pobtemp %>%
   mutate(sev = ifelse(rr_max <=1 | rr_mean<=1, 0, pr_zona * (rr_mean - 1)/(rr_max-1))) %>%
   mutate(fecha = as.numeric(substr(fecha, 1, 4 ))) %>% 
@@ -468,7 +468,7 @@ sev <- base_pobtemp %>%
   mutate(sev = ifelse(sev < 0, 0, sev),
          sev = ifelse(sev > 1, 1, sev))
 
-# promedios ponderados entre zonas
+# weighted averages across zones
 sev2 <- sev %>%
   mutate(ppzonadep = pob_zona / pob_depto,
          sev2 = sev * ppzonadep) %>%
@@ -480,7 +480,7 @@ sev2 <- sev %>%
 # write.csv(sev2, "Bases/Estimaciones carga/sevs_year_departamento.csv")
 
 
-# riesgo por año y efecto atribuible --------------------------------------
+# annual risk and attributable effect --------------------------------------
 # 
 # paf_year_depto <- paf_day_depto_cold %>%
 #   rename(paf_cold = paf2) %>%
@@ -514,7 +514,7 @@ paf_day_depto <- df_rr %>%
 
 
 
-# enfoque 2
+# approach 2
 
 # paf_day_depto2 <- paf_day_depto_cold %>% 
 #   rename(paf_cold = paf) %>% 
@@ -530,7 +530,7 @@ paf_day_depto <- df_rr %>%
 
 # saveRDS(paf_day_depto, "Bases/Estimaciones carga/PAF_dia_departamento.rds")
 # write.csv(paf_day_depto, "Bases/Estimaciones carga/PAF_dia_departamento.csv")
-# carga atribuible a temperaturas no optimas ------------------------------
+# attributable burden from non-optimal temperatures ------------------------------
 
 # carga_atriuible <- avpp_totales %>%
 #   left_join(paf_year_depto %>%
@@ -543,7 +543,7 @@ paf_day_depto <- df_rr %>%
 #          avpp_heat = round(avpp*paf_heat*sev,2),
 #          avpp_non_optimal_temp = round(avpp*paf_non_optimal_temp*sev,2))
 
-#con ajustes sev samuel
+#with Samuel's SEV adjustments
 carga_atriuible <- mortalidad_dia %>% 
   left_join(paf_day_depto) %>% 
   mutate(fecha = as.numeric(substr(fecha, 1, 4 ))) %>% 
@@ -564,7 +564,7 @@ carga_atriuible <- mortalidad_dia %>%
 # saveRDS(carga_atriuible, "Bases/Estimaciones carga/muertes_atribuibles.rds")
 
 
-#avpp atribuibles
+#attributable YLLs
 carga_atriuible <- left_join(carga_atriuible, df_tv_global %>% mutate(ano = as.numeric(ano)))
 
 carga_atriuible <- carga_atriuible %>% 

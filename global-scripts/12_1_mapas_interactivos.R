@@ -10,7 +10,7 @@ library(viridis)
 library(RColorBrewer)
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
 
@@ -29,14 +29,14 @@ wpop <- read.csv("Bases/Ambientales/WorldPop/ppp_COL_2020_1km_Aggregated.csv")
 wpop <- wpop %>% 
   st_as_sf(coords = c("X", "Y"), crs = "4326")
 
-# poblacion
+# population
 gri5 <- st_read("Bases/Ambientales/Shapes/grilla_5.shp")
 gri5 <- read_sf("Bases/Ambientales/Shapes/grilla_5.shp")
 plot(gri5)
 gri5$sum_z <- round(gri5$sum_z,0)
 Poblacion <- gri5[,c(2,3)]
 
-# temp diaria y pob
+# daily temperature and population
 temp_d <- readRDS("Bases/Ambientales/temperatura_diaria_pixel.rds")
 tempd <- temp_d[,c(1,3)]
 temp <- tempd %>%
@@ -48,7 +48,7 @@ tempp <- left_join(gri5, temp)
 tempp$temp <- round(tempp$temp,1)
 Temperatura<- tempp[,c(4,3)]
 
-# carga
+# burden
 mcc <- read.csv("Salidas/Capas mapas/Murtes_calor.csv")
 mff <- read.csv("Salidas/Capas mapas/Murtes_frio.csv")
 mno <- read.csv("Salidas/Capas mapas/Murtes_non_optimal.csv")
@@ -110,7 +110,7 @@ PIB_TM <- dep2 %>%
   left_join(pib2) %>% 
   select(pib, geometry)
 
-# plot del departamento
+# department plot
 
 # Create a continuous palette function
 pal <- colorNumeric(

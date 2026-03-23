@@ -1,14 +1,14 @@
-# Mortalidad causas relacionadas con temperatura 2010-2020
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 3/3/2022
-# Institucion: Banco Mundial
+# Mortality from temperature-related causes 2010-2020
+# Author: Jean Carlo Pineda Lozano
+# Date created: 3/3/2022
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
-# instalar paquetes necesarios
+# install required packages
 packages <- c("tidyverse", "gtsummary", "flextable", "officer")
 to_install <- packages[!packages %in% installed.packages()[, "Package"]]
 if (length(to_install)) { 
@@ -16,20 +16,20 @@ if (length(to_install)) {
 }
 
 
-# cargar librerias
+# load libraries
 library(tidyverse)
 library(ggplot2)
 library("RColorBrewer")
 library(janitor)
 
-# ajuste de datos mortalidad ---------------------------------------------------------
+# mortality data adjustment ---------------------------------------------------------
 
-# cargue de base de datos 
+# data loading
 df_mortalidad_hist <- readRDS("Bases/mortalidad_2010_2021.rds")
 df_mortalidad_proy <- readRDS("Bases/Proyecciones mortalidad/Proyeccion_mortalidad_edad_agrupada.rds")
 df_mortalidad_estudio <- readRDS("Bases/Bases mortalidad estudio depto residencia/df_mortalidad_estudiodepto_resid.rds")
 df_pob <- readRDS("Bases/Proyecciones poblacionales/Proyecciones_poblacion_nacional_2010_2070.rds")
-#ajuste nacional y 2018-2020
+#national adjustment and 2018-2020
 
 df_mortalidad_hist_sex <- df_mortalidad_hist %>% 
   group_by(ano) %>% 
@@ -63,9 +63,9 @@ ggplot(df_mort, aes(x = ano, y = value, group = tipo, color = tipo)) +
   theme_minimal()
 
 
-# causa especifica --------------------------------------------------------
+# specific cause --------------------------------------------------------
 
-# agrupacion nacional y grupo de edad
+# national and age group aggregation
 df_mortalidad_gru_edad <- df_mortalidad_estudio %>% 
   group_by(ano, sexo, gru_ed1, c_muerte) %>% 
   summarise(muertes = sum(muertes)) %>% 
@@ -73,19 +73,19 @@ df_mortalidad_gru_edad <- df_mortalidad_estudio %>%
 
 df_pob$edad <- as.character(df_pob$edad)
 
-#calculo de tasas
+#rate calculation
 df_mort_tasa <- left_join(df_mortalidad_gru_edad, df_pob, by = c("ano", "sexo", "edad"))
 df_mort_tasa$tasa_esp <- round((df_mort_tasa$muertes/df_mort_tasa$poblacion)*100000, 2)
 
 
 
 ################################################
-# agrupacion nacional
+# national aggregation
 df_mortalidad_nal <- df_mortalidad_estudio %>% 
   group_by(ano, c_muerte) %>% 
   summarise(muertes = sum(muertes))
 
-#calculo de tasas
+#rate calculation
 df_mort_tasa_nal <- df_mortalidad_nal %>% 
   left_join(df_pob %>% 
               group_by(ano) %>% 
@@ -94,7 +94,7 @@ df_mort_tasa_nal <- df_mortalidad_nal %>%
 df_mort_tasa_nal$tasa_esp <- round((df_mort_tasa_nal$muertes/df_mort_tasa_nal$poblacion) *100000,
                                    digits = 2)
 
-# grafico todas las causas de muerte
+# plot all causes of death
 df_mort_tasa_nal %>% 
   # filter(c_muerte == "accidentes_trafico") %>% 
   ggplot(aes(x = ano, y = tasa_esp, group = c_muerte, color = c_muerte)) +
@@ -107,7 +107,7 @@ df_mort_tasa_nal %>%
   theme_minimal()
 
 
-# grafico primera causa
+# plot first cause
 df_mort_tasa_nal %>% 
   filter(c_muerte == "accidentes_trafico") %>% 
   ggplot(aes(x = ano, y = tasa_esp)) +
@@ -121,7 +121,7 @@ df_mort_tasa_nal %>%
   theme_minimal()
 
 
-# iteracion graficos todas las causas de muerte
+# iterate plots for all causes of death
 
 lista_c_muerte <- unique(df_mort_tasa_nal$c_muerte)
 
@@ -142,11 +142,11 @@ for (i in seq_along(lista_c_muerte)) {
           axis.title.x = element_text(face="bold", vjust=1.5, colour="black", size=rel(1.5)),
           axis.title.y = element_text(face="bold", vjust=1.5, colour="black", size=rel(1.5)),
           axis.text = element_text(colour = "black")) +
-    ggtitle(paste("Causa de muerte: ", lista_c_muerte[i])) #Configuro un título por grupo
+    ggtitle(paste("Causa de muerte: ", lista_c_muerte[i])) #Set a title per group
   
   print (Grafico_c_muerte)
   
-  # guardar gráfica como .jpeg
+  # save plot as .jpeg
   ggsave(Grafico_c_muerte,
          file=paste("Salidas/Grafico tendencia", lista_c_muerte[i], ".jpeg", sep=''),
          width = 5, height = 2.5)

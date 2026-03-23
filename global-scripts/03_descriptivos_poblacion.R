@@ -1,14 +1,14 @@
-# Proyecciones poblacionales DANE 2010-2050(70)
-# Autor: Jean Carlo Pineda-Lozano
-# fecha de creacion: 24/1/2023
-# Institucion: Banco Mundial
+# DANE population projections 2010-2050(70)
+# Author: Jean Carlo Pineda-Lozano
+# Date created: 24/1/2023
+# Institution: World Bank
 
 
 
-# limpiar memoria
+# Clear memory
 rm(list = ls()); invisible(gc())
 
-# instalar paquetes necesarios
+# Install required packages
 packages <- c("tidyverse", "gtsummary", "flextable", "officer", "gganimate")
 to_install <- packages[!packages %in% installed.packages()[, "Package"]]
 if (length(to_install)) { 
@@ -16,7 +16,7 @@ if (length(to_install)) {
 }
 
 
-# cargar librerias
+# Load libraries
 library(tidyverse)
 library(flextable)
 library(gtsummary)
@@ -29,16 +29,16 @@ library(areaplot)
 
 
 
-# cargue de datos ---------------------------------------------------------
+# Data loading ---------------------------------------------------------
 
 pob_depto_2010_2050 <- readRDS("E:/wb_carga_ temperatura/Bases/Proyecciones poblacionales/Proyecciones_poblacion_depto_2010_2050.rds")
 pob_nacional_2010_2070 <- readRDS("E:/wb_carga_ temperatura/Bases/Proyecciones poblacionales/Proyecciones_poblacion_nacional_2010_2070.rds")
 
 
 
-# graficas ----------------------------------------------------------------
+# Plots ----------------------------------------------------------------
 
-# tendencia poblacion general 2010-2070 (barras)
+# General population trend 2010-2070 (bars)
 
 pob_nacional_2010_2070 %>% 
   group_by(ano) %>% 
@@ -52,7 +52,7 @@ pob_nacional_2010_2070 %>%
 
 ggsave(filename = "Grafico poblacion nal 210-2070.jpg", plot = last_plot(), path = "Salidas")
 
-# piramides poblacionales cada decenio
+# Population pyramids by decade
 
 # 2010
 
@@ -82,7 +82,7 @@ pob_2070 = pob_nacional_2010_2070 %>%
 ggsave(filename = "Piramide poblacional 2010.jpg", plot = last_plot(), path = "Salidas")
 
 
-# poblacion por departamentos
+# Population by departments
 
 pob_depto_2010_2050 %>% 
   group_by(nom_dpto, ano) %>% 

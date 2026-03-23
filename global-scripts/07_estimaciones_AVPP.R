@@ -1,17 +1,17 @@
-# Mortalidad causas relacionadas con temperatura 2010-2020
-# Estimaciones AVPP
-# Autor: Jean Carlo Pineda Lozano
-# fecha de creacion: 7/3/2023
-# Institucion: Banco Mundial
+# Mortality from temperature-related causes 2010-2020
+# YPLL estimates
+# Author: Jean Carlo Pineda Lozano
+# Date created: 7/3/2023
+# Institution: World Bank
 
 
 
-# Configuracion -----------------------------------------------------------
+# Configuration -----------------------------------------------------------
 
-# limpiar memoria
+# clear memory
 rm(list = ls()); invisible(gc())
 
-# instalar paquetes necesarios
+# install required packages
 packages <- c("tidyverse", "janitor", "readxl")
 to_install <- packages[!packages %in% installed.packages()[, "Package"]]
 if (length(to_install)) { 
@@ -19,7 +19,7 @@ if (length(to_install)) {
 }
 
 
-# cargar librerias
+# load libraries
 library(tidyverse)
 library(janitor)
 library(readxl)
@@ -27,7 +27,7 @@ library(stringr)
 library(fs)
 
 
-# Cargue de base de datos  ------------------------------------------------
+# Data loading  ------------------------------------------------
 df_mortalidad_estudio <- readRDS("Bases/Bases mortalidad estudio depto residencia/df_mortalidad_estudiodepto_resid.rds")
 df_mortalidad_estudio <- filter(df_mortalidad_estudio, ano <= 2019)
 df_pob <- readRDS("Bases/Proyecciones poblacionales/Proyecciones_poblacion_depto_2010_2050.rds")
@@ -36,18 +36,18 @@ df_pob <- df_pob %>%
          gru_ed1 = edad) %>% 
   mutate(gru_ed1 = as.character(gru_ed1))
 
-# cargue de tablas de vida
+# load life tables
 
 # 2005 a 2017
 vec_2005 <- list.files("Bases/Tablas de vida/2005-2017/", full.names = T)
 list_hojas_2005 <- sapply(vec_2005, excel_sheets)
 list_hojas_2005 <- lapply(list_hojas_2005, function(a) a[grepl("A$", a)])
 vec_sheet <- sort(unlist(list_hojas_2005[33], use.names = F))
-# repetir mismo numero de veces las bases y las hhojas para el cargue iterativo
+# repeat the same number of times for databases and sheets for iterative loading
 vec_bd <- rep(vec_2005, each = length(vec_sheet))
 vc_sheet_rep <- rep(vec_sheet, times = 34)
 
-# cargue iterativo de los datos
+# iterative data loading
 list_2005 <- mapply(function(e, r) read_excel(path = e, sheet = r, range = "A12:H30"),
                     e = vec_bd, r = vc_sheet_rep, SIMPLIFY = F)
 
@@ -71,11 +71,11 @@ vec_2018 <- list.files("Bases/Tablas de vida/2018-2050/", full.names = T)
 list_hojas_2018 <- sapply(vec_2018, excel_sheets)
 list_hojas_2018 <- lapply(list_hojas_2018, function(a) a[grepl("A$", a)])
 vec_sheet <- sort(unlist(list_hojas_2018[33], use.names = F))
-# repetir mismo numero de veces las bases y las hhojas para el cargue iterativo
+# repeat the same number of times for databases and sheets for iterative loading
 vec_bd <- rep(vec_2018, each = length(vec_sheet))
 vc_sheet_rep <- rep(vec_sheet, times = 34)
 
-# cargue iterativo de los datos
+# iterative data loading
 list_2018 <- mapply(function(e, r) read_excel(path = e, sheet = r, range = "A12:H30"),
                     e = vec_bd, r = vc_sheet_rep, SIMPLIFY = F)
 
@@ -93,19 +93,19 @@ for (i in seq_along(list_2018)) {
   df_tv_2018 <- rbind(df_tv_2018, tabla)
 }
  
-#unificar tablas de vida
+#combine life tables
 df_tv_global <- rbind(df_tv, df_tv_2018) %>% 
   clean_names() %>% 
   select(c("cod_depto", "sexo", "ano", "age", "e_x")) %>% 
   rename(ev = e_x)
 
-# guardar tablas de vida
+# save life tables
 # saveRDS(df_tv_global, "Bases/Tablas de vida/Tablas_vida_DANE_2005_2050.rds")
 df_tv_global <- readRDS("Bases/Tablas de vida/Tablas_vida_DANE_2005_2050.rds")
 
-# Estimacion AVPP ---------------------------------------------------------
+# YPLL estimation ---------------------------------------------------------
 
-#unificar bases
+#combine datasets
 names(df_mortalidad_estudio) <- c("ano", "cod_depto", "sexo", "gru_ed1", "c_muerte", "muertes")
 df_tv_global <- df_tv_global %>% 
   mutate(gru_ed1 = case_when(
@@ -130,10 +130,10 @@ df_tv_global <- df_tv_global %>%
     TRUE ~ NA_character_),
     cod_depto = as.numeric(cod_depto),
     cod_depto = case_when(
-      cod_depto == 0 ~ 75, # extranjero se le adjudica esperanzas de vida nacionales
+      cod_depto == 0 ~ 75, # foreign residents are assigned national life expectancies
       TRUE ~ cod_depto), 
     ano = as.numeric(ano)) %>% 
-  filter(age != 0) %>% # no se tiene en cuenta edad 0, esta se incluye a quinquenio 0-4
+  filter(age != 0) %>% # age 0 is not considered, it is included in the 0-4 quinquennial group
   select(-age) %>% 
   distinct()
 
@@ -141,28 +141,28 @@ df_avpp <- left_join(df_mortalidad_estudio, df_tv_global, multiple = "all")
 
 # AVPP
 df_avpp$avpp <- ifelse(df_avpp$gru_ed1 == ">80", 
-                       round(df_avpp$muertes * 10, 2), # Supuesto de que mayores de 80 pierden 10 años, dado el rango más amplio que en los otros grupos
+                       round(df_avpp$muertes * 10, 2), # Assumption that those over 80 lose 10 years, given the wider range than in other groups
                        round(df_avpp$muertes * (df_avpp$ev-2.5), 2))
 
-# tasas
+# rates
 df_avpp <- left_join(df_avpp, df_pob, multiple = "all")
 df_avpp$tasa_avpp <- round((df_avpp$avpp/df_avpp$poblacion)*100000,2)
 
-# Reordenar y quitar ev
+# Reorder and remove ev
 df_avpp <- df_avpp %>% 
   select(c("ano", "cod_depto", "nom_dpto", "sexo", "gru_ed1", "c_muerte", "muertes", 
            "poblacion", "avpp", "tasa_avpp"))
 
-# Exportar resultados -----------------------------------------------------
+# Export results -----------------------------------------------------
 
 
 f_export_data = function(data, pathfile){
   
   #RDS
   saveRDS(data, file = paste0(pathfile,".rds"))
-  # csv
+  # CSV
   write.csv2(data, file = paste0(pathfile,".csv"), na = "", row.names = FALSE)
-  # excel
+  # Excel
   writexl::write_xlsx(data, path = paste0(pathfile,".xlsx")) 
 }
 
