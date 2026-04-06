@@ -27,66 +27,67 @@ tmrel <- readRDS(file.path(INTERMEDIATE_DIR, "tmrel.rds"))
 
 setDT(erf); setDT(temp); setDT(tmrel)
 
-# SEVs are computed from summary RR values even in draw mode,
-# since they are a reporting metric, not part of the burden calculation.
-# If in draw mode, summarize ERF draws first.
+# SEVs use summary RR values even in draw mode (diagnostic metric).
 if (USE_DRAWS) {
-  erf_summary <- erf[, .(rr_mean = mean(rr)), by = .(zone, daily_temp, acause)]
-  tmrel_summary <- tmrel[, .(tmrel_mean_10 = as.integer(round(mean(tmrel)))),
-                         by = .(zone, year_id)]
+  erf <- erf[, .(rr_mean = mean(rr)), by = .(zone, daily_temp, acause)]
+  tmrel_s <- tmrel[, .(tmrel_mean_10 = as.integer(round(mean(tmrel)))),
+                   by = .(zone, year_id)]
 } else {
-  erf_summary <- copy(erf)
-  tmrel_summary <- tmrel[, .(zone, year_id, tmrel_mean_10)]
+  # Keep only needed columns
+  erf <- erf[, .(zone, daily_temp, acause, rr_mean)]
+  tmrel_s <- tmrel[, .(zone, year_id, tmrel_mean_10)]
 }
 
 # --- Rescale RR to 1.0 at the TMREL ---
-rr_at_tmrel <- merge(
-  erf_summary,
-  tmrel_summary,
-  by = "zone", allow.cartesian = TRUE
+# For each zone/year, find the RR at the TMREL temperature
+rr_ref_dt <- merge(
+  tmrel_s,
+  erf,
+  by.x = c("zone"),
+  by.y = c("zone"),
+  allow.cartesian = TRUE
 )
-rr_ref <- rr_at_tmrel[daily_temp == tmrel_mean_10,
-                       .(zone, acause, year_id, rr_ref = rr_mean)]
+rr_ref_dt <- rr_ref_dt[daily_temp == tmrel_mean_10,
+                        .(zone, year_id, acause, rr_ref = rr_mean)]
 
-erf_rescaled <- merge(
-  merge(erf_summary, tmrel_summary, by = "zone", allow.cartesian = TRUE),
-  rr_ref,
-  by = c("zone", "acause", "year_id"), all.x = TRUE
-)
-erf_rescaled[rr_ref > 0, rr_mean := rr_mean / rr_ref]
+# Build rescaled RR table with year dimension
+erf_yr <- merge(erf, tmrel_s, by = "zone", allow.cartesian = TRUE)
+erf_yr <- merge(erf_yr, rr_ref_dt, by = c("zone", "year_id", "acause"), all.x = TRUE)
+erf_yr[!is.na(rr_ref) & rr_ref > 0, rr_rescaled := rr_mean / rr_ref]
+erf_yr[is.na(rr_rescaled), rr_rescaled := rr_mean]
 
-# --- Compute RR_max: 99th percentile of population-weighted RR per cause/zone ---
-# Merge temperature exposure with rescaled RR
-sev_data <- merge(temp, erf_rescaled,
+# --- Merge temperature exposure with rescaled RR ---
+sev_data <- merge(temp, erf_yr,
                   by.x = c("zone", "daily_temp_10", "year"),
                   by.y = c("zone", "daily_temp", "year_id"),
-                  all.x = TRUE)
+                  all.x = TRUE, allow.cartesian = TRUE)
+sev_data <- sev_data[!is.na(rr_rescaled)]
 
-# Compute RR_max as 99th percentile by cause and zone
-sev_data <- sev_data[!is.na(rr_mean)]
-sev_data[, pop_cumfrac := cumsum(pop) / sum(pop),
-         by = .(zone, acause)]
-rr_max <- sev_data[order(zone, acause, rr_mean)][,
-  .SD[which.min(abs(pop_cumfrac - 0.99))],
-  by = .(zone, acause)
-][, .(zone, acause, rr_max = rr_mean)]
+# --- Compute RR_max: 99th percentile of pop-weighted RR per cause/zone ---
+sev_data_sorted <- sev_data[order(zone, acause, rr_rescaled)]
+sev_data_sorted[, pop_cumfrac := cumsum(pop) / sum(pop),
+                by = .(zone, acause)]
+
+rr_max_dt <- sev_data_sorted[, {
+  idx <- which.min(abs(pop_cumfrac - 0.99))
+  .(rr_max = rr_rescaled[idx])
+}, by = .(zone, acause)]
 
 # --- Compute SEVs ---
-sev_data <- merge(sev_data, rr_max, by = c("zone", "acause"), all.x = TRUE)
+sev_data <- merge(sev_data, rr_max_dt, by = c("zone", "acause"), all.x = TRUE)
 
-# Recalculate population proportions within each zone (per Burkart sevFix)
-sev_data[, pr_zone := pop / sum(pop, na.rm = TRUE),
-         by = .(year, zone, acause)]
+# Population proportion within each zone-year-cause
+sev_data[, pr_zone := pop / sum(pop, na.rm = TRUE), by = .(year, zone, acause)]
 
-sev_data[, sev_contrib := ifelse(rr_max <= 1 | rr_mean <= 1, 0,
-                                  pr_zone * (rr_mean - 1) / (rr_max - 1))]
+sev_data[, sev_contrib := fifelse(rr_max <= 1 | rr_rescaled <= 1, 0,
+                                   pr_zone * (rr_rescaled - 1) / (rr_max - 1))]
 
 sevs <- sev_data[, .(sev = sum(sev_contrib, na.rm = TRUE)),
                  by = .(year, zone, acause)]
 sevs[sev < 0, sev := 0]
 sevs[sev > 1, sev := 1]
 
-# Aggregate across zones (population-weighted average)
+# --- Aggregate across zones (population-weighted average) ---
 zone_pops <- temp[, .(pop_zone = sum(pop, na.rm = TRUE)), by = .(year, zone)]
 total_pops <- temp[, .(pop_total = sum(pop, na.rm = TRUE)), by = year]
 zone_weights <- merge(zone_pops, total_pops, by = "year")

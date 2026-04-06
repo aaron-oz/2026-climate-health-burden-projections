@@ -21,7 +21,8 @@ for (arg in args) {
 }
 
 # Discover available location IDs from TMREL files
-project_root <- here::here()
+project_root <- Sys.getenv("PROJECT_ROOT",
+                           unset = normalizePath(file.path(getwd(), "..")))
 tmrel_dir <- file.path(project_root, "data", "tmrel")
 tmrel_files <- list.files(tmrel_dir, pattern = "^tmrel_\\d+_summaries\\.csv$")
 location_ids <- as.integer(gsub("tmrel_(\\d+)_summaries\\.csv", "\\1", tmrel_files))

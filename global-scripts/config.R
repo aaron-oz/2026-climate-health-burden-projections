@@ -23,7 +23,9 @@ BASELINE_YEARS <- c(2010, 2011, 2012)
 # =============================================================================
 
 # Root directory for the project
-PROJECT_ROOT <- here::here()
+# Project root: parent of global-scripts/. Set via environment variable or auto-detect.
+PROJECT_ROOT <- Sys.getenv("PROJECT_ROOT",
+                           unset = normalizePath(file.path(getwd(), "..")))
 
 # Input data directories
 DATA_DIR       <- file.path(PROJECT_ROOT, "data")

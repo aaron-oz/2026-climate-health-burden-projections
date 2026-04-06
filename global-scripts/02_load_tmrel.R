@@ -72,9 +72,11 @@ if (RUN_DIAGNOSTICS) {
                            by = .(zone, year_id)]
   } else {
     tmrel_summary <- copy(tmrel)
-    setnames(tmrel_summary, "tmrelMean", "tmrel_mean")
-    setnames(tmrel_summary, "tmrelLower", "tmrel_lower")
-    setnames(tmrel_summary, "tmrelUpper", "tmrel_upper")
+    # Drop derived columns to avoid duplicates, keep only what we need for plotting
+    plot_cols <- c("zone", "year_id", "tmrelMean", "tmrelLower", "tmrelUpper")
+    tmrel_summary <- tmrel_summary[, ..plot_cols]
+    setnames(tmrel_summary, c("tmrelMean", "tmrelLower", "tmrelUpper"),
+             c("tmrel_mean", "tmrel_lower", "tmrel_upper"))
   }
 
   p <- ggplot(tmrel_summary, aes(x = year_id, y = tmrel_mean, color = as.factor(zone))) +
