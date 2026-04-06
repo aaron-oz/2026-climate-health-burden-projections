@@ -239,33 +239,38 @@ df_rr <- left_join(df_rr, curves_er_2)
 # tmrel -------------------------------------------------------------------
 
 # TMREL
-# run this statement to use the average values between 2010 and 2020
-df_tmrel <- df_tmrel %>% 
-  group_by(meanTempCat) %>% 
-  summarise(tmrelMean = mean(tmrelMean),
-            tmrelLower = mean(tmrelLower),
-            tmrelUpper = mean(tmrelUpper)) %>% 
-  mutate(zona = as.character(meanTempCat)) %>% 
-  select(-meanTempCat) 
+# Use year-specific TMRELs (not averaged across years) per Burkart methodology.
+# The TMREL shifts over time as cause-of-death composition changes.
+df_tmrel <- df_tmrel %>%
+  rename(zona = meanTempCat, ano = year_id) %>%
+  mutate(zona = as.character(zona),
+         tmrelMean = round(tmrelMean, 1))
 
 # replicate the dataset 17 times (one per cause of death)
 df_tmrel <- map(seq_len(17), ~df_tmrel) %>%
   bind_rows()
 
 # assign each cause of death the necessary number of rows
-df_tmrel$c_muerte = rep(c_muerte, each = 23)
+n_tmrel_rows <- nrow(df_tmrel) / 17
+df_tmrel$c_muerte = rep(c_muerte, each = n_tmrel_rows)
 
-# round and convert to numeric
-df_tmrel <- df_tmrel %>% 
-  mutate(
-    across(where(is.numeric), ~round(.x, 1)))%>% 
-  left_join(curves_er %>% 
+# look up the RR at the TMREL temperature for each zone/cause (for rescaling)
+df_tmrel <- df_tmrel %>%
+  left_join(curves_er %>%
               rename(tmrelMean = temperatura,
                      rr_tmrel_mean = rr_mean,
                      rr_tmrel_lower = rr_lower,
                      rr_tmrel_upper = rr_upper))
 
-df_rr <- left_join(df_rr, df_tmrel)
+df_rr <- left_join(df_rr, df_tmrel, by = c("zona", "ano", "c_muerte"))
+
+# Rescale RR curves so that RR = 1.0 at the TMREL (per Burkart methodology).
+# Without rescaling, the PAF formula (RR-1)/RR incorrectly attributes risk
+# at the minimum-risk temperature.
+df_rr <- df_rr %>%
+  mutate(rr_mean = rr_mean / rr_tmrel_mean,
+         rr_lower = rr_lower / rr_tmrel_lower,
+         rr_upper = rr_upper / rr_tmrel_upper)
 
 zona_rr <- curves_er_2 %>% 
   group_by(zona, c_muerte) %>% 
@@ -367,16 +372,14 @@ df_base_sevs <- df_base_sevs %>%
 #population-weighted PAFs
 # df_rr <- left_join(df_rr, prop_pob_depto)
 
-df_rr <- df_rr %>% 
+# PAF calculation: population-weighted, no floor at zero.
+# Negative PAFs represent protective effects (e.g., cold protecting against
+# drowning/homicide) and are retained per Burkart methodology.
+df_rr <- df_rr %>%
   mutate(paf = case_when(
-    rr_mean >= 1 ~ pr*(rr_mean -1)/rr_mean,
-    TRUE ~ pr* -1*((1/rr_mean)-1)/(1/rr_mean) #-((1/RR)-1)/(1/RR)
-      ),
-    paf2 = case_when(
-      rr_mean >= 1 ~ pr*(rr_mean -1)/rr_mean,
-      TRUE ~ pr* -1*((1/rr_mean)-1)/(1/rr_mean) #-((1/RR)-1)/(1/RR)
-    ),
-    paf = ifelse(paf < 0, 0, paf)) # GBD code formula ifelse(x>=1, pr*(x-1)/x, pr*-1*((1/x)-1)/(1/x)))
+    rr_mean >= 1 ~ pr*(rr_mean - 1)/rr_mean,
+    TRUE ~ pr * -1 * ((1/rr_mean) - 1) / (1/rr_mean)
+  ))
 
 
 #effect
@@ -410,13 +413,11 @@ heatPafs <- filter(df_rr, effect == "high_temperature")
 
 paf_day_depto_cold <- coldPafs %>%
   group_by(cod_depto, fecha, c_muerte) %>%
-  summarise(paf = sum(paf),
-            paf2= sum(paf2))
+  summarise(paf = sum(paf))
 
 paf_day_depto_heat <- heatPafs %>%
   group_by(cod_depto, fecha, c_muerte) %>%
-  summarise(paf = sum(paf),
-            paf2= sum(paf2))
+  summarise(paf = sum(paf))
 
 # sev ---------------------------------------------------------------------
 # calculation using RR maximums by zone, department, year, and cause of death
@@ -499,15 +500,13 @@ sev2 <- sev %>%
 #   left_join(sevs)
 
 
-paf_day_depto <- df_rr %>% 
-  select(fecha, cod_depto, c_muerte) %>% 
-  distinct() %>% 
-  left_join(paf_day_depto_cold %>% 
-              rename(paf_cold = paf,
-                     paf_cold2 = paf2)) %>% 
-  left_join(paf_day_depto_heat %>% 
-              rename(paf_heat = paf,
-                     paf_heat2 = paf2)) %>% 
+paf_day_depto <- df_rr %>%
+  select(fecha, cod_depto, c_muerte) %>%
+  distinct() %>%
+  left_join(paf_day_depto_cold %>%
+              rename(paf_cold = paf)) %>%
+  left_join(paf_day_depto_heat %>%
+              rename(paf_heat = paf)) %>%
   mutate(paf_heat = ifelse(is.na(paf_heat), 0, paf_heat),
          paf_cold = ifelse(is.na(paf_cold), 0, paf_cold),
          paf_non_optimal_temp = paf_cold + paf_heat)
@@ -543,20 +542,21 @@ paf_day_depto <- df_rr %>%
 #          avpp_heat = round(avpp*paf_heat*sev,2),
 #          avpp_non_optimal_temp = round(avpp*paf_non_optimal_temp*sev,2))
 
-#with Samuel's SEV adjustments
-carga_atriuible <- mortalidad_dia %>% 
-  left_join(paf_day_depto) %>% 
-  mutate(fecha = as.numeric(substr(fecha, 1, 4 ))) %>% 
+# Attributable burden = deaths × PAF (per Burkart/Murray-Lopez CRA framework).
+# SEVs are computed separately as a diagnostic but are NOT multiplied into the
+# burden calculation. See step2-comparison.md for rationale.
+carga_atriuible <- mortalidad_dia %>%
+  left_join(paf_day_depto) %>%
+  mutate(fecha = as.numeric(substr(fecha, 1, 4 ))) %>%
   rename(ano = fecha) %>%
-  left_join(sev2) %>% 
-  mutate(muertes_cold = muertes*paf_cold*sev,
-         muertes_heat = muertes*paf_heat*sev,
-         muertes_non_optimal_temp = muertes*paf_non_optimal_temp*sev) %>% 
-  group_by(ano, cod_depto, sexo, gru_ed1, c_muerte) %>% 
+  mutate(muertes_cold = muertes * paf_cold,
+         muertes_heat = muertes * paf_heat,
+         muertes_non_optimal_temp = muertes * paf_non_optimal_temp) %>%
+  group_by(ano, cod_depto, sexo, gru_ed1, c_muerte) %>%
   summarise(muertes = sum(muertes),
             muertes_cold = sum(muertes_cold),
             muertes_heat = sum(muertes_heat),
-            muertes_non_optimal_temp = sum(muertes_non_optimal_temp)) %>% 
+            muertes_non_optimal_temp = sum(muertes_non_optimal_temp)) %>%
   mutate(muertes_cold = ifelse(is.na(muertes_cold), 0, muertes_cold),
          muertes_heat = ifelse(is.na(muertes_heat), 0, muertes_heat),
          muertes_non_optimal_temp = ifelse(is.na(muertes_non_optimal_temp), 0, muertes_non_optimal_temp))
@@ -581,18 +581,5 @@ saveRDS(carga_atriuible, "Bases/Estimaciones carga/avpp_atribuibles.rds")
 write.csv(carga_atriuible, "Bases/Estimaciones carga/avpp_atribuibles.csv")
 
 
-carga_atriuible_nosevs <- mortalidad_dia %>% 
-  left_join(paf_day_depto) %>% 
-  mutate(fecha = as.numeric(substr(fecha, 1, 4 ))) %>% 
-  rename(ano = fecha) %>%
-  mutate(muertes_cold = muertes*paf_cold,
-         muertes_heat = muertes*paf_heat,
-         muertes_non_optimal_temp = muertes*paf_non_optimal_temp) %>% 
-  group_by(ano, cod_depto, sexo, gru_ed1, c_muerte) %>% 
-  summarise(muertes = sum(muertes),
-            muertes_cold = sum(muertes_cold),
-            muertes_heat = sum(muertes_heat),
-            muertes_non_optimal_temp = sum(muertes_non_optimal_temp)) %>% 
-  mutate(muertes_cold = ifelse(is.na(muertes_cold), 0, muertes_cold),
-         muertes_heat = ifelse(is.na(muertes_heat), 0, muertes_heat),
-         muertes_non_optimal_temp = ifelse(is.na(muertes_non_optimal_temp), 0, muertes_non_optimal_temp))
+# Note: The previous "nosevs" variant is now redundant since the main
+# calculation above uses deaths × PAF without SEV, matching Burkart.
