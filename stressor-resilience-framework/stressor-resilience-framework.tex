@@ -1,0 +1,413 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{graphicx}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small\textit{Climate Stressor Health Resilience Framework}}
+\lhead{\small\textit{OZ Statistical Consulting --- WBG}}
+\cfoot{\thepage}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.8em}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Retrospective Climate Stressor Health Resilience Analysis}\\[0.5em]
+  {\large\itshape Extending the Burkart et al.\ (2021) Framework\\to Measure Health System Adaptation to Observed Temperature Change}\\[1.5em]
+  {\normalsize Aaron Osgood-Zimmerman\\OZ Statistical Consulting\\[0.3em]
+  Prepared for Exemplars in Global Health, World Bank, Seed Global Health, and Management Sciences for Health\\[0.3em]
+  \today}
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1.5em}
+
+%----------------------------------------------------------------------
+\section{Motivation}
+%----------------------------------------------------------------------
+
+Burkart et al.\ (2021) developed a two-part framework for estimating the global burden of disease attributable to non-optimal temperature. Their model links cause-specific mortality to daily temperature via exposure--response surfaces estimated from 64.9 million deaths across nine countries, then applies these surfaces globally to estimate attributable deaths, DALYs, and population attributable fractions (PAFs) for 204 countries and territories for the period 1990--2019. The analysis is entirely \textbf{retrospective}---it quantifies historical temperature-attributable burden, not future projections, though the authors note it serves as ``a prelude to investigating future temperature scenarios.''
+
+The Burkart framework answers: \emph{How large is the temperature-attributable health burden?} We propose to extend it with a \textbf{counterfactual resilience measurement layer} that answers a complementary question: \emph{How well are health systems absorbing the health burden imposed by observed temperature change?} Beyond estimating attributable burden, we compare:
+\begin{itemize}[nosep]
+  \item The burden \textbf{expected} under observed rising temperatures, assuming population vulnerability remained at a historical baseline, against
+  \item The burden \textbf{actually observed}.
+\end{itemize}
+
+The gap between these two quantities is a measure of \textbf{climate health resilience}---the degree to which health systems, infrastructure, behavior, and clinical capacity have adapted to offset the additional burden imposed by warming. This approach can be applied to any country or subnational unit for which temperature data, cause-specific mortality, and population estimates are available. At the end, we also discuss the potential to extend this to non-temperature stressors.
+
+%----------------------------------------------------------------------
+\section{Review of the Burkart Framework}
+%----------------------------------------------------------------------
+
+\subsection{Model Structure}
+
+The Burkart model has two stages:
+
+\textbf{Stage 1: Exposure--response estimation.} Using individual death records from nine countries (Brazil, Chile, China, Colombia, Guatemala, Mexico, New Zealand, South Africa, USA), cause-specific mortality rates are modeled as a function of daily mean temperature and mean annual temperature zone using MR-BRT (meta-regression---Bayesian, regularized, trimmed). This produces relative risk (RR) surfaces $\text{RR}_c(T_{\text{daily}}, T_{\text{zone}})$ for each cause $c$, defined over a two-dimensional grid of daily temperatures and 23 mean annual temperature zones (6\textdegree C to 28\textdegree C).
+
+Two distinct curve shapes emerge:
+\begin{itemize}[nosep]
+  \item \textbf{J-shaped} (non-external causes: IHD, stroke, COPD, LRI, CKD, diabetes, hypertensive heart disease, cardiomyopathy): mortality increases at both temperature extremes, with cold effects dominant across a wide range and heat effects concentrated at the upper tail.
+  \item \textbf{Monotonically increasing} (external causes: drowning, homicide, suicide, transport injuries, disasters): mortality rises with temperature throughout.
+\end{itemize}
+
+\textbf{Stage 2: Burden attribution.} For each grid pixel, day, and cause, the model computes:
+\begin{enumerate}[nosep]
+  \item The \textbf{TMREL} (theoretical minimum-risk exposure level): the location- and year-specific daily temperature associated with the lowest combined mortality across all included causes.
+  \item The \textbf{PAF}: the fraction of deaths attributable to temperature above (heat) or below (cold) the TMREL.
+  \item The temperature \textbf{attributable burden}: total deaths $\times$ PAF, aggregated to the desired spatial and temporal resolution.
+\end{enumerate}
+
+The RR curves are normalized so that $\text{RR} = 1.0$ at the TMREL, and the PAF for a given cause $c$, temperature zone $z$, and daily temperature $t$ is:
+\begin{equation}
+  \text{PAF}_{cztd} = \frac{\text{RR}_{czt} - 1}{\text{RR}_{czt}}
+  \label{eq:paf}
+\end{equation}
+Each pixel-day is classified as \textbf{heat} (daily temperature $>$ TMREL) or \textbf{cold} (daily temperature $<$ TMREL); days exactly at the TMREL contribute no excess risk ($\text{RR} = 1$) and are excluded. PAFs are computed separately within each category:
+\begin{align}
+  \text{PAF}_{\text{heat}}(l,y,c) &= \sum_{d:\, T_d > \text{TMREL}} \sum_p \frac{pop_{ply}}{pop_{ly}} \cdot \frac{\text{RR}_{cztd} - 1}{\text{RR}_{cztd}} \label{eq:paf_heat}\\[0.3em]
+  \text{PAF}_{\text{cold}}(l,y,c) &= \sum_{d:\, T_d < \text{TMREL}} \sum_p \frac{pop_{ply}}{pop_{ly}} \cdot \frac{\text{RR}_{cztd} - 1}{\text{RR}_{cztd}} \label{eq:paf_cold}
+\end{align}
+where $p$ indexes pixels within location $l$, $d$ indexes days within year $y$, $pop_{ply}$ is the pixel population, and $pop_{ly}$ is the total location population. The \textbf{non-optimal temperature PAF} is the sum of the two:
+\begin{equation}
+  \text{PAF}_{\text{non-opt}}(l,y,c) = \text{PAF}_{\text{heat}}(l,y,c) + \text{PAF}_{\text{cold}}(l,y,c)
+  \label{eq:paf_nonopt}
+\end{equation}
+This additive combination is valid because heat and cold days are mutually exclusive---each day contributes to one or the other. Note that cold PAFs can be negative for external causes (e.g., cold temperatures are protective against drowning and homicide), so the non-optimal PAF can be smaller than the heat PAF alone.
+
+Uncertainty is propagated by performing all calculations at the draw level (1000 posterior draws of RR, TMREL, and temperature), with summary statistics computed only at the final output stage.
+
+\subsection{Attributable Burden Formula}
+
+Following the comparative risk assessment framework of Murray and Lopez (1999), the temperature-attributable burden, $B$, for location $l$, year $y$, cause $c$, age group $a$, and sex $s$ is:
+\begin{equation}
+  B(l,y,c,a,s) = M(l,y,c,a,s) \times \text{PAF}(l,y,c)
+  \label{eq:burden}
+\end{equation}
+where $M$ is the total cause-specific burden (deaths, YLLs, or DALYs) and $\text{PAF}$ is the population-weighted annual PAF.
+
+\subsection{Summary Exposure Value Calculations}
+
+As a side note, summary exposure values (SEVs) can also be computed
+separately, using the same inputs, as a standardized metric of
+exposure intensity for cross-risk-factor comparison. They function as
+a standardized summary of how much a population is exposed to a risk
+factor, and are typically used for:
+
+  1. Comparing exposure levels across risk factors (e.g., is temperature a bigger exposure problem than air
+   pollution in this location?)
+  2. Tracking exposure trends over time
+  3. Reporting in the GBD's comparative risk assessment tables
+
+  Adapting standard use case (1) and (3) might provide some interesting insights into which comparing risks from stressors, if we get this running for multiple stressors.
+
+  Additionally, they may be useful as a diagnostic tool and to
+  increase our understanding of why PAFs are changing (is it because
+  more people live in hot areas, or because temperatures are
+  shifting?).
+
+  From the Burkhart appendix, (p. 16–17, Section 3.3.4.4) and the Burkart code\\ (pafCalc_sevFix.R lines 269–293):
+
+  $$\text{SEV}_{czly} = \frac{\displaystyle\sum{t=t_{\min}}^{t_{\max}} \frac{pop_{ztly}}{pop_{zly}} \cdot
+  (RR_{czt} - 1)}{RR_{\max_{cz}}}$$
+
+  where $c$ = cause, $z$ = temperature zone, $l$ = location, $y$ = year, $t$ = daily mean temperature,  $pop_{ztly}$ = population exposed to temperature $t$ in zone $z$, location $l$, year $y$, $pop_{zly}$ = total population in that zone-location-year, $RR_{czt}$ = relative risk for cause $c$ at temperature $t$ in zone $z$ (rescaled to 1.0 at TMREL), and  $RR_{\max_{cz}}$ = 99th percentile of RRs experienced by the population for that cause and zone, across  all years and locations.
+
+  The SEV is bounded to [0, 1] (code lines 281–282). It equals 0 when everyone is at the TMREL (all RR = 1,
+   so numerator = 0) and approaches 1 when the entire population is exposed at the maximum observed risk
+  level.
+
+  In plain language: the numerator is the population-weighted average excess risk, and the denominator
+  normalizes it against the worst-case excess risk. It answers "how much of the theoretical maximum risk is
+   this population actually experiencing?"
+
+
+%----------------------------------------------------------------------
+\section{Proposed Retrospective Resilience Framework}
+%----------------------------------------------------------------------
+
+\subsection{Core Idea}
+
+The attributable burden in any year is the product of two time-varying components:
+\begin{equation}
+  B(t) \;=\; \underbrace{M(t)}_{\text{underlying burden}} \;\times\; \underbrace{\text{PAF}\bigl(T(t)\bigr)}_{\text{exposure}}
+  \label{eq:decomp}
+\end{equation}
+
+Changes in $B(t)$ over time arise from changes in \emph{either} of these components. To measure health system resilience, we need to disentangle \textbf{how much of the burden change is driven by shifting temperatures} (exposure) versus \textbf{how much is offset by changes in the underlying disease burden} (adaptation).
+
+\subsection{Baseline Period}
+
+Define a baseline period $t_0$ (e.g., the first 2--3 years of the study period). From this period, compute and freeze:
+\begin{itemize}[nosep]
+  \item $m_0(l,c,a,s)$: baseline cause-specific mortality \emph{rates} (deaths per 100,000) by location $l$, cause $c$, age group $a$, and sex $s$.
+  \item $\text{PAF}_0(l,c)$: PAFs computed from the baseline-period daily temperature distributions.
+  \item $T_0(l)$: the daily temperature distribution during the baseline period.
+\end{itemize}
+
+\subsection{Counterfactual Scenarios}
+
+We construct four burden estimates for each year $t$, location $l$, and cause $c$:
+
+\medskip
+
+\begin{table}[H]
+\centering
+\small
+\caption{Counterfactual burden scenarios}
+\label{tab:scenarios}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Scenario} & \textbf{Mortality} & \textbf{Temperature} & \textbf{Interpretation} \\
+\midrule
+$B_{\text{obs}}(t)$ & Observed $M(t)$ & Observed $T(t)$ & What actually happened \\[0.3em]
+$B_{\text{noWarm}}(t)$ & Observed $M(t)$ & Baseline $T_0$ & What if temperatures hadn't changed? \\[0.3em]
+$B_{\text{noAdapt}}(t)$ & Baseline rates $\times$ $\text{Pop}(t)$ & Observed $T(t)$ & What if vulnerability hadn't changed? \\[0.3em]
+$B_{\text{base}}(t)$ & Baseline rates $\times$ $\text{Pop}(t)$ & Baseline $T_0$ & Pure demographic growth effect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+
+Formally:
+\begin{align}
+  B_{\text{obs}}(t,l,c) &= M_{\text{obs}}(t,l,c) \times \text{PAF}\bigl(T_{\text{obs}}(t,l)\bigr) \label{eq:obs}\\[0.5em]
+  B_{\text{noWarm}}(t,l,c) &= M_{\text{obs}}(t,l,c) \times \text{PAF}_0(l) \label{eq:nowarm}\\[0.5em]
+  B_{\text{noAdapt}}(t,l,c) &= m_0(l,c) \times \text{Pop}(t,l) \times \text{PAF}\bigl(T_{\text{obs}}(t,l)\bigr) \label{eq:noadapt}\\[0.5em]
+  B_{\text{base}}(t,l,c) &= m_0(l,c) \times \text{Pop}(t,l) \times \text{PAF}_0(l) \label{eq:base}
+\end{align}
+
+where $m_0(l,c)$ denotes baseline-period mortality \emph{rates} and $\text{Pop}(t,l)$ is the actual population in year $t$.
+
+\subsection{Derived Quantities}
+
+\subsubsection{Excess Burden from Temperature Change}
+The additional burden attributable to observed temperature change, using the observed levels of the underlying burden, is:
+\begin{equation}
+  \Delta B_{\text{tempchange}}(t) = B_{\text{obs}}(t) - B_{\text{noWarm}}(t)
+  \label{eq:excess}
+\end{equation}
+
+Since PAFs are computed separately for heat and cold, this decomposes naturally:
+\begin{equation}
+  \Delta B_{\text{tempchange}}(t) = \underbrace{M_{\text{obs}}(t) \cdot \bigl[\text{PAF}_{\text{heat}}(t) - \text{PAF}_{\text{heat},0}\bigr]}_{\Delta B_{\text{heat}}} \;+\; \underbrace{M_{\text{obs}}(t) \cdot \bigl[\text{PAF}_{\text{cold}}(t) - \text{PAF}_{\text{cold},0}\bigr]}_{\Delta B_{\text{cold}}}
+  \label{eq:excess_split}
+\end{equation}
+
+The heat and cold components will typically move in opposite directions under warming: more hot days increase $\Delta B_{\text{heat}}$, while fewer cold days decrease $\Delta B_{\text{cold}}$ (a benefit of warming). The net $\Delta B_{\text{tempchange}}$ depends on which effect dominates, which varies by location---tropical locations near the TMREL may see predominantly heat increases, while cold-climate locations may experience a net reduction in temperature-attributable burden from reduced cold exposure.
+
+\subsubsection{Burden Absorbed by Adaptation}
+
+The burden that \emph{would have occurred} under current temperatures if vulnerability had remained at baseline, minus what actually occurred:
+\begin{equation}
+  \Delta B_{\text{adapted}}(t) = B_{\text{noAdapt}}(t) - B_{\text{obs}}(t)
+  \label{eq:adapted}
+\end{equation}
+
+When positive, this quantity reflects the burden successfully absorbed by improvements in health systems, clinical capacity, infrastructure, and behavior.
+
+\subsubsection{Climate Health Resilience Index}
+
+We define a normalized resilience index:
+\begin{equation}
+  \boxed{\;R(t,l,c) = 1 - \frac{B_{\text{obs}}(t,l,c)}{B_{\text{noAdapt}}(t,l,c)}\;}
+  \label{eq:resilience}
+\end{equation}
+
+Interpretation:
+\begin{itemize}[nosep]
+  \item $R = 0$: No adaptation. Actual burden matches what baseline vulnerability would predict under current temperatures.
+  \item $R > 0$: Positive adaptation. The health system is absorbing some of the temperature-attributable burden. $R = 1$ would imply complete absorption (zero observed attributable burden).
+  \item $R < 0$: Maladaptation. Actual burden \emph{exceeds} what baseline vulnerability would predict, suggesting increased fragility.
+\end{itemize}
+
+This index can be computed at any aggregation level: nationally, subnationally, by cause, by age group, or by heat vs.\ cold.
+
+\subsubsection{Full Decomposition}
+
+The attributable burden is a product of three factors: the cause-specific mortality rate $m$, the population size $\text{Pop}$, and the PAF. The total change from the baseline period (subscript 0) to year $t$ (subscript 1) can be decomposed into contributions from each factor using the symmetric decomposition method of Das Gupta (1993), which extends the two-factor approach of Kitagawa (1955) to products of three or more components.
+
+For three factors $A$, $B$, $C$ where the quantity of interest is $Q = A \times B \times C$, the Das Gupta decomposition allocates the total change $\Delta Q = A_1 B_1 C_1 - A_0 B_0 C_0$ symmetrically:
+\begin{align}
+  \Delta_A &= (A_1 - A_0) \cdot \frac{B_0 C_1 + B_1 C_0}{2} \label{eq:dg_a}\\[0.3em]
+  \Delta_B &= (B_1 - B_0) \cdot \frac{A_0 C_1 + A_1 C_0}{2} \label{eq:dg_b}\\[0.3em]
+  \Delta_C &= (C_1 - C_0) \cdot \frac{A_0 B_1 + A_1 B_0}{2} \label{eq:dg_c}
+\end{align}
+
+with the exact property that $\Delta_A + \Delta_B + \Delta_C = \Delta Q$ (no residual interaction term). Each component $\Delta_A$, $\Delta_B$, $\Delta_C$ is in the same units as $Q$ itself---it represents how much of the total change in $Q$ is attributable to the change in that factor, after symmetrically distributing interaction effects.
+
+In our application, $A = m$ (mortality rate), $B = \text{Pop}$ (population), and $C = \text{PAF}$ (temperature-attributable fraction), yielding:
+\begin{equation}
+  \Delta B(t) = B_{\text{obs}}(t) - B_{\text{base}}(t_0) = \Delta B_{\text{mortality}} + \Delta B_{\text{population}} + \Delta B_{\text{temperature}}
+  \label{eq:dasgupta}
+\end{equation}
+
+where $\Delta B_{\text{mortality}}$ is the change in attributable burden (in deaths) due to changing cause-specific mortality rates, $\Delta B_{\text{population}}$ is the change due to population growth and aging, and $\Delta B_{\text{temperature}}$ is the change due to shifting temperature distributions affecting the PAF. Each component answers ``how many more or fewer attributable deaths resulted from this factor changing?'' and all three sum exactly to the total observed change $\Delta B$. This decomposition reveals whether burden is rising primarily because of temperature change, or whether health improvements are large enough to offset the temperature signal.
+
+%----------------------------------------------------------------------
+\section{Interpreting ``Adaptation''}
+%----------------------------------------------------------------------
+
+The gap between $B_{\text{noAdapt}}$ and $B_{\text{obs}}$ reflects the \textbf{net effect of all changes in the underlying burden} within the model's scope---that is, changes in cause-specific mortality rates for the 17 included causes. These changes may stem from multiple mechanisms, which the index does not distinguish on its own:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Temperature-specific adaptation}: early warning systems, cooling centers, air conditioning penetration, urban greening, behavioral changes during heat events.
+  \item \textbf{General health system improvement}: better cardiovascular care, stroke treatment units, improved diabetes management---interventions that reduce underlying mortality regardless of temperature.
+  \item \textbf{Epidemiological transition}: shifts in cause-of-death composition independent of climate.
+\end{enumerate}
+
+The index also has limitations: when $M$ is measured as deaths or YLLs, non-fatal outcomes are not captured (though using YLDs or DALYs as the burden measure would address this). Additionally, the index does not capture changes in causes outside the 17 included, or subnational heterogeneity within the unit of analysis. Separating the mechanisms above from observational data alone is difficult. However, two strategies provide partial identification:
+
+\textbf{Cross-cause comparison.} Compute $R(t,l,c)$ separately for each cause. If the resilience index is high for IHD but near zero for drowning, cardiovascular care improvements---not temperature-specific interventions---are likely driving the adaptation signal. Causes where $R$ remains low despite strong temperature trends are candidates for targeted climate adaptation investment.
+
+\textbf{Cross-location comparison.} Compare locations with similar temperature trends but different health system capacity (measured by, e.g., hospital bed density, health expenditure per capita, or urbanization). Locations with stronger health systems should show higher $R$ values, isolating the health-system-specific contribution.
+
+%----------------------------------------------------------------------
+\section{Implementation}
+%----------------------------------------------------------------------
+
+This framework can be applied to any location for which the following data are available: (1) cause-specific mortality by age and sex for the 17 GBD causes with established temperature--mortality relationships, (2) daily temperature data at sufficient spatial resolution, and (3) population estimates. The Burkart exposure--response curves and TMRELs are globally applicable and publicly available for over 1,000 GBD locations.
+
+\subsection{Step 1: Compute Baseline Parameters}
+
+Using data from the baseline period:
+\begin{itemize}[nosep]
+  \item Compute cause-specific mortality \emph{rates} by location, age group, and sex: $m_0(l,c,a,s)$.
+  \item Compute $\text{PAF}_0(l,c)$ from the baseline-period daily temperature distributions using the Burkart RR curves and year-specific TMREL values.
+  \item Store the baseline daily temperature distribution $T_0(l)$ for the ``no warming'' counterfactual.
+\end{itemize}
+
+\subsection{Step 2: Compute All Four Burden Scenarios}
+
+For each year $t$ in the study period, compute:
+\begin{enumerate}[nosep]
+  \item $B_{\text{obs}}(t)$ --- observed mortality $\times$ PAF from observed temperatures.
+  \item $B_{\text{noWarm}}(t)$ --- observed mortality $\times$ PAF from baseline temperatures.
+  \item $B_{\text{noAdapt}}(t)$ --- baseline mortality rates $\times$ current population $\times$ PAF from observed temperatures.
+  \item $B_{\text{base}}(t)$ --- baseline mortality rates $\times$ current population $\times$ PAF from baseline temperatures.
+\end{enumerate}
+
+\subsection{Step 3: Compute Derived Quantities}
+
+\begin{itemize}[nosep]
+  \item Excess burden from warming: $\Delta B_{\text{warming}}(t)$ per Equation~\eqref{eq:excess}.
+  \item Burden absorbed by adaptation: $\Delta B_{\text{adapted}}(t)$ per Equation~\eqref{eq:adapted}.
+  \item Resilience index: $R(t,l,c)$ per Equation~\eqref{eq:resilience}.
+  \item Full Das Gupta decomposition per Equation~\eqref{eq:dasgupta}.
+\end{itemize}
+
+\subsection{Step 4: Visualization and Output}
+
+Suggested outputs:
+\begin{itemize}[nosep]
+  \item \textbf{Time series panels}: $B_{\text{obs}}$, $B_{\text{noAdapt}}$, and $B_{\text{noWarm}}$ by location, with the adaptation gap shaded.
+  \item \textbf{Choropleth maps}: resilience index $R$ by subnational unit, nationally and by cause group.
+  \item \textbf{Decomposition bar charts}: stacked contributions of temperature, vulnerability, population, and interaction to total burden change, by location or cause.
+  \item \textbf{Cause-level heatmaps}: $R(t,l,c)$ for all 17 causes $\times$ locations, identifying where adaptation is weakest.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Contribution and Policy Relevance}
+%----------------------------------------------------------------------
+
+The Burkart framework quantifies temperature-attributable burden. This extension adds a layer that asks \textbf{\emph{how well health systems are coping with that burden as temperatures change}}. This is directly actionable for health system strengthening:
+
+\begin{itemize}[nosep]
+  \item \textbf{Identifies adaptation gaps}: locations and causes where the resilience index is lowest are priority targets for climate-health investment.
+  \item \textbf{Quantifies adaptation value}: the total $\Delta B_{\text{adapted}}$ provides an estimate of what health system improvements have already ``bought'' in terms of climate resilience.
+  \item \textbf{Distinguishes temperature-specific vs.\ general health gains}: cross-cause analysis reveals whether resilience is driven by broad health improvements or targeted climate adaptation, informing whether future investment should target climate-specific interventions (early warning systems, cooling infrastructure) or general health system capacity.
+  \item \textbf{Uses only observed data}: this approach requires no climate model outputs, emissions scenarios, or assumptions about future adaptation---only vital registration, temperature records, and population data.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Extension to Other Climate Stressors}
+%----------------------------------------------------------------------
+
+Although this framework is developed around temperature as the climate stressor, the counterfactual structure can extend to other climate-sensitive health risks---provided they satisfy certain structural requirements. The core logic (freezing baseline underlying burden, applying observed exposure changes, measuring the gap) is not specific to temperature. However, the framework is best suited to \textbf{slow-onset, continuous stressors} rather than acute climate shocks.
+
+\subsection{What the Framework Requires}
+
+The counterfactual decomposition relies on three properties of the stressor:
+\begin{enumerate}[nosep]
+  \item \textbf{Continuous exposure distribution}: Exposure must be measurable as a distribution that shifts gradually over time (e.g., the distribution of daily temperatures over a year). The PAF is computed as a population-weighted integral over this distribution.
+  \item \textbf{Smooth dose--response relationship}: A well-characterized, cause-specific relative risk function must map exposure levels to health outcomes, enabling PAF calculation at each point in the exposure distribution.
+  \item \textbf{Gradual temporal change}: Year-to-year changes in exposure should be driven by trend (climate change shifting the distribution) rather than dominated by stochastic event occurrence.
+\end{enumerate}
+
+\subsection{Strong Candidates}
+
+\textbf{Ambient air pollution (PM\textsubscript{2.5}).} The strongest candidate for extension. The GBD already estimates PAFs for particulate matter using well-established integrated exposure--response curves. Exposure is continuous, measured daily, and changes gradually over time. Climate change affects PM\textsubscript{2.5} concentrations through wildfire frequency, atmospheric stagnation events, and changes in secondary aerosol formation. The framework would apply with near-identical structure: replace daily temperature with daily PM\textsubscript{2.5} concentration, use the GBD's concentration--response curves, and compute the resilience index as before.
+
+\textbf{Ground-level ozone (O\textsubscript{3}).} The GBD estimates ozone-attributable COPD mortality using a seasonal concentration--response curve. Higher temperatures accelerate tropospheric ozone formation, making this a directly climate-sensitive stressor. Exposure is continuous and daily, with gradual trends driven by climate and precursor emissions. The framework applies straightforwardly, though the cause list is narrower than for temperature or PM\textsubscript{2.5}.
+
+\textbf{Ultraviolet (UV) radiation.} Climate change affects UV exposure through ozone layer dynamics, cloud cover, and snow/ice albedo changes. The exposure--response relationship with skin cancers (melanoma, squamous and basal cell carcinoma) and cataracts is well-established, continuous, and dose-dependent. UV index data is available daily at high spatial resolution. The health outcomes are largely non-fatal (except melanoma), but this does not pose a problem for the framework: the burden measure $M$ can be YLDs (years lived with disability) or DALYs rather than deaths, capturing the non-fatal burden within the same $B = M \times \text{PAF}$ structure.
+
+\subsection{Moderate Candidates}
+
+\textbf{Ambient humidity.} Increasingly studied as an independent risk factor for cardiovascular and respiratory mortality, distinct from temperature effects. Humidity exposure is continuous, daily, and climate-sensitive (warming increases atmospheric moisture capacity). However, the exposure--response literature is less mature than for temperature or PM\textsubscript{2.5}, and disentangling humidity effects from correlated temperature effects requires care.
+
+\textbf{Pollen and aeroallergens.} Climate change is extending pollen seasons, increasing pollen concentrations, and shifting the geographic range of allergenic species. Exposure is continuous and seasonal, with dose--response relationships to asthma exacerbations and allergic respiratory disease. The framework could apply if exposure data (pollen counts or modeled concentrations) are available. As with UV, the outcomes are primarily morbidity rather than mortality, but using YLDs or DALYs as the burden measure accommodates this.
+
+\subsection{Possible Candidate: Vector-Borne Disease Range Shifts}
+
+Climate change is expanding the geographic range of malaria, dengue, and other vector-borne diseases. If exposure is defined as a continuous climate-dependent measure of transmission suitability (e.g., temperature-dependent vectorial capacity), the framework could in principle assess health system resilience in newly exposed areas. However, the exposure--response relationship is heavily mediated by non-climate factors (bed net coverage, indoor residual spraying, treatment access, population immunity), making the PAF harder to isolate and interpret. This extension is conceptually possible but would require careful specification.
+
+\subsection{Poor Fit: Acute Climate Shocks}
+
+Acute events---floods, storms, cyclones, and sudden-onset droughts---do not fit this framework well. These ``climate shocks'' differ structurally from slow-onset stressors in several ways:
+\begin{itemize}[nosep]
+  \item \textbf{Exposure is binary or categorical}, not continuous. A location either experiences a flood or does not; there is no smooth exposure distribution to integrate over.
+  \item \textbf{The dose--response is event-level}, depending on event characteristics (flood depth, duration, warning time, infrastructure damage) rather than a smooth function of a single exposure variable.
+  \item \textbf{Stochasticity dominates inter-annual variation.} A 10-year study period might contain zero or three major events in a given location, making the counterfactual ``what if exposure hadn't changed'' unstable.
+  \item \textbf{The baseline period may or may not contain an event}, making the baseline exposure distribution unrepresentative.
+\end{itemize}
+
+All said, climate shocks  require a different analytical approach. Heatwaves are a partial exception, since they represent the extreme tail of the daily temperature distribution and are already captured by the Burkart RR curves.
+
+Similarly, food and water insecurity driven by changing precipitation and growing-season temperatures involves long causal chains (climate $\to$ crop yields $\to$ food prices $\to$ nutrition $\to$ health outcomes) with many confounders, making it more of a structural modeling problem than a PAF-based analysis.
+
+\subsection{Composite Climate Health Resilience Index}
+
+For stressors that do fit the framework, a \textbf{composite index} could combine stressor-specific resilience indices, weighted by relative burden contribution. The same underlying cause-specific mortality data ($M$) can serve as the denominator for multiple stressors simultaneously---the GBD's comparative risk assessment framework already does this, computing independent PAFs for temperature, air pollution, and other risk factors applied to overlapping cause lists. Each stressor would require its own exposure data and exposure--response curves, but the health outcome data is shared.
+
+Such a composite index would provide a single summary of how well a health system is coping with the aggregate slow-onset climate threat, while the stressor-specific components would identify where targeted investment is most needed.
+
+%----------------------------------------------------------------------
+\section*{References}
+%----------------------------------------------------------------------
+
+\begin{enumerate}[nosep, label={[\arabic*]}]
+  \item Burkart KG, Brauer M, Aravkin AY, et al.\ Estimating the cause-specific relative risks of non-optimal temperature on daily mortality: a two-part modelling approach applied to the Global Burden of Disease Study.\ \textit{Lancet}. 2021;398:685--697.
+  \item Murray CJL, Lopez AD.\ On the comparable quantification of health risks: lessons from the Global Burden of Disease Study.\ \textit{Epidemiology}. 1999;10:594--605.
+  \item Das Gupta P.\ Standardization and decomposition of rates: a user's manual.\ \textit{U.S.\ Bureau of the Census, Current Population Reports}. 1993;P23--186.
+  \item Kitagawa EM.\ Components of a difference between two rates.\ \textit{J Am Stat Assoc}. 1955;50(272):1168--1194.
+\end{enumerate}
+
+\end{document}
