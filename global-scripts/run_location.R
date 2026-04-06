@@ -16,7 +16,10 @@ scripts <- c(
   "02_load_tmrel.R",
   "03_load_temperature.R",
   "04_load_mortality.R",
-  "05_compute_pafs.R"
+  "05_compute_pafs.R",
+  "06_compute_sevs.R",
+  "07_compute_ylls.R",
+  "08_outputs.R"
 )
 
 t_start <- Sys.time()
