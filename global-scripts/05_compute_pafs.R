@@ -41,18 +41,25 @@ if (USE_DRAWS) {
               by = c("zone", "draw"), all = TRUE, allow.cartesian = TRUE)
 
   # --- Rescale RR to 1.0 at the TMREL ---
-  rr[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
-     by = .(zone, acause, draw, year_id)]
-  rr[rr_ref > 0, rr := rr / rr_ref]
-  rr[, rr_ref := NULL]
-  log_msg("RR curves rescaled to TMREL")
+  if (COLOMBIA_VERIFICATION) {
+    log_msg("COLOMBIA_VERIFICATION: skipping RR rescaling at TMREL")
+  } else {
+    rr[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
+       by = .(zone, acause, draw, year_id)]
+    rr[rr_ref > 0, rr := rr / rr_ref]
+    rr[, rr_ref := NULL]
+    log_msg("RR curves rescaled to TMREL")
+  }
 
-  # --- Merge temperature exposure with RR ---
-  pafs <- merge(temp, rr,
-                by = c("zone", "daily_temp_10", "draw", "year"),
+  # --- Collapse temperature to (zone, daily_temp_10, draw, year) before merging ---
+  temp_agg <- temp[, .(pr = sum(pr, na.rm = TRUE), pop = sum(pop, na.rm = TRUE)),
+                   by = .(zone, daily_temp_10, draw, year)]
+
+  # --- Merge aggregated temperature with RR ---
+  pafs <- merge(temp_agg, rr,
                 by.x = c("zone", "daily_temp_10", "draw", "year"),
                 by.y = c("zone", "daily_temp", "draw", "year_id"),
-                all.x = TRUE)
+                all.x = TRUE, allow.cartesian = TRUE)
 
   # --- Classify heat/cold ---
   pafs[, risk := ifelse(daily_temp_10 < tmrel, "cold",
@@ -75,6 +82,12 @@ if (USE_DRAWS) {
   paf_wide[, paf_lower := apply(.SD, 1, quantile, 0.025, na.rm = TRUE), .SDcols = draw_cols]
   paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975, na.rm = TRUE), .SDcols = draw_cols]
 
+  # Colombia verification: floor PAFs at zero (removes protective effects)
+  if (COLOMBIA_VERIFICATION) {
+    paf_results[paf < 0, paf := 0]
+    log_msg("COLOMBIA_VERIFICATION: PAFs floored at zero")
+  }
+
   log_msg("Draw-level PAFs computed")
 
 # =============================================================================
@@ -90,28 +103,37 @@ if (USE_DRAWS) {
               by = "zone", all.x = TRUE, allow.cartesian = TRUE)
   setnames(rr, "year_id", "year")
 
-  # Look up the RR at the TMREL temperature for rescaling
-  rr_at_tmrel <- erf[, .(zone, daily_temp, acause, rr_mean)]
-  rr_at_tmrel <- merge(rr_at_tmrel,
-                       tmrel[, .(zone, year_id, tmrel_mean_10)],
-                       by = "zone", allow.cartesian = TRUE)
-  rr_at_tmrel <- rr_at_tmrel[daily_temp == tmrel_mean_10]
-  setnames(rr_at_tmrel, c("rr_mean", "year_id"), c("rr_ref", "year"))
-  rr_at_tmrel <- rr_at_tmrel[, .(zone, acause, year, rr_ref)]
-
   # Rescale RR to 1.0 at the TMREL
-  rr <- merge(rr, rr_at_tmrel, by = c("zone", "acause", "year"), all.x = TRUE)
-  rr[rr_ref > 0, `:=`(rr_mean  = rr_mean / rr_ref,
-                       rr_lower = rr_lower / rr_ref,
-                       rr_upper = rr_upper / rr_ref)]
-  rr[, rr_ref := NULL]
-  log_msg("RR curves rescaled to TMREL")
+  if (COLOMBIA_VERIFICATION) {
+    log_msg("COLOMBIA_VERIFICATION: skipping RR rescaling at TMREL")
+  } else {
+    rr_at_tmrel <- erf[, .(zone, daily_temp, acause, rr_mean)]
+    rr_at_tmrel <- merge(rr_at_tmrel,
+                         tmrel[, .(zone, year_id, tmrel_mean_10)],
+                         by = "zone", allow.cartesian = TRUE)
+    rr_at_tmrel <- rr_at_tmrel[daily_temp == tmrel_mean_10]
+    setnames(rr_at_tmrel, c("rr_mean", "year_id"), c("rr_ref", "year"))
+    rr_at_tmrel <- rr_at_tmrel[, .(zone, acause, year, rr_ref)]
 
-  # --- Merge temperature exposure with rescaled RR ---
-  pafs <- merge(temp, rr,
+    rr <- merge(rr, rr_at_tmrel, by = c("zone", "acause", "year"), all.x = TRUE)
+    rr[rr_ref > 0, `:=`(rr_mean  = rr_mean / rr_ref,
+                         rr_lower = rr_lower / rr_ref,
+                         rr_upper = rr_upper / rr_ref)]
+    rr[, rr_ref := NULL]
+    log_msg("RR curves rescaled to TMREL")
+  }
+
+  # --- Collapse temperature to (zone, daily_temp_10, year) before merging ---
+  # Each pixel-day doesn't need its own row — we only need the aggregate
+  # population proportion per (zone, temp, year) for the PAF formula.
+  temp_agg <- temp[, .(pr = sum(pr, na.rm = TRUE), pop = sum(pop, na.rm = TRUE)),
+                   by = .(zone, daily_temp_10, year)]
+
+  # --- Merge aggregated temperature with rescaled RR ---
+  pafs <- merge(temp_agg, rr,
                 by.x = c("zone", "daily_temp_10", "year"),
                 by.y = c("zone", "daily_temp", "year"),
-                all.x = TRUE)
+                all.x = TRUE, allow.cartesian = TRUE)
 
   # --- Classify heat/cold ---
   pafs[, risk := ifelse(daily_temp_10 < tmrel_mean_10, "cold",
@@ -125,6 +147,12 @@ if (USE_DRAWS) {
                                                  pr * -1 * ((1/rr_mean) - 1) / (1/rr_mean)),
                                           na.rm = TRUE)),
                       by = .(acause, risk, year)]
+
+  # Colombia verification: floor PAFs at zero (removes protective effects)
+  if (COLOMBIA_VERIFICATION) {
+    paf_results[paf_mean < 0, paf_mean := 0]
+    log_msg("COLOMBIA_VERIFICATION: PAFs floored at zero")
+  }
 
   log_msg("Summary-level PAFs computed")
 }
@@ -158,9 +186,32 @@ mort_agg <- mort[, .(deaths = sum(deaths, na.rm = TRUE)),
 setnames(mort_agg, "year_id", "year")
 
 burden <- merge(mort_agg, paf_combined, by = c("year", "acause"), all.x = TRUE)
-burden[, `:=`(deaths_heat   = deaths * paf_heat,
-              deaths_cold   = deaths * paf_cold,
-              deaths_nonopt = deaths * paf_nonopt)]
+
+if (COLOMBIA_VERIFICATION) {
+  # Samuel's formula: attributable = deaths × PAF × SEV
+  # Load SEVs (06_compute_sevs.R must have already run)
+  sev_file <- file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds"))
+  if (file.exists(sev_file)) {
+    sevs <- readRDS(sev_file)
+    setDT(sevs)
+    burden <- merge(burden, sevs[, .(year, acause, sev)],
+                    by = c("year", "acause"), all.x = TRUE)
+    burden[is.na(sev), sev := 0]
+    burden[, `:=`(deaths_heat   = deaths * paf_heat * sev,
+                  deaths_cold   = deaths * paf_cold * sev,
+                  deaths_nonopt = deaths * paf_nonopt * sev)]
+    log_msg("COLOMBIA_VERIFICATION: burden = deaths * PAF * SEV")
+  } else {
+    warning("COLOMBIA_VERIFICATION: SEV file not found — run 06_compute_sevs.R first. Falling back to deaths * PAF.")
+    burden[, `:=`(deaths_heat   = deaths * paf_heat,
+                  deaths_cold   = deaths * paf_cold,
+                  deaths_nonopt = deaths * paf_nonopt)]
+  }
+} else {
+  burden[, `:=`(deaths_heat   = deaths * paf_heat,
+                deaths_cold   = deaths * paf_cold,
+                deaths_nonopt = deaths * paf_nonopt)]
+}
 
 burden[, location_id := LOCATION_ID]
 saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))

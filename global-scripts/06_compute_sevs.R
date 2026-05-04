@@ -39,25 +39,26 @@ if (USE_DRAWS) {
 }
 
 # --- Rescale RR to 1.0 at the TMREL ---
-# For each zone/year, find the RR at the TMREL temperature
-rr_ref_dt <- merge(
-  tmrel_s,
-  erf,
-  by.x = c("zone"),
-  by.y = c("zone"),
-  allow.cartesian = TRUE
-)
-rr_ref_dt <- rr_ref_dt[daily_temp == tmrel_mean_10,
-                        .(zone, year_id, acause, rr_ref = rr_mean)]
-
-# Build rescaled RR table with year dimension
 erf_yr <- merge(erf, tmrel_s, by = "zone", allow.cartesian = TRUE)
-erf_yr <- merge(erf_yr, rr_ref_dt, by = c("zone", "year_id", "acause"), all.x = TRUE)
-erf_yr[!is.na(rr_ref) & rr_ref > 0, rr_rescaled := rr_mean / rr_ref]
-erf_yr[is.na(rr_rescaled), rr_rescaled := rr_mean]
 
-# --- Merge temperature exposure with rescaled RR ---
-sev_data <- merge(temp, erf_yr,
+if (COLOMBIA_VERIFICATION) {
+  log_msg("COLOMBIA_VERIFICATION: skipping RR rescaling for SEV calculation")
+  erf_yr[, rr_rescaled := rr_mean]
+} else {
+  rr_ref_dt <- merge(tmrel_s, erf, by = "zone", allow.cartesian = TRUE)
+  rr_ref_dt <- rr_ref_dt[daily_temp == tmrel_mean_10,
+                          .(zone, year_id, acause, rr_ref = rr_mean)]
+  erf_yr <- merge(erf_yr, rr_ref_dt, by = c("zone", "year_id", "acause"), all.x = TRUE)
+  erf_yr[!is.na(rr_ref) & rr_ref > 0, rr_rescaled := rr_mean / rr_ref]
+  erf_yr[is.na(rr_rescaled), rr_rescaled := rr_mean]
+}
+
+# --- Collapse temperature to (zone, daily_temp_10, year) before merging ---
+temp_agg <- temp[, .(pop = sum(pop, na.rm = TRUE)),
+                 by = .(zone, daily_temp_10, year)]
+
+# --- Merge aggregated temperature with rescaled RR ---
+sev_data <- merge(temp_agg, erf_yr,
                   by.x = c("zone", "daily_temp_10", "year"),
                   by.y = c("zone", "daily_temp", "year_id"),
                   all.x = TRUE, allow.cartesian = TRUE)
@@ -85,7 +86,27 @@ sev_data[, sev_contrib := fifelse(rr_max <= 1 | rr_rescaled <= 1, 0,
 sevs <- sev_data[, .(sev = sum(sev_contrib, na.rm = TRUE)),
                  by = .(year, zone, acause)]
 sevs[sev < 0, sev := 0]
-sevs[sev > 1, sev := 1]
+
+if (COLOMBIA_VERIFICATION) {
+  # Replicate Samuel's SEV calculation (11_carga_atribuible.R:444-469).
+  # Samuel sums pixel-day contributions of pr_zona*(RR-1)/(RR_max-1) across
+  # all ~365 days in the year, then caps at 1. Because pop is ~constant
+  # across days, that is equivalent to multiplying our year-level SEV
+  # (a true person-time fraction) by N days/year and capping at 1.
+  #
+  # WARNING: this departs from the GBD/Burkart SEV definition and only
+  # exists to reproduce Samuel's Colombia numbers for validation. Gated on
+  # COLOMBIA_VERIFICATION; config.R errors if this flag is set with any
+  # LOCATION_ID other than 125.
+  n_days_per_year <- temp[, .(n_days = uniqueN(date)), by = year]
+  sevs <- merge(sevs, n_days_per_year, by = "year")
+  sevs[, sev := pmin(sev * n_days, 1)]
+  sevs[, n_days := NULL]
+  log_msg("COLOMBIA_VERIFICATION: SEVs scaled by N days/year and capped at 1 ",
+          "(replicates Samuel's daily-summation bug)")
+} else {
+  sevs[sev > 1, sev := 1]
+}
 
 # --- Aggregate across zones (population-weighted average) ---
 zone_pops <- temp[, .(pop_zone = sum(pop, na.rm = TRUE)), by = .(year, zone)]

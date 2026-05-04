@@ -62,6 +62,34 @@ Samuel appears to have adopted this approach deliberately (there's also a `carga
 
 **Recommendation:** The standard GBD formula is `attributable_burden = total_burden × PAF`. Remove the `× SEV` multiplier. Keep SEV as a separate diagnostic/reporting metric.
 
+#### 2b. Samuel's SEV computation itself is wrong (additional bug found 2026-05-04)
+
+Even within the choice to multiply by SEV, the way Samuel *computes* SEV does not produce a valid 0–1 exposure fraction. In `11_carga_atribuible.R:444-469`:
+
+```r
+base_pobtemp <- df_base_sevs %>%
+  group_by(fecha, cod_depto, c_muerte, zona, temperatura) %>%   # PER DAY
+  summarise(pob_temp = sum(pob), pob_zona = mean(pob_zona), ...) %>%
+  mutate(pr_zona = pob_temp / pob_zona)                          # snapshot pop denom
+
+sev <- base_pobtemp %>%
+  mutate(sev = ifelse(rr_max <=1 | rr_mean<=1, 0,
+                      pr_zona * (rr_mean - 1)/(rr_max-1))) %>%
+  group_by(ano, cod_depto, c_muerte, zona) %>%
+  summarise(sev = sum(sev), ...) %>%                             # SUM ACROSS DAYS
+  mutate(sev = ifelse(sev > 1, 1, sev))                          # CAP AT 1
+```
+
+`pob_zona` is a single-day Jan-1 snapshot of zone population (line 320-333). `pr_zona = pob_temp / pob_zona` is therefore a *daily* fraction. Summing across all 365 days gives values up to ~365, which Samuel then caps at 1.
+
+**Effective behavior:** for any cause where temperature has a non-trivial effect (RR meaningfully > 1) in any high-population zone, the daily sum saturates to 1 within the first few days, so Samuel's "SEV" effectively becomes an indicator of "does this cause have any temperature exposure in this zone-year?" weighted by RR-intensity. For top causes (IHD, stroke, COPD, drowning), it sits at 95–100%, which is what the report shows in Tables A1.15–A1.21.
+
+**Comparison with our pipeline:** our SEV in `06_compute_sevs.R` follows the conventional definition — aggregate to person-time at each (zone, temp, year) and divide by total person-time → a true [0,1] fraction. The ratio Samuel/Ours ≈ N days/year, capped at 1.
+
+**Impact:** When run with our (correct) SEV definition, Samuel's `× SEV` multiplier shrinks attributable burden by ~5×. With his (saturated) SEV, the multiplier is mostly a no-op for top causes. This is why Samuel's reported total (9,472 deaths) is ~6× our verification-mode result before the fix.
+
+**Replicated in our pipeline (verification-mode only):** `06_compute_sevs.R` multiplies the per-zone year-level SEV by N days in the year and caps at 1, mirroring Samuel. Gated on `COLOMBIA_VERIFICATION = TRUE` and `LOCATION_ID = 125`; `config.R` errors if either condition is violated.
+
 ---
 
 ### 3. Temperature data: point estimates vs Monte Carlo draws

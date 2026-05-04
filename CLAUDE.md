@@ -4,56 +4,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-World Bank statistical consulting project quantifying mortality and morbidity (AVPP — Años de Vida Potencial Perdidos / Years of Potential Life Lost) attributable to non-optimal temperatures across Colombian departments for 2010–2019, with projections to 2050. Based on the Burkart et al. (Lancet 2021) methodology and the GBD 2023 framework.
+World Bank statistical consulting project quantifying mortality and morbidity (YLLs / AVPP) attributable to non-optimal temperatures. Currently validating with Colombia data (2010–2019), with the goal of scaling globally and projecting to 2100 under SSP scenarios. Based on the Burkart et al. (Lancet 2021) methodology and the GBD 2023 framework.
+
+The stressor-resilience framework (a related but separate project) has been moved to `../2026-stressor-resilience-framework/`.
 
 ## Architecture
 
-This is a pure R epidemiological analysis pipeline with no build system, tests, or CI/CD. Scripts are run sequentially in RStudio.
+Pure R pipeline in `global-scripts/`. No build system, tests, or CI/CD. Scripts are run sequentially via `run_location.R`.
 
-### Pipeline (Scripts/Colombia/)
+### Global Pipeline (global-scripts/)
 
-Scripts are numbered and must be run in order — each depends on outputs from prior steps:
+Run order (managed by `run_location.R`):
 
-1. `01_mortalidad_2010_2020.R` — Extract/clean 2010–2021 mortality data from DANE vital registration
-2. `02_descriptivos_mortalidad.R` — Mortality descriptive statistics
-3. `03_descriptivos_poblacion.R` — Population descriptive statistics
-4. `04_proyecciones_poblacion.R` — DANE population projections (2010–2050) by department/age/sex
-5. `05_proyecciones_mortalidad.R` — Mortality rate projections
-6. `06_serie mortalidad.R` — Time series analysis of mortality
-7. `07_estimaciones_AVPP.R` — AVPP calculations using life tables
-8. `09_curvas_ER.R` — Process 19 environmental risk factor curves (CSVs → single RDS)
-9. `10_ajuste_temperatura.R` — Temperature data alignment, Kelvin → Celsius conversion
-10. `10_2_Proces_temp.R` — Additional temperature processing
-11. `11_carga_atribuible.R` — Attributable burden via PAF (Population Attributable Fraction)
-12. `12_salidas_graph_final.R` / `12_1_mapas_interactivos.R` — Output maps and figures
+1. `01_load_erf.R` — Load 17 cause-specific ERF curves (supports draw and summary modes)
+2. `02_load_tmrel.R` — Load TMRELs for a location (sparse years filled by nearest-year; 100 TMREL draws recycled to match 1000 ERF draws)
+3. `03_load_temperature.R` — Load daily temperature, assign zones, compute population weights
+4. `04_load_mortality.R` — Load GBD cause-specific mortality
+5. `06_compute_sevs.R` — Compute Summary Exposure Values (diagnostic metric, not used in burden calc)
+6. `05_compute_pafs.R` — Compute PAFs and attributable burden (core calculation)
+7. `07_compute_ylls.R` — Convert attributable deaths to YLLs using life tables
+8. `08_outputs.R` — Summary tables and figures
+
+Key config flags in `config.R`:
+- `USE_DRAWS` — Full 1000-draw uncertainty propagation (TRUE) vs summary statistics (FALSE)
+- `COLOMBIA_VERIFICATION` — Toggle Samuel's methodological choices for validation (see step2-comparison.md)
+- `COMPUTE_SEVS` — Whether to compute SEVs
+
+### Samuel's Original Colombia Scripts (from-samuel/Scripts/Colombia/)
+
+The original 12-script Colombia pipeline in Spanish. Kept for reference. Not used directly — the global pipeline reimplements this with corrections.
+
+### Utility Scripts
+
+- `util_convert_samuel_colombia.R` — Convert Samuel's RDS/CSV data to pipeline format
+- `util_generate_test_data.R` — Generate synthetic test data
+- `util_parse_gbd_mortality.R` — Parse GBD Results Tool downloads
+- `util_parse_un_lifetables.R` — Parse UN WPP life tables
+- `util_download_un_lifetables.R` — Download UN life tables
 
 ### Key Data Inputs
 
-- **Mortality**: DANE death certificates with ICD-10 codes (format varies by year: xlsx, txt, csv). Source archives are the two `bod shared-*.zip` files (~880 MB each)
-- **Temperature**: `temp_colombia_dias.csv` (daily) and `temp_colombia_horas.csv` (hourly) by department
-- **Risk curves**: 19 cause-specific temperature-response curves with 1,000 Monte Carlo draws each, in `Info Burkart/ERF/`
-- **TMREL**: Theoretical Minimum Risk Exposure Level data in `Info Burkart/TMRELs/`
-- **GBD hierarchy**: `IHME_GBD_2023_HIERARCHIES_Y2025M10D23.XLSX`
-- **Shapefiles**: Colombian admin boundaries in `GBD2023 Shape/`
+- **ERF curves**: 17 cause-specific RR curves × 1000 draws in `data/erf/` (symlinked from `from-samuel/Info Burkart/ERF/`)
+- **TMRELs**: 1,034 locations × 100 draws × 3 time points (1990, 2010, 2020) in `data/tmrel/`
+- **Temperature**: Daily pixel-level temp + population in `data/temperature/`
+- **Mortality**: GBD cause-specific deaths in `data/mortality/`
+- **Life tables**: By location/age/sex/year in `data/lifetables/`
+- **Colombia verification data**: Samuel's intermediate RDS files in `data/columbia-data-for-verifying-pipeline/`
+- **GBD hierarchy**: `from-samuel/IHME_GBD_2023_HIERARCHIES_Y2025M10D23.XLSX`
+- **Shapefiles**: GBD 2023 admin boundaries in `data/shapefiles/`
 
 ### Key Methodological Details
 
-- **18 temperature-related causes** per GBD taxonomy (CVD subtypes, CKD, diabetes, LRI, COPD, injuries)
-- **Geographic unit**: 32 Colombian departments + DC Bogotá
-- **Age groups**: 5-year bins (0–4 through 95+)
-- **Uncertainty**: Propagated via 1,000 draws from risk curves
-- **Location matching**: Scripts must reconcile DANE municipal codes, IHME location IDs, and raster grid indices
+- **17 temperature-related causes** per GBD taxonomy (CVD subtypes, CKD, diabetes, LRI, COPD, injuries)
+- **Uncertainty**: 1000 RR draws × 100 TMREL draws (recycled) × optional temperature draws
+- **Temperature zones**: Annual mean temp per pixel (6–28°C), determines which ERF curve segment applies
+- **TMREL**: Theoretical Minimum Risk Exposure Level — the death-weighted optimal temperature per location. Provided at decadal resolution; can be derived annually from cause-specific mortality + RR curves.
 
 ## Important Caveats
 
-- **Hardcoded paths**: Scripts reference local `Bases/` directories relative to the RStudio project working directory. These paths will need updating on a new machine.
-- **DANE format inconsistency**: Mortality data changes format across years, requiring year-specific parsing logic in the early scripts.
-- **Large files**: Zipped mortality archives, CSV curve samples (130 MB+), and shapefiles (33 MB) are stored in the repo directory.
-- **Language**: Script comments and variable names are in Spanish.
+- **Large files**: ERF curve CSVs (~130 MB each), zipped mortality archives (~880 MB each), shapefiles (33 MB)
+- **TMREL sparse years**: Files only contain 1990, 2010, 2020 — pipeline fills gaps by nearest-year
+- **Colombia verification**: `COLOMBIA_VERIFICATION` flag toggles 4 methodological deviations from Burkart. Waiting on Samuel's output numbers for calibration.
 
 ## R Dependencies
 
-Core: `tidyverse`, `data.table`, `readxl`, `feather`, `janitor`
-Geospatial: `sf`, `rgdal`, `raster`, `sp`, `mapview`, `ggspatial`
-Visualization: `ggplot2`, `RColorBrewer`, `cowplot`, `classInt`
-Reporting: `gtsummary`, `flextable`, `officer`
+Core: `data.table`, `ggplot2`
+Geospatial (for outputs): `sf`, `raster`

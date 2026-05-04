@@ -52,7 +52,9 @@ DIAGNOSTICS_DIR <- file.path(OUTPUT_DIR, "diagnostics")
 # Summary mode is faster but does not produce valid confidence intervals.
 USE_DRAWS <- FALSE
 
-# Number of draws (only used when USE_DRAWS = TRUE)
+# Number of draws (only used when USE_DRAWS = TRUE).
+# ERF curves have 1000 draws, but TMREL files only have 100 (tmrel_0 to tmrel_99).
+# When USE_DRAWS = TRUE, TMREL draws are recycled 10× to match. See 02_load_tmrel.R.
 N_DRAWS <- 1000
 
 # Run descriptive/diagnostic plots (set FALSE to skip for production runs)
@@ -61,8 +63,29 @@ RUN_DIAGNOSTICS <- TRUE
 # Compute SEVs as a separate diagnostic output
 COMPUTE_SEVS <- TRUE
 
-# Compute resilience index and counterfactuals
-COMPUTE_RESILIENCE <- TRUE
+# =============================================================================
+# Colombia verification mode
+# =============================================================================
+#
+# When TRUE, replicates Samuel's methodological choices that differ from
+# Burkart et al. (2021). This allows us to reproduce Samuel's Colombia
+# results for validation, then compare against the corrected pipeline.
+#
+# Differences toggled by this flag:
+#   1. No RR rescaling at TMREL (raw RR used as-is)         [05/06]
+#   2. PAF floored at zero (removes protective/negative PAFs) [05]
+#   3. TMREL averaged across all years (single per zone)    [02]
+#   4. Attributable burden = deaths × PAF × SEV (not just deaths × PAF) [05]
+#   5. SEV computed as N-days × annual SEV, capped at 1 — replicates
+#      Samuel's daily-summation bug in 11_carga_atribuible.R:444-469. [06]
+#
+# Note: USE_DRAWS = FALSE separately controls draw-level propagation
+# (Samuel's critical issue #1). Temperature draws (issue #3) are controlled
+# by whether temp_sd is present in the data.
+#
+# THIS FLAG MUST BE FALSE for any production / global / non-Colombia run.
+# A guard below errors if it is TRUE with LOCATION_ID != 125.
+COLOMBIA_VERIFICATION <- FALSE
 
 # =============================================================================
 # GBD cause list (17 temperature-sensitive causes from Burkart et al. 2021)
@@ -115,6 +138,18 @@ parse_args <- function() {
 }
 
 parse_args()
+
+# =============================================================================
+# Safety guards
+# =============================================================================
+
+if (isTRUE(COLOMBIA_VERIFICATION) && LOCATION_ID != 125) {
+  stop("COLOMBIA_VERIFICATION = TRUE is only valid for LOCATION_ID = 125 ",
+       "(Colombia). Current LOCATION_ID = ", LOCATION_ID, ". ",
+       "This mode replicates known methodological bugs in Samuel's original ",
+       "Colombia code (see config.R doc block) and must NEVER be used for ",
+       "any other location or production run. Set COLOMBIA_VERIFICATION = FALSE.")
+}
 
 # =============================================================================
 # Create output directories
