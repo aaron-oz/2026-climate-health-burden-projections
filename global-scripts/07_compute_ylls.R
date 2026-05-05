@@ -61,6 +61,27 @@ mort_detail[, `:=`(deaths_heat   = deaths * paf_heat,
                    deaths_cold   = deaths * paf_cold,
                    deaths_nonopt = deaths * paf_nonopt)]
 
+if (COLOMBIA_VERIFICATION) {
+  # Replicate Samuel (11_carga_atribuible.R:547-554): apply SEV multiplier to
+  # attributable deaths in the YLL pathway too. Without this, our YLLs use raw
+  # deaths*PAF while Samuel's use deaths*PAF*SEV. Gated on verification mode
+  # because Burkart does not use the SEV multiplier (see step2-comparison.md
+  # issue #2).
+  sev_file <- file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds"))
+  if (file.exists(sev_file)) {
+    sevs <- setDT(readRDS(sev_file))
+    mort_detail <- merge(mort_detail, sevs[, .(year_id = year, acause, sev)],
+                         by = c("year_id", "acause"), all.x = TRUE)
+    mort_detail[is.na(sev), sev := 0]
+    mort_detail[, `:=`(deaths_heat   = deaths_heat   * sev,
+                       deaths_cold   = deaths_cold   * sev,
+                       deaths_nonopt = deaths_nonopt * sev)]
+    log_msg("COLOMBIA_VERIFICATION: applied SEV multiplier to attributable deaths in YLL pathway")
+  } else {
+    warning("COLOMBIA_VERIFICATION: SEV file not found for YLL multiplier")
+  }
+}
+
 # --- Merge with life tables ---
 # Try to match on available common columns
 merge_cols <- intersect(names(mort_detail), names(lt))
@@ -79,9 +100,23 @@ if (sum(!is.na(ylls$ex)) == 0) {
 }
 
 # --- Compute YLLs = attributable deaths × remaining life expectancy ---
-ylls[, `:=`(yll_heat   = deaths_heat * ex,
-            yll_cold   = deaths_cold * ex,
-            yll_nonopt = deaths_nonopt * ex)]
+if (COLOMBIA_VERIFICATION) {
+  # Replicate Samuel (11_carga_atribuible.R:570-577): subtract a 2.5-year mid-bin
+  # correction from life expectancy for ages <80, and use a fixed 10 years for
+  # the >80 group (since DANE life tables don't extend cleanly past 80).
+  # In our converter, age_group_id encodes the lower bound of the 5-yr bin;
+  # age_group_id == 80 corresponds to Samuel's ">80" category.
+  ylls[, ex_adj := fifelse(age_group_id == 80L, 10, pmax(0, ex - 2.5))]
+  ylls[, `:=`(yll_heat   = deaths_heat   * ex_adj,
+              yll_cold   = deaths_cold   * ex_adj,
+              yll_nonopt = deaths_nonopt * ex_adj)]
+  ylls[, ex_adj := NULL]
+  log_msg("COLOMBIA_VERIFICATION: applied (ex - 2.5) for age<80 and ex=10 for age>=80")
+} else {
+  ylls[, `:=`(yll_heat   = deaths_heat * ex,
+              yll_cold   = deaths_cold * ex,
+              yll_nonopt = deaths_nonopt * ex)]
+}
 
 # --- Aggregate ---
 yll_summary <- ylls[, .(deaths_heat = sum(deaths_heat, na.rm = TRUE),

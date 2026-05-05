@@ -68,11 +68,24 @@ if (USE_DRAWS) {
 
   # --- Compute PAFs per draw ---
   # PAF = sum of pop-weighted (RR-1)/RR
-  paf_results <- pafs[, .(paf = sum(ifelse(rr >= 1,
-                                            pr * (rr - 1) / rr,
-                                            pr * -1 * ((1/rr) - 1) / (1/rr)),
-                                    na.rm = TRUE)),
-                      by = .(acause, risk, draw, year)]
+  if (COLOMBIA_VERIFICATION) {
+    # Replicate Samuel (11_carga_atribuible.R:379): floor PAF contribution at 0
+    # PER ROW (per zone × daily_temp × year × draw), BEFORE summing. This zeros
+    # out individual cold-protective contributions instead of letting them net
+    # out within the year-level sum.
+    pafs[, paf_contrib := pmax(0, fifelse(rr >= 1,
+                                          pr * (rr - 1) / rr,
+                                          pr * -1 * ((1/rr) - 1) / (1/rr)))]
+    paf_results <- pafs[, .(paf = sum(paf_contrib, na.rm = TRUE)),
+                        by = .(acause, risk, draw, year)]
+    log_msg("COLOMBIA_VERIFICATION: PAF contributions floored at 0 per row before summing")
+  } else {
+    paf_results <- pafs[, .(paf = sum(ifelse(rr >= 1,
+                                              pr * (rr - 1) / rr,
+                                              pr * -1 * ((1/rr) - 1) / (1/rr)),
+                                      na.rm = TRUE)),
+                        by = .(acause, risk, draw, year)]
+  }
 
   # Reshape to wide for summaries
   paf_wide <- dcast(paf_results, year + acause + risk ~ paste0("draw_", draw),
@@ -81,12 +94,6 @@ if (USE_DRAWS) {
   paf_wide[, paf_mean  := rowMeans(.SD, na.rm = TRUE), .SDcols = draw_cols]
   paf_wide[, paf_lower := apply(.SD, 1, quantile, 0.025, na.rm = TRUE), .SDcols = draw_cols]
   paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975, na.rm = TRUE), .SDcols = draw_cols]
-
-  # Colombia verification: floor PAFs at zero (removes protective effects)
-  if (COLOMBIA_VERIFICATION) {
-    paf_results[paf < 0, paf := 0]
-    log_msg("COLOMBIA_VERIFICATION: PAFs floored at zero")
-  }
 
   log_msg("Draw-level PAFs computed")
 
@@ -142,16 +149,23 @@ if (USE_DRAWS) {
 
   # --- Compute PAFs ---
   # PAF = sum of pop-weighted (RR-1)/RR across pixel-days
-  paf_results <- pafs[, .(paf_mean = sum(ifelse(rr_mean >= 1,
-                                                 pr * (rr_mean - 1) / rr_mean,
-                                                 pr * -1 * ((1/rr_mean) - 1) / (1/rr_mean)),
-                                          na.rm = TRUE)),
-                      by = .(acause, risk, year)]
-
-  # Colombia verification: floor PAFs at zero (removes protective effects)
   if (COLOMBIA_VERIFICATION) {
-    paf_results[paf_mean < 0, paf_mean := 0]
-    log_msg("COLOMBIA_VERIFICATION: PAFs floored at zero")
+    # Replicate Samuel (11_carga_atribuible.R:379): floor PAF contribution at 0
+    # PER ROW (per zone × daily_temp × year), BEFORE summing. Zeros out
+    # individual cold-protective contributions instead of letting them net out
+    # within the year-level sum.
+    pafs[, paf_contrib := pmax(0, fifelse(rr_mean >= 1,
+                                          pr * (rr_mean - 1) / rr_mean,
+                                          pr * -1 * ((1/rr_mean) - 1) / (1/rr_mean)))]
+    paf_results <- pafs[, .(paf_mean = sum(paf_contrib, na.rm = TRUE)),
+                        by = .(acause, risk, year)]
+    log_msg("COLOMBIA_VERIFICATION: PAF contributions floored at 0 per row before summing")
+  } else {
+    paf_results <- pafs[, .(paf_mean = sum(ifelse(rr_mean >= 1,
+                                                   pr * (rr_mean - 1) / rr_mean,
+                                                   pr * -1 * ((1/rr_mean) - 1) / (1/rr_mean)),
+                                            na.rm = TRUE)),
+                        by = .(acause, risk, year)]
   }
 
   log_msg("Summary-level PAFs computed")
