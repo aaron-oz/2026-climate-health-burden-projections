@@ -1,0 +1,21 @@
+# Vendored Samuel-pipeline directory — ignore the largest reference assets.
+# Anything kept out of git here is preserved in Dropbox sync; the pipeline
+# reads from `data/erf/`, `data/tmrel/`, `data/mortality/` etc. (some are
+# symlinks back into this directory).
+
+# Raw DANE death-certificate archives (~1.25 GB total)
+*.zip
+
+# Burkart 2021 ERF curve samples (~130 MB each, 17 files)
+Info Burkart/ERF/
+
+# Duplicates of curve samples that live at the Info Burkart/ top level
+Info Burkart/*_curve_samples.csv
+
+# Burkart 2021 Lancet supplementary mmc1 PDF (96 MB) — we have the smaller
+# 2021_GBDtemp_anexos.pdf which covers the same methodology
+Info Burkart/mmc1.pdf
+
+# TMREL collection (~97 MB, 1,034 locations x 2 files each) — already
+# symlinked into data/tmrel/ which is what the pipeline reads
+Info Burkart/TMRELs/
