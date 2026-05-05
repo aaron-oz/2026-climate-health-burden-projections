@@ -33,8 +33,13 @@ if (USE_DRAWS) {
   tmrel_s <- tmrel[, .(tmrel_mean_10 = as.integer(round(mean(tmrel)))),
                    by = .(zone, year_id)]
 } else {
-  # Keep only needed columns
-  erf <- erf[, .(zone, daily_temp, acause, rr_mean)]
+  # Keep only needed columns. In verification mode also keep rr_max for the
+  # Samuel-style rr_max definition below.
+  if (COLOMBIA_VERIFICATION) {
+    erf <- erf[, .(zone, daily_temp, acause, rr_mean, rr_max)]
+  } else {
+    erf <- erf[, .(zone, daily_temp, acause, rr_mean)]
+  }
   tmrel_s <- tmrel[, .(zone, year_id, tmrel_mean_10)]
 }
 
@@ -64,15 +69,26 @@ sev_data <- merge(temp_agg, erf_yr,
                   all.x = TRUE, allow.cartesian = TRUE)
 sev_data <- sev_data[!is.na(rr_rescaled)]
 
-# --- Compute RR_max: 99th percentile of pop-weighted RR per cause/zone ---
-sev_data_sorted <- sev_data[order(zone, acause, rr_rescaled)]
-sev_data_sorted[, pop_cumfrac := cumsum(pop) / sum(pop),
-                by = .(zone, acause)]
+# --- Compute RR_max ---
+if (COLOMBIA_VERIFICATION) {
+  # Items 5/23: Samuel uses the max over daily_temp of the per-cell
+  # 99th-percentile RR (which is in `erf$rr_max` from 01_load_erf.R), per
+  # (zona, c_muerte). Reference: 11_carga_atribuible.R:270-272.
+  rr_max_dt <- erf[, .(rr_max = max(rr_max, na.rm = TRUE)), by = .(zone, acause)]
+  log_msg("COLOMBIA_VERIFICATION: using Samuel's max-of-99th-percentile rr_max")
+  # rr_max is no longer needed on the row-level erf frame
+  sev_data[, rr_max := NULL]
+} else {
+  # Pop-weighted 99th cumulative-fraction of rr_rescaled per (zone, cause).
+  sev_data_sorted <- sev_data[order(zone, acause, rr_rescaled)]
+  sev_data_sorted[, pop_cumfrac := cumsum(pop) / sum(pop),
+                  by = .(zone, acause)]
 
-rr_max_dt <- sev_data_sorted[, {
-  idx <- which.min(abs(pop_cumfrac - 0.99))
-  .(rr_max = rr_rescaled[idx])
-}, by = .(zone, acause)]
+  rr_max_dt <- sev_data_sorted[, {
+    idx <- which.min(abs(pop_cumfrac - 0.99))
+    .(rr_max = rr_rescaled[idx])
+  }, by = .(zone, acause)]
+}
 
 # --- Compute SEVs ---
 sev_data <- merge(sev_data, rr_max_dt, by = c("zone", "acause"), all.x = TRUE)

@@ -83,6 +83,14 @@ if (COLOMBIA_VERIFICATION) {
 }
 
 # --- Merge with life tables ---
+if (COLOMBIA_VERIFICATION) {
+  # Item 33: Samuel filters age == 0 out of the life table before joining,
+  # so the "0-4" group (gru_ed1 == "0-4") gets ex(age=1) rather than ex(age=0).
+  # Replicate by remapping mortality age_group_id 0 -> 1 before the merge.
+  mort_detail[age_group_id == 0L, age_group_id := 1L]
+  log_msg("COLOMBIA_VERIFICATION: remapped age_group_id 0 -> 1 for the 0-4 group")
+}
+
 # Try to match on available common columns
 merge_cols <- intersect(names(mort_detail), names(lt))
 merge_cols <- merge_cols[merge_cols %in% c("year_id", "age_group_id", "sex_id", "age")]

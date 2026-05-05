@@ -47,6 +47,30 @@ temp[, year := as.integer(format(date, "%Y"))]
 # Filter to study period
 temp <- temp[year >= YEAR_START & year <= YEAR_END]
 
+if (COLOMBIA_VERIFICATION) {
+  # Item 9: Samuel uses year-varying WorldPop (WorldPop_2010_2019_pixel.csv)
+  # rather than the constant per-pixel snapshot bundled in
+  # temperatura_diaria_pixel.rds. Replace pop where WorldPop has a value;
+  # keep the original (San Andrés / pixels missing from WorldPop) as fallback,
+  # mirroring Samuel's treatment in 11_carga_atribuible.R:308-313.
+  worldpop_file <- file.path(DATA_DIR, "columbia-data-for-verifying-pipeline",
+                             "colombia", "WorldPop_2010_2019_pixel.csv")
+  if (file.exists(worldpop_file)) {
+    worldpop <- fread(worldpop_file)
+    setnames(worldpop, c("indx_rg", "sum_z", "ano"), c("pixel_id", "pop_yr", "year"))
+    worldpop <- worldpop[, .(pixel_id, year, pop_yr)]
+    temp <- merge(temp, worldpop, by = c("pixel_id", "year"), all.x = TRUE)
+    n_replaced <- sum(!is.na(temp$pop_yr))
+    n_kept     <- sum(is.na(temp$pop_yr))
+    temp[!is.na(pop_yr), pop := pop_yr]
+    temp[, pop_yr := NULL]
+    log_msg("COLOMBIA_VERIFICATION: replaced pop with year-varying WorldPop on ",
+            n_replaced, " rows; ", n_kept, " kept the constant fallback")
+  } else {
+    warning("COLOMBIA_VERIFICATION: WorldPop file not found; using constant pop")
+  }
+}
+
 # --- Assign temperature zones ---
 # Zone = rounded annual mean temperature per pixel per year
 temp[, zone := as.integer(round(mean(daily_temp, na.rm = TRUE))),
