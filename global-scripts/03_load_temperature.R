@@ -34,11 +34,19 @@ if (file.exists(temp_file_rds)) {
 log_msg("Loaded", nrow(temp), "pixel-day rows")
 
 # --- Standardize columns ---
-# Expect: pixel_id, date, daily_temp, pop, and optionally temp_sd
+# Expect: pixel_id, date, daily_temp, pop, and optionally temp_sd, subloc_id
 required_cols <- c("pixel_id", "date", "daily_temp", "pop")
 missing <- setdiff(required_cols, names(temp))
 if (length(missing) > 0) {
   stop(paste("Temperature file missing required columns:", paste(missing, collapse = ", ")))
+}
+
+# subloc_id is the subnational dimension (department / admin1 / state). If
+# absent in the input, treat the entire country as one subnational unit so
+# the rest of the pipeline still works.
+if (!"subloc_id" %in% names(temp)) {
+  log_msg("No subloc_id column in temperature input — treating whole location as one subloc")
+  temp[, subloc_id := as.character(LOCATION_ID)]
 }
 
 temp[, date := as.Date(date)]
@@ -91,8 +99,14 @@ temp[daily_temp_10 > max_temp, daily_temp_10 := max_temp]
 temp[, c("min_temp", "max_temp") := NULL]
 
 # --- Compute population weights ---
-temp[, pop_total := sum(pop, na.rm = TRUE), by = .(year)]
-temp[, pr := pop / pop_total]
+# pr is the within-subloc population fraction: a pixel-day's pop divided by
+# the total person-time in that subloc-year. Summing pr within (subloc, year)
+# across all pixel-days = 1, so the PAF formula sum(pr * (RR-1)/RR) within a
+# subloc-year is the standard within-population PAF.
+# Also keep the country-year denominator for backwards-compatible diagnostics.
+temp[, pop_total       := sum(pop, na.rm = TRUE), by = .(year)]
+temp[, pop_subloc_total := sum(pop, na.rm = TRUE), by = .(year, subloc_id)]
+temp[, pr := pop / pop_subloc_total]
 
 # --- Temperature draws (if enabled and temp_sd available) ---
 if (USE_DRAWS && "temp_sd" %in% names(temp)) {

@@ -2,12 +2,18 @@
 #
 # SEVs are a standardized metric of exposure intensity (0 to 1) used for
 # cross-risk-factor comparison and tracking exposure trends over time.
-# They are NOT used in the attributable burden calculation.
+# They are NOT used in the attributable burden calculation in production
+# mode; in COLOMBIA_VERIFICATION mode they enter the burden formula via
+# 05_compute_pafs.R (matching Samuel's methodology).
 #
 # SEV = sum of pop-weighted (RR - 1) / (RR_max - 1), bounded [0, 1]
 #
+# Subnational dimension: SEVs are computed per (year, subloc_id, zone,
+# cause) and then aggregated across zones within a subloc using
+# population-share weights, yielding per (year, subloc_id, cause) SEVs.
+#
 # Input:  INTERMEDIATE_DIR/erf_curves.rds, temperature.rds, tmrel.rds
-# Output: RESULTS_DIR/sevs_{LOCATION_ID}.rds
+# Output: RESULTS_DIR/sevs_{LOCATION_ID}.rds — (year, subloc_id, acause)
 
 source("config.R")
 
@@ -33,8 +39,6 @@ if (USE_DRAWS) {
   tmrel_s <- tmrel[, .(tmrel_mean_10 = as.integer(round(mean(tmrel)))),
                    by = .(zone, year_id)]
 } else {
-  # Keep only needed columns. In verification mode also keep rr_max for the
-  # Samuel-style rr_max definition below.
   if (COLOMBIA_VERIFICATION) {
     erf <- erf[, .(zone, daily_temp, acause, rr_mean, rr_max)]
   } else {
@@ -58,9 +62,12 @@ if (COLOMBIA_VERIFICATION) {
   erf_yr[is.na(rr_rescaled), rr_rescaled := rr_mean]
 }
 
-# --- Collapse temperature to (zone, daily_temp_10, year) before merging ---
+# --- Aggregate temperature to (subloc, zone, daily_temp_10, year) ---
+# Each (subloc, zone, daily_temp, year) row has total person-days at that
+# combination. Population fractions for SEV will be computed within
+# (subloc, zone, year), so the SEV is meaningful per subloc-zone-year.
 temp_agg <- temp[, .(pop = sum(pop, na.rm = TRUE)),
-                 by = .(zone, daily_temp_10, year)]
+                 by = .(subloc_id, zone, daily_temp_10, year)]
 
 # --- Merge aggregated temperature with rescaled RR ---
 sev_data <- merge(temp_agg, erf_yr,
@@ -71,49 +78,47 @@ sev_data <- sev_data[!is.na(rr_rescaled)]
 
 # --- Compute RR_max ---
 if (COLOMBIA_VERIFICATION) {
-  # Items 5/23: Samuel uses the max over daily_temp of the per-cell
-  # 99th-percentile RR (which is in `erf$rr_max` from 01_load_erf.R), per
-  # (zona, c_muerte). Reference: 11_carga_atribuible.R:270-272.
+  # Items 5/23: Samuel uses max over daily_temp of the per-cell 99th-
+  # percentile RR (which is in `erf$rr_max`), per (zona, c_muerte).
+  # Reference: 11_carga_atribuible.R:270-272. Not subloc-specific.
   rr_max_dt <- erf[, .(rr_max = max(rr_max, na.rm = TRUE)), by = .(zone, acause)]
   log_msg("COLOMBIA_VERIFICATION: using Samuel's max-of-99th-percentile rr_max")
-  # rr_max is no longer needed on the row-level erf frame
   sev_data[, rr_max := NULL]
 } else {
   # Pop-weighted 99th cumulative-fraction of rr_rescaled per (zone, cause).
-  sev_data_sorted <- sev_data[order(zone, acause, rr_rescaled)]
-  sev_data_sorted[, pop_cumfrac := cumsum(pop) / sum(pop),
+  # Aggregated across subloc since RR_max for SEV is a property of the
+  # zone-cause RR curve, not a subloc-specific quantity.
+  sev_zone <- sev_data[, .(pop = sum(pop, na.rm = TRUE)),
+                       by = .(zone, acause, daily_temp_10, rr_rescaled)]
+  sev_zone_sorted <- sev_zone[order(zone, acause, rr_rescaled)]
+  sev_zone_sorted[, pop_cumfrac := cumsum(pop) / sum(pop),
                   by = .(zone, acause)]
 
-  rr_max_dt <- sev_data_sorted[, {
+  rr_max_dt <- sev_zone_sorted[, {
     idx <- which.min(abs(pop_cumfrac - 0.99))
     .(rr_max = rr_rescaled[idx])
   }, by = .(zone, acause)]
 }
 
-# --- Compute SEVs ---
+# --- Compute SEVs at (year, subloc, zone, cause) granularity ---
 sev_data <- merge(sev_data, rr_max_dt, by = c("zone", "acause"), all.x = TRUE)
 
-# Population proportion within each zone-year-cause
-sev_data[, pr_zone := pop / sum(pop, na.rm = TRUE), by = .(year, zone, acause)]
+# Population proportion within each (subloc, year, zone, cause): summing
+# pr_zone over daily_temp_10 within those keys = 1.
+sev_data[, pr_zone := pop / sum(pop, na.rm = TRUE),
+         by = .(subloc_id, year, zone, acause)]
 
 sev_data[, sev_contrib := fifelse(rr_max <= 1 | rr_rescaled <= 1, 0,
                                    pr_zone * (rr_rescaled - 1) / (rr_max - 1))]
 
 sevs <- sev_data[, .(sev = sum(sev_contrib, na.rm = TRUE)),
-                 by = .(year, zone, acause)]
+                 by = .(year, subloc_id, zone, acause)]
 sevs[sev < 0, sev := 0]
 
 if (COLOMBIA_VERIFICATION) {
-  # Replicate Samuel's SEV calculation (11_carga_atribuible.R:444-469).
-  # Samuel sums pixel-day contributions of pr_zona*(RR-1)/(RR_max-1) across
-  # all ~365 days in the year, then caps at 1. Because pop is ~constant
-  # across days, that is equivalent to multiplying our year-level SEV
-  # (a true person-time fraction) by N days/year and capping at 1.
-  #
-  # WARNING: this departs from the GBD/Burkart SEV definition and only
-  # exists to reproduce Samuel's Colombia numbers for validation. Gated on
-  # COLOMBIA_VERIFICATION; config.R errors if this flag is set with any
-  # LOCATION_ID other than 125.
+  # Replicate Samuel's daily-summation bug (11_carga_atribuible.R:444-469).
+  # Multiply year-level SEV by N days/year and cap at 1, mirroring his
+  # sum-across-365-days-then-cap pattern.
   n_days_per_year <- temp[, .(n_days = uniqueN(date)), by = year]
   sevs <- merge(sevs, n_days_per_year, by = "year")
   sevs[, sev := pmin(sev * n_days, 1)]
@@ -124,20 +129,24 @@ if (COLOMBIA_VERIFICATION) {
   sevs[sev > 1, sev := 1]
 }
 
-# --- Aggregate across zones (population-weighted average) ---
-zone_pops <- temp[, .(pop_zone = sum(pop, na.rm = TRUE)), by = .(year, zone)]
-total_pops <- temp[, .(pop_total = sum(pop, na.rm = TRUE)), by = year]
-zone_weights <- merge(zone_pops, total_pops, by = "year")
-zone_weights[, zone_weight := pop_zone / pop_total]
+# --- Aggregate across zones within each subloc using zone-pop weights ---
+# zone_weight = (pop in subloc-zone-year) / (pop in subloc-year)
+zone_pops <- temp[, .(pop_zone = sum(pop, na.rm = TRUE)),
+                  by = .(year, subloc_id, zone)]
+subloc_pops <- temp[, .(pop_subloc = sum(pop, na.rm = TRUE)),
+                    by = .(year, subloc_id)]
+zone_weights <- merge(zone_pops, subloc_pops, by = c("year", "subloc_id"))
+zone_weights[, zone_weight := pop_zone / pop_subloc]
 
-sevs <- merge(sevs, zone_weights[, .(year, zone, zone_weight)],
-              by = c("year", "zone"), all.x = TRUE)
+sevs <- merge(sevs, zone_weights[, .(year, subloc_id, zone, zone_weight)],
+              by = c("year", "subloc_id", "zone"), all.x = TRUE)
 sevs_agg <- sevs[, .(sev = sum(sev * zone_weight, na.rm = TRUE)),
-                 by = .(year, acause)]
+                 by = .(year, subloc_id, acause)]
 
 sevs_agg[, location_id := LOCATION_ID]
 saveRDS(sevs_agg, file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds")))
-log_msg("SEVs saved to", file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds")))
+log_msg("SEVs saved to ", file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds")),
+        " (", nrow(sevs_agg), " rows at year x subloc x cause)")
 
 # =============================================================================
 # Diagnostic plots (if enabled)
@@ -147,9 +156,19 @@ if (RUN_DIAGNOSTICS) {
   library(ggplot2)
   log_msg("Generating SEV diagnostic plots")
 
-  p <- ggplot(sevs_agg, aes(x = year, y = sev, color = acause)) +
+  # National-aggregated SEV for the diagnostic plot only
+  pop_subloc_year <- temp[, .(pop_subloc_year = sum(pop, na.rm = TRUE)),
+                          by = .(year, subloc_id)]
+  pop_year <- temp[, .(pop_year = sum(pop, na.rm = TRUE)), by = year]
+  sev_natl <- merge(sevs_agg, pop_subloc_year, by = c("year", "subloc_id"))
+  sev_natl <- merge(sev_natl, pop_year, by = "year")
+  sev_natl[, w := pop_subloc_year / pop_year]
+  sev_plot <- sev_natl[, .(sev = sum(sev * w, na.rm = TRUE)),
+                       by = .(year, acause)]
+
+  p <- ggplot(sev_plot, aes(x = year, y = sev, color = acause)) +
     geom_line() +
-    labs(x = "Year", y = "SEV", color = "Cause",
+    labs(x = "Year", y = "SEV (pop-weighted national)", color = "Cause",
          title = paste("Summary Exposure Values — Location", LOCATION_ID)) +
     theme_minimal() +
     theme(legend.position = "bottom", legend.text = element_text(size = 7))

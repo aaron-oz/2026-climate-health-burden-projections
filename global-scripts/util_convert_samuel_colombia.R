@@ -27,14 +27,18 @@ log_msg("Converting temperature data...")
 temp <- readRDS(file.path(SAMUEL_DIR, "temperatura_diaria_pixel.rds"))
 setDT(temp)
 
-setnames(temp, c("temperatura", "fecha", "index_right", "pob"),
-               c("daily_temp",  "date",  "pixel_id",    "pop"))
+setnames(temp, c("temperatura", "fecha", "index_right", "pob",   "DPTO_CCDGO"),
+               c("daily_temp",  "date",  "pixel_id",    "pop", "subloc_id"))
 temp[, date := as.Date(date)]
-# Keep DPTO_CCDGO for potential department-level analysis
-temp[, DPTO_CCDGO := NULL]
+# subloc_id is kept (department for Colombia); pipeline groups within subloc
+# for PAF / SEV / burden computation. Stored as 2-char zero-padded character
+# to match the format used in mortality (codptore) and life tables (cod_depto).
+temp[, subloc_id := sprintf("%02d", as.integer(subloc_id))]
 
 saveRDS(temp, file.path(TEMP_DIR, "125_daily_temp.rds"))
-log_msg("Temperature: ", nrow(temp), " rows -> ", file.path(TEMP_DIR, "125_daily_temp.rds"))
+log_msg("Temperature: ", nrow(temp), " rows, ",
+        uniqueN(temp$subloc_id), " subnational locations -> ",
+        file.path(TEMP_DIR, "125_daily_temp.rds"))
 
 # =============================================================================
 # 2. Mortality: mortalidad_diaria_DANE_2010_2019_imput.rds
@@ -90,14 +94,18 @@ age_map <- data.table(
 
 mort <- merge(mort, age_map, by = "gru_ed1", all.x = TRUE)
 
-# Extract year and aggregate daily to yearly (pipeline expects annual totals)
-mort[, year_id := as.integer(format(as.Date(fecha_def), "%Y"))]
+# Extract year and aggregate daily to yearly while keeping the subnational
+# dimension. codptore is the department of residence for the deceased.
+mort[, year_id  := as.integer(format(as.Date(fecha_def), "%Y"))]
+mort[, subloc_id := sprintf("%02d", as.integer(codptore))]  # zero-padded
 mort_annual <- mort[, .(deaths = sum(muertes, na.rm = TRUE)),
-                    by = .(year_id, age_group_id, sex_id, acause)]
+                    by = .(year_id, subloc_id, age_group_id, sex_id, acause)]
 mort_annual[, location_id := LOCATION_ID]
 
 saveRDS(mort_annual, file.path(MORTALITY_DIR, "125_mortality.rds"))
-log_msg("Mortality: ", nrow(mort_annual), " rows -> ", file.path(MORTALITY_DIR, "125_mortality.rds"))
+log_msg("Mortality: ", nrow(mort_annual), " rows, ",
+        uniqueN(mort_annual$subloc_id), " subnational locations -> ",
+        file.path(MORTALITY_DIR, "125_mortality.rds"))
 
 # =============================================================================
 # 3. Life tables: Tablas_vida_DANE_2005_2050.rds
@@ -109,30 +117,23 @@ log_msg("Converting life table data...")
 lt <- readRDS(file.path(SAMUEL_DIR, "Tablas_vida_DANE_2005_2050.rds"))
 setDT(lt)
 
-# Use national-level life tables (cod_depto == "00")
-lt_nat <- lt[cod_depto == "00"]
-if (nrow(lt_nat) == 0) {
-  # Try without leading zero
-  lt_nat <- lt[cod_depto == "0" | cod_depto == 0]
-}
-if (nrow(lt_nat) == 0) {
-  warning("No national life table found (cod_depto=00). Using all departments averaged.")
-  lt_nat <- lt[, .(ev = mean(ev, na.rm = TRUE)),
-               by = .(sexo, ano, age)]
-}
+# Standardize columns. Keep BOTH the national life table (cod_depto == "00")
+# and the department-level life tables. 07_compute_ylls.R picks which to use
+# based on COLOMBIA_VERIFICATION mode (Samuel uses dept-level).
+setnames(lt, c("ano", "ev", "cod_depto"), c("year_id", "ex", "subloc_id"))
+lt[, year_id := as.integer(year_id)]
+lt[, sex_id := fifelse(sexo == "F", 2L, 1L)]
+lt[, age_group_id := as.integer(age)]
+lt[, subloc_id := as.character(subloc_id)]
 
-# Map columns
-setnames(lt_nat, c("ano", "ev"), c("year_id", "ex"))
-lt_nat[, year_id := as.integer(year_id)]
-lt_nat[, sex_id := fifelse(sexo == "F", 2L, 1L)]
-lt_nat[, age_group_id := as.integer(age)]
-
-lt_out <- lt_nat[year_id >= YEAR_START & year_id <= YEAR_END,
-                 .(year_id, age_group_id, sex_id, ex)]
+lt_out <- lt[year_id >= YEAR_START & year_id <= YEAR_END,
+             .(year_id, subloc_id, age_group_id, sex_id, ex)]
 lt_out[, location_id := LOCATION_ID]
 
 saveRDS(lt_out, file.path(LIFETABLE_DIR, "125_lifetable.rds"))
-log_msg("Life tables: ", nrow(lt_out), " rows -> ", file.path(LIFETABLE_DIR, "125_lifetable.rds"))
+log_msg("Life tables: ", nrow(lt_out), " rows (national + ",
+        uniqueN(lt_out$subloc_id) - 1L, " depts) -> ",
+        file.path(LIFETABLE_DIR, "125_lifetable.rds"))
 
 # =============================================================================
 # 4. DIVIPOLA lookup (informational — save for reference)

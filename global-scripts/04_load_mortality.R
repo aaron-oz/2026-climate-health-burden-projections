@@ -32,6 +32,13 @@ if (file.exists(mort_file_rds)) {
 
 log_msg("Loaded", nrow(mort), "mortality rows")
 
+# subloc_id is the subnational dimension. If absent, treat the whole location
+# as one subnational unit so the rest of the pipeline still works.
+if (!"subloc_id" %in% names(mort)) {
+  log_msg("No subloc_id column in mortality input — treating whole location as one subloc")
+  mort[, subloc_id := as.character(LOCATION_ID)]
+}
+
 # --- Filter to study period and included causes ---
 mort <- mort[year_id >= YEAR_START & year_id <= YEAR_END]
 mort <- mort[acause %in% GBD_CAUSES]
