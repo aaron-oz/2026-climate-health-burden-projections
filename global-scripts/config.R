@@ -78,6 +78,12 @@ COMPUTE_SEVS <- TRUE
 #   4. Attributable burden = deaths × PAF × SEV (not just deaths × PAF) [05]
 #   5. SEV computed as N-days × annual SEV, capped at 1 — replicates
 #      Samuel's daily-summation bug in 11_carga_atribuible.R:444-469. [06]
+#   6. Department-specific life tables, age 0 -> 1 remap for the 0-4
+#      group, ex - 2.5 for ages <80, ex = 10 for ages >=80 [07]
+#   7. Depto-day attribution: daily PAFs (date x depto x cause x risk) merged
+#      with daily mortality, multiplied by annual SEV, summed to annual
+#      burden (matches Samuel's daily-attribution pattern). Requires
+#      mortality_daily.rds; falls back to annual attribution if absent. [05]
 #
 # Note: USE_DRAWS = FALSE separately controls draw-level propagation
 # (Samuel's critical issue #1). Temperature draws (issue #3) are controlled

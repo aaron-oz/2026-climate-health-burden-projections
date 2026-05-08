@@ -94,10 +94,13 @@ age_map <- data.table(
 
 mort <- merge(mort, age_map, by = "gru_ed1", all.x = TRUE)
 
-# Extract year and aggregate daily to yearly while keeping the subnational
-# dimension. codptore is the department of residence for the deceased.
-mort[, year_id  := as.integer(format(as.Date(fecha_def), "%Y"))]
+# Extract year and date; codptore is the department of residence for the
+# deceased.
+mort[, date     := as.Date(fecha_def)]
+mort[, year_id  := as.integer(format(date, "%Y"))]
 mort[, subloc_id := sprintf("%02d", as.integer(codptore))]  # zero-padded
+
+# Aggregate to annual (subloc x age x sex x cause) — pipeline default input.
 mort_annual <- mort[, .(deaths = sum(muertes, na.rm = TRUE)),
                     by = .(year_id, subloc_id, age_group_id, sex_id, acause)]
 mort_annual[, location_id := LOCATION_ID]
@@ -106,6 +109,19 @@ saveRDS(mort_annual, file.path(MORTALITY_DIR, "125_mortality.rds"))
 log_msg("Mortality: ", nrow(mort_annual), " rows, ",
         uniqueN(mort_annual$subloc_id), " subnational locations -> ",
         file.path(MORTALITY_DIR, "125_mortality.rds"))
+
+# Also save daily mortality for COLOMBIA_VERIFICATION mode, which attributes
+# at depto-day granularity to match Samuel's approach. Aggregate over rows
+# that fall on the same (date, subloc, age, sex, cause) — the raw file has
+# one row per death event so most groups have count 1 here.
+mort_daily <- mort[!is.na(date) & !is.na(acause),
+                   .(deaths = sum(muertes, na.rm = TRUE)),
+                   by = .(date, year_id, subloc_id, age_group_id, sex_id, acause)]
+mort_daily[, location_id := LOCATION_ID]
+
+saveRDS(mort_daily, file.path(MORTALITY_DIR, "125_mortality_daily.rds"))
+log_msg("Daily mortality: ", nrow(mort_daily), " rows -> ",
+        file.path(MORTALITY_DIR, "125_mortality_daily.rds"))
 
 # =============================================================================
 # 3. Life tables: Tablas_vida_DANE_2005_2050.rds

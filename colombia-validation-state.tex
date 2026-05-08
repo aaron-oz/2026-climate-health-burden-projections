@@ -1,0 +1,416 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black,
+}
+
+\newcommand{\flag}[1]{\textcolor{red!70!black}{\textbf{#1}}}
+\newcommand{\fact}[0]{\textcolor{green!40!black}{[fact]}}
+\newcommand{\guess}[0]{\textcolor{orange!80!black}{[hypothesis]}}
+
+\title{Colombia Validation: Pipeline vs.\ Samuel's Published Results\\
+\large World Bank climate-health burden projections}
+\author{Aaron Osgood-Zimmerman}
+\date{2026-05-07}
+
+\begin{document}
+\maketitle
+
+\section*{TL;DR}
+
+Running the global R pipeline in \texttt{COLOMBIA\_VERIFICATION} mode against
+Samuel Cuervo's published Colombia 2010--2019 results, we now pass
+\textbf{18 of 19} headline metrics at $\pm 5\%$ tolerance. National totals
+agree to $-2.26\%$ (non-optimal deaths), $-2.35\%$ (heat), $-2.24\%$ (cold),
+and $-3.35\%$ (non-optimal years of life lost, YLL). Top-3 cause rankings
+match exactly for both heat and cold across deaths, YLLs, and population
+attributable fractions (PAFs). The only remaining failure is the heat YLL
+for road injuries (\texttt{inj\_trans\_road}) at $-11.76\%$. Section
+\ref{sec:hypotheses} describes hypotheses for the residual gap; Section
+\ref{sec:verif-vs-prod} describes what is stripped out before the pipeline
+runs in production / global mode.
+
+This document is a snapshot as of 2026-05-07 of the
+\texttt{verification-depto-day} branch.
+
+\section{Background and terminology}
+
+\paragraph{Project.} World Bank statistical consulting work quantifying
+mortality and morbidity attributable to non-optimal ambient temperature.
+Validating against Colombia 2010--2019 (location\_id 125) before scaling
+globally and projecting to 2100 under SSP (Shared Socioeconomic Pathway)
+scenarios. Built on the Burkart et al.\ (\textit{Lancet} 2021) methodology
+and the GBD (Global Burden of Disease) 2023 framework.
+
+\paragraph{Reference.} Samuel Cuervo's Colombia work used a 12-script R
+pipeline plus pre-processed input data (DANE vital registration, ERA5
+temperature, WorldPop). His published Colombia totals for 2010--2019 are
+the targets of this validation.
+
+\paragraph{Key terms.} Defined inline at first use:
+\begin{description}[style=multiline,leftmargin=3.5cm]
+  \item[ERF] Exposure-Response Function. The relative-risk (RR) curve mapping
+    daily temperature to cause-specific RR for one of 17 temperature-sensitive
+    causes. Provided as 1000 posterior draws per (zone, daily temperature, cause).
+  \item[TMREL] Theoretical Minimum Risk Exposure Level. The death-weighted
+    optimal temperature; days hotter than the TMREL count as ``heat,''
+    cooler as ``cold.''
+  \item[PAF] Population Attributable Fraction. Fraction of deaths in a
+    population that would not have occurred under counterfactual exposure
+    (here, all days at the TMREL).
+  \item[SEV] Summary Exposure Value. A standardized $[0,1]$ exposure metric.
+    In Burkart, diagnostic only; in Samuel's Colombia code (and our
+    verification mode) it enters the burden formula multiplicatively.
+  \item[YLL] Years of Life Lost. Attributable deaths $\times$ remaining
+    life expectancy at age of death.
+  \item[depto] Departamento --- Colombia's admin-1 / state-level
+    subdivision. Carried as \texttt{subloc\_id} (zero-padded
+    DIVIPOLA codes, e.g.\ ``05'' for Antioquia).
+\end{description}
+
+\section{Validation methodology}
+
+\subsection{Verification mode toggles}
+\label{subsec:toggles}
+
+The pipeline has a \texttt{COLOMBIA\_VERIFICATION} flag (\texttt{config.R}) that,
+when \texttt{TRUE}, replicates six methodological choices specific to Samuel's
+Colombia code. A safety guard refuses to run with this flag set if
+\texttt{LOCATION\_ID != 125}.
+
+\begin{enumerate}
+  \item \textbf{No RR rescaling at the TMREL.} Burkart rescales each ERF curve
+    so $RR(\text{TMREL}) = 1$ before computing PAFs; Samuel uses the raw
+    posterior-mean RR. Verification mode skips the rescale.
+  \item \textbf{Per-row PAF floor at zero.} Samuel zeroes out negative
+    contributions to the PAF before summing within (year, depto, cause, risk).
+    Burkart sums signed contributions and lets cancellation happen.
+  \item \textbf{TMREL averaged across years.} TMREL files contain values for
+    1990, 2010, and 2020. Verification mode averages all three with equal
+    weight to produce a single per-zone value used for all study years.
+    Production mode uses the year-specific TMREL with nearest-year fill for
+    missing years.
+  \item \textbf{Burden formula multiplied by SEV.} Verification mode computes
+    attributable burden as $\text{deaths} \times \text{PAF} \times \text{SEV}$
+    rather than $\text{deaths} \times \text{PAF}$.
+  \item \textbf{Samuel's daily-summation SEV bug.} Samuel's
+    \texttt{11\_carga\_atribuible.R:444--469} sums daily SEV contributions
+    over 365 days and then caps at 1, which inflates the SEV by roughly
+    a factor of $N_{\text{days}}/\text{year}$ before truncation. Verification
+    mode replicates this bug exactly.
+  \item \textbf{Department-specific life tables; \texttt{ex} adjustments.}
+    YLL computation uses department-specific (not national) DANE life tables;
+    age 0 is remapped to age 1 for the 0--4 group; remaining life expectancy
+    is reduced by 2.5 years for ages $<80$ and held at a fixed 10 years for
+    ages $\geq 80$, mirroring Samuel's
+    \texttt{11\_carga\_atribuible.R:570--577}.
+\end{enumerate}
+
+\subsection{Subnational refactor}
+
+The pipeline computes PAFs at \texttt{(year, subloc\_id, cause, risk)}
+granularity and merges with mortality at full
+\texttt{(year, subloc\_id, age\_group\_id, sex\_id, cause)} granularity.
+Pre-refactor it computed PAFs only at \texttt{(year, cause)} and merged
+against country-level mortality, losing the within-country covariance
+between high-mortality and high-temperature departments.
+
+\subsection{Depto-day verification branch}
+\label{subsec:depto-day}
+
+The most recent change is a daily-attribution branch
+(\texttt{05\_compute\_pafs.R}, gated on \texttt{COLOMBIA\_VERIFICATION}):
+
+\begin{enumerate}
+  \item Aggregate temperature to (date, depto, zone, daily-temp bin) and
+    compute within-(date, depto) population fractions $\pi$.
+  \item Compute daily PAFs as $\sum_i \max(0, \pi_i (RR_i-1)/RR_i)$ within
+    (date, depto, cause, risk).
+  \item Merge daily PAFs with daily mortality at (date, depto, cause),
+    broadcasting across age and sex.
+  \item Multiply by the annual SEV at (year, depto, cause).
+  \item Sum days $\to$ annual burden at
+    (year, depto, age, sex, cause).
+\end{enumerate}
+
+This captures the within-year covariance between hot days and high-mortality
+days that Samuel's daily-attribution pattern picks up but the
+annual-PAF $\times$ annual-deaths formula does not.
+
+\subsection{Comparison layers}
+
+\texttt{util\_compare\_to\_samuel.R} compares 19 metrics in five layers:
+national totals, per-million rates, YLL totals, sex split, and per-cause
+YLLs. Top-3 cause rankings are also checked. Per-cause PAFs are reported
+but excluded from the pass/fail count because of a \fact\ metric mismatch:
+the pipeline reports death-weighted PAFs, while Samuel publishes plain
+pixel-day-mean PAFs --- the two are not reconcilable from his published
+output alone.
+
+\section{Numerical results}
+\label{sec:results}
+
+Table \ref{tab:results} reports all 19 headline metrics. Tolerance is $\pm 5\%$.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Pipeline vs.\ Samuel's published Colombia 2010--2019 results,
+\texttt{COLOMBIA\_VERIFICATION = TRUE}, summary mode (point-estimate RR), depto-day attribution. Tolerance $\pm 5\%$.
+Source: \texttt{output/results/comparison\_to\_samuel\_125.csv} as of 2026-05-07.}
+\label{tab:results}
+\begin{tabular}{l r r r c}
+\toprule
+Metric & Pipeline & Samuel & \% diff & Verdict \\
+\midrule
+\multicolumn{5}{l}{\textit{National totals}} \\
+Total attributable deaths (non-optimal) & 9{,}257.5 & 9{,}472 & $-2.26$ & PASS \\
+Heat-attributable deaths & 2{,}247.7 & 2{,}301.7 & $-2.35$ & PASS \\
+Cold-attributable deaths & 7{,}009.9 & 7{,}170.3 & $-2.24$ & PASS \\
+Cold share of attributable deaths & 0.7572 & 0.7570 & $+0.03$ & PASS \\
+17-cause mortality denominator & 882{,}545 & 884{,}628 & $-0.24$ & PASS \\
+Share of 17-cause mortality (PAF) & 0.0105 & 0.0105 & $-0.10$ & PASS \\
+\midrule
+\multicolumn{5}{l}{\textit{Per-million rates (implied population $\sim$46.4M)}} \\
+Rate per 1M (non-optimal) & 19.95 & 20.41 & $-2.26$ & PASS \\
+Rate per 1M (heat) & 4.84 & 5.00 & $-3.14$ & PASS \\
+Rate per 1M (cold) & 15.10 & 15.41 & $-1.98$ & PASS \\
+\midrule
+\multicolumn{5}{l}{\textit{YLL totals}} \\
+Total YLL (non-optimal) & 167{,}074 & 172{,}870 & $-3.35$ & PASS \\
+Heat YLL & 60{,}595 & 63{,}556 & $-4.66$ & PASS \\
+Cold YLL & 106{,}479 & 109{,}313 & $-2.59$ & PASS \\
+\midrule
+\multicolumn{5}{l}{\textit{Sex split (deaths)}} \\
+Men & 5{,}362.7 & 5{,}510 & $-2.67$ & PASS \\
+Women & 3{,}894.8 & 3{,}962 & $-1.70$ & PASS \\
+\midrule
+\multicolumn{5}{l}{\textit{Per-cause YLL (causes Samuel reports numerically)}} \\
+YLL heat --- inj\_homicide & 29{,}277 & 30{,}045 & $-2.56$ & PASS \\
+YLL heat --- inj\_trans\_road & 9{,}651 & 10{,}937 & $\mathbf{-11.76}$ & \flag{FAIL} \\
+YLL heat --- cvd\_ihd & 9{,}369 & 9{,}408 & $-0.41$ & PASS \\
+YLL cold --- cvd\_ihd & 48{,}512 & 48{,}907 & $-0.81$ & PASS \\
+YLL cold --- cvd\_stroke & 10{,}293 & 10{,}372 & $-0.76$ & PASS \\
+\midrule
+\multicolumn{5}{l}{\textbf{Total: 18 PASS / 1 FAIL of 19}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Top-3 cause rankings.} Where Samuel publishes ordered top-3 lists,
+the pipeline matches exactly:
+\begin{itemize}[itemsep=2pt]
+  \item Heat top-3 YLL: \texttt{inj\_homicide, inj\_trans\_road, cvd\_ihd} (3/3 overlap)
+  \item Cold top-3 YLL: \texttt{cvd\_ihd, resp\_copd, cvd\_stroke} (3/3 overlap)
+  \item Heat top-3 PAF: \texttt{inj\_homicide, inj\_trans\_road, diabetes} (3/3 overlap)
+  \item Cold top-3 PAF: \texttt{inj\_drowning, resp\_copd, cvd\_ihd} (2/3 overlap;
+    Samuel has \texttt{lri} in third)
+\end{itemize}
+
+\section{Hypotheses for the residual gap}
+\label{sec:hypotheses}
+
+These are \guess{} ranked by what we would investigate first if pursuing
+exact replication. Items are not numerically attributed because we have not
+isolated their individual contributions.
+
+\subsection*{H1. Mortality input is imputed upstream}
+
+Samuel's input file is \texttt{mortalidad\_diaria\_DANE\_2010\_2019\_imput.rds};
+the \texttt{imput} suffix suggests upstream missingness imputation that we
+do not replicate. Our 17-cause denominator is 882{,}545 deaths vs.\ Samuel's
+884{,}628 ($-0.24\%$). The EXTRANJERO filter (\texttt{codptore == 75}, deaths
+of residents abroad) accounts for 1{,}987 of the 2{,}083 missing rows;
+\textasciitilde 96 deaths remain unexplained. The total-level effect is small,
+but if imputation is non-uniform across causes it could account for
+cause-specific gaps including \texttt{inj\_trans\_road}.
+\textbf{Verification path:} request the pre-imputation file or the
+imputation script from Samuel.
+
+\subsection*{H2. ERF point-estimate convention}
+
+\texttt{01\_load\_erf.R} computes \texttt{rr\_mean} as the arithmetic mean
+across 1000 posterior draws. If Samuel uses the median draw or the
+publication's point estimate, the two differ when the draw distribution is
+skewed --- which is plausible for the heat tail of the road-injury ERF.
+\textbf{Verification path:} swap \texttt{mean()} for \texttt{median()} in the
+ERF aggregation, rerun, see if \texttt{inj\_trans\_road} closes.
+
+\subsection*{H3. TMREL provenance}
+
+In verification mode we average IHME's 1990 / 2010 / 2020 TMREL files with
+equal weight. Samuel's TMREL provenance is not fully documented in what he
+sent; if his TMRELs come from a different source or were derived rather than
+averaged, sub-degree shifts at the boundary push borderline days from
+``optimal'' to ``heat'' or ``cold,'' which propagates into all per-cause
+heat/cold splits. \textbf{Verification path:} compare our derived TMREL
+file to any TMREL file in Samuel's repo we have not yet diffed.
+
+\subsection*{H4. Garbage-code redistribution upstream of the cause map}
+
+Our cause map is a 1:1 string mapping from Samuel's Spanish
+\texttt{c\_muerte} labels to GBD acause codes. GBD typically redistributes
+``garbage'' codes (R-codes / ill-defined causes) proportionally to specific
+causes. If Samuel's \texttt{c\_muerte} field already has garbage-code
+redistribution applied with a specific coefficient set, and we operate on
+his file as-is, the totals stay close (they do: $-0.24\%$ on the denominator)
+but per-cause numbers drift, which is the pattern we observe. \textbf{Verification path:} ask Samuel whether his cause field
+incorporates garbage-code redistribution and which coefficients.
+
+\subsection*{H5. Cause-specific age restriction (\texttt{inj\_trans\_road} only)}
+
+Samuel may zero out road injuries for the 0--4 age group before
+attribution; we do not. Combined with the YLL adjustment (\texttt{ex - 2.5}
+for ages $<80$), even a small misassignment to 0--4 leverages heavily
+because the \texttt{ex\_adj} for that group is roughly 70 years. This is
+specifically the cause where we still fail.
+\textbf{Verification path:} inspect his
+\texttt{11\_carga\_atribuible.R} for any age filtering on
+\texttt{relacion\_transporte} / \texttt{accidentes\_trafico}, or check whether his
+input mortality has zero road-injury deaths at 0--4.
+
+\subsection*{H6. Daily-mortality NA / boundary handling}
+
+Our daily save filter is \texttt{!is.na(date) \& !is.na(acause)}. If Samuel
+keeps NA-date deaths under a default-date convention rather than dropping
+them, daily attribution shifts slightly. Same family of issue as H1, but
+isolable on our side.
+
+\subsection*{Comparison-script artifact (not a real gap)}
+
+The per-cause PAF rows (excluded from the 18-of-19 count) report
+death-weighted PAFs from our pipeline against plain pixel-day-mean PAFs from
+Samuel. The two are not reconcilable from his published outputs alone, so
+we report ours and document the metric mismatch in
+\texttt{util\_compare\_to\_samuel.R}.
+
+\section{Verification mode vs.\ production / global pipeline}
+\label{sec:verif-vs-prod}
+
+The validation just described is run with \texttt{COLOMBIA\_VERIFICATION = TRUE}.
+Production / global runs set this flag to \texttt{FALSE}, which reverts to
+the Burkart-correct methodology.
+
+\subsection{What is reverted in production}
+
+Each verification toggle from Section \ref{subsec:toggles} is undone:
+
+\begin{enumerate}
+  \item \textbf{RR is rescaled to 1.0 at the TMREL} per Burkart, eliminating
+    the level offset in raw posterior-mean RR.
+  \item \textbf{PAF contributions are summed signed}, allowing
+    sub-TMREL-but-near-optimal exposures to cancel rather than zero.
+  \item \textbf{TMREL is year-specific} with nearest-year fill (1990 for years
+    $\leq 2000$, 2010 for 2000--2014, 2020 for 2015+) rather than
+    averaged across years.
+  \item \textbf{Burden $= \text{deaths} \times \text{PAF}$.} The SEV
+    multiplicative term is dropped; SEV remains as a diagnostic output but
+    does not enter burden.
+  \item \textbf{SEV is computed once per year} (no daily summation $\times$ cap
+    bug), with the conventional definition.
+  \item \textbf{National life table only.} YLLs use the national life table
+    broadcast across all subnational units. The age 0 $\to$ 1 remap and
+    the \texttt{ex - 2.5} / \texttt{ex = 10} truncations are dropped;
+    the full life-expectancy column from the life table is used directly.
+\end{enumerate}
+
+\subsection{Depto-day attribution becomes optional}
+
+The depto-day branch in \texttt{05\_compute\_pafs.R} (Section
+\ref{subsec:depto-day}) is gated on \texttt{COLOMBIA\_VERIFICATION \&\&\ !USE\_DRAWS \&\&\ <daily mortality file present>}. In production:
+
+\begin{itemize}[itemsep=2pt]
+  \item For locations \textbf{with} daily mortality: this branch is currently only enabled in
+    verification mode; whether to enable for production is open
+    (open decision, not yet made). The production default is annual
+    attribution: $\text{burden} = \text{deaths\_annual} \times \text{PAF\_annual}$
+    at full \texttt{(year, subloc, age, sex, cause)} granularity.
+  \item For locations \textbf{without} daily mortality (most countries):
+    annual attribution is the only option.
+\end{itemize}
+
+\subsection{Subnational dimension is preserved}
+
+The subnational refactor (PAFs at depto, mortality at depto-age-sex,
+merge at depto-age-sex-cause) is part of the production pipeline, not a
+verification-only change. For non-Colombia locations, \texttt{subloc\_id}
+falls back to a single value equal to \texttt{LOCATION\_ID} if the input
+data has no subnational column.
+
+\subsection{Uncertainty propagation}
+
+Verification runs use summary mode (\texttt{USE\_DRAWS = FALSE}) for speed:
+mean / lower / upper RR, mean TMREL. Production should run with
+\texttt{USE\_DRAWS = TRUE} to propagate the full 1000 ERF draws $\times$ 100
+TMREL draws (recycled 10$\times$ to match) through the entire pipeline,
+producing 95\% uncertainty intervals on PAFs and burdens.
+
+\subsection{Inputs that change at the global scale}
+
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Mortality:} GBD 2023 cause-specific death estimates (parsed
+    via \texttt{util\_parse\_gbd\_mortality.R}) replace DANE vital
+    registration. These are annual, not daily.
+  \item \textbf{Life tables:} UN World Population Prospects (parsed via
+    \texttt{util\_parse\_un\_lifetables.R}) replace DANE life tables.
+    Annual, single-region (national) by default.
+  \item \textbf{Temperature:} ERA5 reanalysis (historical), CMIP6 climate
+    projections (forecast). Daily pixel-level format unchanged.
+  \item \textbf{Population:} WorldPop gridded, year-varying, 1km. Same
+    format as Colombia.
+  \item \textbf{TMREL:} IHME files for 1{,}034 GBD locations, 1990 / 2010
+    / 2020 with nearest-year fill.
+\end{itemize}
+
+\section{Recommendations and next steps}
+
+\paragraph{Short term (validation closure).}
+\begin{enumerate}
+  \item Test H2 (median vs.\ mean ERF draws) --- one-line change, immediate
+    rerun, cheap.
+  \item Test H5 (road-injury age restriction) --- inspect Samuel's script,
+    add filter if found, rerun.
+  \item Decide whether $-11.76\%$ on a single cause-specific YLL is a
+    blocker, given that totals, top-3 rankings, sex split, and other
+    per-cause numbers all pass.
+\end{enumerate}
+
+\paragraph{Medium term (Samuel asks).}
+\begin{enumerate}
+  \item Request the pre-imputation mortality file or the imputation
+    script (H1).
+  \item Request his TMREL source / derivation script (H3).
+  \item Confirm whether his \texttt{c\_muerte} field has garbage-code
+    redistribution applied and with what coefficients (H4).
+\end{enumerate}
+
+\paragraph{Before any production / global run.} Verify
+\texttt{COLOMBIA\_VERIFICATION = FALSE} in \texttt{config.R}. The safety
+guard catches mis-set flags only when \texttt{LOCATION\_ID != 125}, so
+nothing prevents the flag from staying \texttt{TRUE} on a re-run of
+Colombia where it would silently apply the wrong methodology to a
+production output.
+
+\bigskip
+\hrule
+\smallskip
+
+\textit{Source artifacts:}
+\texttt{output/results/comparison\_to\_samuel\_125.csv} (numerical
+comparison),
+\texttt{output/results/burden\_125.rds} (full-granularity attributable
+burden),
+\texttt{output/results/pafs\_daily\_125.rds} (daily PAFs),
+\texttt{global-scripts/} (pipeline source on branch
+\texttt{verification-depto-day}).
+
+\end{document}

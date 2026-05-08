@@ -198,52 +198,183 @@ log_msg("PAFs saved to", file.path(RESULTS_DIR, paste0("pafs_", LOCATION_ID, ".r
 # Cartesian product of mortality and PAF dimensions. We do NOT pre-aggregate
 # mortality; that loses the subloc x deaths covariance the refactor exists
 # to capture.
+#
+# Two paths:
+#   (a) Production / annual: deaths_annual * paf_annual [* sev in verif].
+#       PAFs are computed at (year, subloc, cause); deaths at full
+#       (year, subloc, age, sex, cause); the merge broadcasts paf across age
+#       and sex within each (year, subloc, cause).
+#   (b) COLOMBIA_VERIFICATION daily branch (depto-day): computes daily PAFs at
+#       (date, subloc, cause, risk), merges with daily mortality at
+#       (date, subloc, age, sex, cause), multiplies by annual SEV, and sums
+#       days to annual burden. This matches Samuel's pattern in
+#       11_carga_atribuible.R, where attribution is daily so days with both
+#       extreme temperature AND high mortality contribute proportionally
+#       more than the annual-paf approximation captures.
 
-burden <- merge(mort[, .(year_id, subloc_id, age_group_id, sex_id, acause, deaths)],
-                paf_combined[, .(year, subloc_id, acause, paf_heat, paf_cold, paf_nonopt)],
-                by.x = c("year_id", "subloc_id", "acause"),
-                by.y = c("year", "subloc_id", "acause"),
-                all.x = TRUE)
-burden[is.na(paf_heat),   paf_heat   := 0]
-burden[is.na(paf_cold),   paf_cold   := 0]
-burden[is.na(paf_nonopt), paf_nonopt := 0]
+do_daily_verif <- COLOMBIA_VERIFICATION && !USE_DRAWS &&
+  file.exists(file.path(INTERMEDIATE_DIR, "mortality_daily.rds"))
 
-if (COLOMBIA_VERIFICATION) {
-  # Samuel's formula: attributable = deaths * PAF * SEV, with SEV at the
-  # (year, subloc, cause) level. SEV file written by 06_compute_sevs.R.
+if (do_daily_verif) {
+  # ---------------------------------------------------------------------------
+  # COLOMBIA_VERIFICATION daily branch (summary-mode RR only)
+  # ---------------------------------------------------------------------------
+  log_msg("COLOMBIA_VERIFICATION daily branch: computing depto-day PAFs and burden")
+
+  # (1) Aggregate raw temperature to (date, subloc, zone, daily_temp_10, year);
+  # within-(date, subloc) pop fractions become the daily PAF weights.
+  temp_daily <- temp[, .(pop = sum(pop, na.rm = TRUE)),
+                     by = .(date, subloc_id, year, zone, daily_temp_10)]
+  temp_daily[, pop_subloc_date := sum(pop, na.rm = TRUE),
+             by = .(date, subloc_id)]
+  temp_daily[, pr_daily := pop / pop_subloc_date]
+
+  # (2) Merge with the (already-rescaled-or-not) summary-mode RR. `rr` carries
+  # tmrel_mean_10 from earlier, so heat/cold classification is direct.
+  pafs_d <- merge(temp_daily, rr,
+                  by.x = c("zone", "daily_temp_10", "year"),
+                  by.y = c("zone", "daily_temp",   "year"),
+                  all.x = TRUE, allow.cartesian = TRUE)
+
+  pafs_d[, risk := ifelse(daily_temp_10 < tmrel_mean_10, "cold",
+                          ifelse(daily_temp_10 > tmrel_mean_10, "heat", NA_character_))]
+  pafs_d <- pafs_d[!is.na(risk) & !is.na(rr_mean)]
+
+  # (3) Per-row PAF contribution, floored at 0 (Samuel's per-row floor).
+  pafs_d[, paf_contrib := pmax(0, fifelse(rr_mean >= 1,
+                                          pr_daily * (rr_mean - 1) / rr_mean,
+                                          pr_daily * -1 * ((1/rr_mean) - 1) / (1/rr_mean)))]
+
+  # (4) Sum within (date, subloc, cause, risk) → daily PAFs.
+  paf_daily_long <- pafs_d[, .(paf = sum(paf_contrib, na.rm = TRUE)),
+                           by = .(date, year, subloc_id, acause, risk)]
+
+  paf_daily <- dcast(paf_daily_long,
+                     date + year + subloc_id + acause ~ risk,
+                     value.var = "paf", fill = 0)
+  if (!"heat" %in% names(paf_daily)) paf_daily[, heat := 0]
+  if (!"cold" %in% names(paf_daily)) paf_daily[, cold := 0]
+  setnames(paf_daily, c("heat", "cold"), c("paf_heat", "paf_cold"))
+  paf_daily[, paf_nonopt := paf_heat + paf_cold]
+  paf_daily[, location_id := LOCATION_ID]
+
+  saveRDS(paf_daily, file.path(RESULTS_DIR, paste0("pafs_daily_", LOCATION_ID, ".rds")))
+  log_msg("Daily PAFs saved to ",
+          file.path(RESULTS_DIR, paste0("pafs_daily_", LOCATION_ID, ".rds")),
+          " (", nrow(paf_daily), " rows at date x subloc x cause)")
+
+  # (5) Merge daily PAFs with daily mortality at (date, subloc, cause). The
+  # PAF row is broadcast across all (age, sex) deaths on that day-depto-cause.
+  mort_daily <- readRDS(file.path(INTERMEDIATE_DIR, "mortality_daily.rds"))
+  setDT(mort_daily)
+  mort_daily[, date := as.Date(date)]
+
+  burden_daily <- merge(mort_daily[, .(date, year_id, subloc_id, age_group_id,
+                                       sex_id, acause, deaths)],
+                        paf_daily[, .(date, subloc_id, acause,
+                                      paf_heat, paf_cold, paf_nonopt)],
+                        by = c("date", "subloc_id", "acause"),
+                        all.x = TRUE)
+  burden_daily[is.na(paf_heat),   paf_heat   := 0]
+  burden_daily[is.na(paf_cold),   paf_cold   := 0]
+  burden_daily[is.na(paf_nonopt), paf_nonopt := 0]
+
+  # (6) Apply annual SEV at (year, subloc, cause).
   sev_file <- file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds"))
-  if (file.exists(sev_file)) {
-    sevs <- setDT(readRDS(sev_file))
-    burden <- merge(burden,
-                    sevs[, .(year, subloc_id, acause, sev)],
-                    by.x = c("year_id", "subloc_id", "acause"),
-                    by.y = c("year", "subloc_id", "acause"),
-                    all.x = TRUE)
-    burden[is.na(sev), sev := 0]
-    burden[, `:=`(deaths_heat   = deaths * paf_heat   * sev,
-                  deaths_cold   = deaths * paf_cold   * sev,
-                  deaths_nonopt = deaths * paf_nonopt * sev)]
-    log_msg("COLOMBIA_VERIFICATION: burden = deaths * PAF * SEV (per subloc)")
+  if (!file.exists(sev_file)) {
+    stop("COLOMBIA_VERIFICATION daily branch: SEV file not found at ", sev_file,
+         ". Run 06_compute_sevs.R before 05_compute_pafs.R in verification mode.")
+  }
+  sevs_annual <- setDT(readRDS(sev_file))
+  burden_daily <- merge(burden_daily,
+                        sevs_annual[, .(year, subloc_id, acause, sev)],
+                        by.x = c("year_id", "subloc_id", "acause"),
+                        by.y = c("year",    "subloc_id", "acause"),
+                        all.x = TRUE)
+  burden_daily[is.na(sev), sev := 0]
+  burden_daily[, `:=`(deaths_heat   = deaths * paf_heat   * sev,
+                      deaths_cold   = deaths * paf_cold   * sev,
+                      deaths_nonopt = deaths * paf_nonopt * sev)]
+
+  # (7) Sum days → annual at (year, subloc, age, sex, cause). Schema matches
+  # the production/annual burden output (07/08 only consume deaths_*).
+  burden <- burden_daily[, .(deaths        = sum(deaths,        na.rm = TRUE),
+                             deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
+                             deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+                             deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE)),
+                         by = .(year_id, subloc_id, age_group_id, sex_id, acause)]
+
+  # Carry annual paf_combined values as diagnostic columns (the daily-rollup
+  # implied effective PAF differs from these but the annual values are still
+  # useful for cross-checks against pafs_<id>.rds).
+  burden <- merge(burden,
+                  paf_combined[, .(year, subloc_id, acause,
+                                   paf_heat, paf_cold, paf_nonopt)],
+                  by.x = c("year_id", "subloc_id", "acause"),
+                  by.y = c("year",    "subloc_id", "acause"),
+                  all.x = TRUE)
+  burden <- merge(burden,
+                  sevs_annual[, .(year, subloc_id, acause, sev)],
+                  by.x = c("year_id", "subloc_id", "acause"),
+                  by.y = c("year",    "subloc_id", "acause"),
+                  all.x = TRUE)
+  burden[is.na(paf_heat),   paf_heat   := 0]
+  burden[is.na(paf_cold),   paf_cold   := 0]
+  burden[is.na(paf_nonopt), paf_nonopt := 0]
+  burden[is.na(sev),        sev        := 0]
+
+  setnames(burden, "year_id", "year")
+  burden[, location_id := LOCATION_ID]
+  saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
+  log_msg("Attributable burden (daily-rolled-up) saved to ",
+          file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
+          " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
+} else {
+  # ---------------------------------------------------------------------------
+  # Annual branch (production + verification fallback when daily mort missing)
+  # ---------------------------------------------------------------------------
+  burden <- merge(mort[, .(year_id, subloc_id, age_group_id, sex_id, acause, deaths)],
+                  paf_combined[, .(year, subloc_id, acause, paf_heat, paf_cold, paf_nonopt)],
+                  by.x = c("year_id", "subloc_id", "acause"),
+                  by.y = c("year", "subloc_id", "acause"),
+                  all.x = TRUE)
+  burden[is.na(paf_heat),   paf_heat   := 0]
+  burden[is.na(paf_cold),   paf_cold   := 0]
+  burden[is.na(paf_nonopt), paf_nonopt := 0]
+
+  if (COLOMBIA_VERIFICATION) {
+    sev_file <- file.path(RESULTS_DIR, paste0("sevs_", LOCATION_ID, ".rds"))
+    if (file.exists(sev_file)) {
+      sevs <- setDT(readRDS(sev_file))
+      burden <- merge(burden,
+                      sevs[, .(year, subloc_id, acause, sev)],
+                      by.x = c("year_id", "subloc_id", "acause"),
+                      by.y = c("year", "subloc_id", "acause"),
+                      all.x = TRUE)
+      burden[is.na(sev), sev := 0]
+      burden[, `:=`(deaths_heat   = deaths * paf_heat   * sev,
+                    deaths_cold   = deaths * paf_cold   * sev,
+                    deaths_nonopt = deaths * paf_nonopt * sev)]
+      log_msg("COLOMBIA_VERIFICATION: burden = deaths * PAF * SEV (per subloc)")
+    } else {
+      warning("COLOMBIA_VERIFICATION: SEV file not found — run 06_compute_sevs.R first. Falling back to deaths * PAF.")
+      burden[, `:=`(deaths_heat   = deaths * paf_heat,
+                    deaths_cold   = deaths * paf_cold,
+                    deaths_nonopt = deaths * paf_nonopt)]
+    }
   } else {
-    warning("COLOMBIA_VERIFICATION: SEV file not found — run 06_compute_sevs.R first. Falling back to deaths * PAF.")
     burden[, `:=`(deaths_heat   = deaths * paf_heat,
                   deaths_cold   = deaths * paf_cold,
                   deaths_nonopt = deaths * paf_nonopt)]
   }
-} else {
-  burden[, `:=`(deaths_heat   = deaths * paf_heat,
-                deaths_cold   = deaths * paf_cold,
-                deaths_nonopt = deaths * paf_nonopt)]
-}
 
-# Rename for backwards compatibility with downstream consumers that expect
-# a `year` column on burden.
-setnames(burden, "year_id", "year")
-burden[, location_id := LOCATION_ID]
-saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
-log_msg("Attributable burden saved to ",
-        file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
-        " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
+  setnames(burden, "year_id", "year")
+  burden[, location_id := LOCATION_ID]
+  saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
+  log_msg("Attributable burden saved to ",
+          file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
+          " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
+}
 
 # =============================================================================
 # Diagnostic plots (if enabled)

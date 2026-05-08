@@ -65,6 +65,32 @@ log_msg("Filtered to", nrow(mort), "rows:",
 saveRDS(mort, file.path(INTERMEDIATE_DIR, "mortality.rds"))
 log_msg("Mortality data saved to", file.path(INTERMEDIATE_DIR, "mortality.rds"))
 
+# --- COLOMBIA_VERIFICATION: also load daily mortality ---
+# In verification mode 05_compute_pafs.R does daily attribution: it merges
+# daily PAFs with deaths on the same (date, subloc) and sums to annual
+# burden. Skip silently if the daily file isn't present (e.g., a global
+# location that was set up to use only annual mortality).
+if (COLOMBIA_VERIFICATION) {
+  mort_daily_rds <- file.path(MORTALITY_DIR, paste0(LOCATION_ID, "_mortality_daily.rds"))
+  if (file.exists(mort_daily_rds)) {
+    mort_daily <- readRDS(mort_daily_rds)
+    setDT(mort_daily)
+    mort_daily[, date := as.Date(date)]
+    mort_daily <- mort_daily[year_id >= YEAR_START & year_id <= YEAR_END
+                              & acause %in% GBD_CAUSES]
+    if (!"subloc_id" %in% names(mort_daily)) {
+      mort_daily[, subloc_id := as.character(LOCATION_ID)]
+    }
+    saveRDS(mort_daily, file.path(INTERMEDIATE_DIR, "mortality_daily.rds"))
+    log_msg("COLOMBIA_VERIFICATION: daily mortality loaded (",
+            nrow(mort_daily), " rows) -> ",
+            file.path(INTERMEDIATE_DIR, "mortality_daily.rds"))
+  } else {
+    warning("COLOMBIA_VERIFICATION mode but daily mortality file not found at ",
+            mort_daily_rds, " — 05_compute_pafs.R will fall back to annual.")
+  }
+}
+
 # =============================================================================
 # Diagnostic plots (if enabled)
 # =============================================================================

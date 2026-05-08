@@ -268,15 +268,22 @@ will need its own benchmarking.
 - **COLOMBIA_VERIFICATION mode:** strictly for replicating Samuel's
   Colombia bugs; safety-guarded against use with any other location.
 - **Validation reference:** Samuel's Colombia 2010-2019 published
-  numbers, with the residual ~5–8% gap traced to subnational
-  (department × day) aggregation and acknowledged as a methodology
-  fix to make.
+  numbers. After the subnational refactor and depto-day verification
+  branch (2026-05-07), 18 of 19 headline metrics pass at ±5% tolerance:
+  totals within ~2–3%, top-3 cause rankings exact, only `inj_trans_road`
+  heat YLL still fails at -11.76%. See `colombia-validation-state.tex`
+  (or `.pdf`) for the snapshot.
+- **Subnational dimension (was O1, closed 2026-05-07):** PAFs computed
+  at (year, subloc_id, cause); mortality at full
+  (year, subloc_id, age, sex, cause); merged at full granularity. For
+  non-Colombia locations, `subloc_id` falls back to a single value =
+  `LOCATION_ID` if input lacks a subnational column.
 
 ### Open — affects production runs
 
 | # | Decision | Notes |
 |---|---|---|
-| O1 | Subnational aggregation level | Currently national-annual. Samuel's pipeline aggregates at department × day. The pending refactor adds a subnational dimension through PAF / SEV / burden / YLL. Estimated cost ~half-day to a day of focused work; needed for global accuracy. |
+| ~~O1~~ | ~~Subnational aggregation level~~ | **Closed 2026-05-07.** Subnational dimension carried through PAF / SEV / burden / YLL. Verification mode adds a depto-day attribution branch. See locked decisions above. |
 | O2 | Heat / cold split for projections | IHME does not separate them. Our pipeline does. To report heat-attributable and cold-attributable separately, we apply our pipeline's split proportions to the combined IHME-anchored projection. To be confirmed in the deliverable spec. |
 | O3 | 17-vs-12 cause coverage | Burkart fits 17 causes; IHME's GBD 2021 forecast module fits 12. Five Burkart causes have no temperature signal in IHME's forecasts. Decision: include forward-only via our pipeline (with disclosure) or exclude. |
 | O4 | SSP-aligned gridded population source | Options: WorldPop held constant at 2020, WorldPop forward-extrapolated (no SSP variation), Jones-O'Neill / NCAR SSP-aligned 1km, Murakami SSP-aligned 1km. Impact on within-country spatial weighting is bounded but unverified. |
@@ -325,9 +332,9 @@ will need its own benchmarking.
 
 In rough priority order:
 
-1. **Subnational refactor.** Add depto / admin-1 dimension through
+1. ~~**Subnational refactor.** Add depto / admin-1 dimension through
    PAF, SEV, burden, YLL. Closes the 5–10% Colombia validation gap and
-   is independently needed for global accuracy.
+   is independently needed for global accuracy.~~ **Done 2026-05-07.**
 2. **Forward-projection inputs.** Pipeline currently expects historical
    pixel-day temperature in a specific format. CMIP6 projection inputs
    from CCKP need to plug in here — schema likely matches but may need
@@ -351,8 +358,14 @@ In rough priority order:
 
 ## 10. Known issues / honest caveats
 
-- The 5–10% validation gap on Colombia is structural (subnational
-  aggregation), not a bug. The fix is the refactor in item 1 above.
+- ~~The 5–10% validation gap on Colombia is structural (subnational
+  aggregation), not a bug. The fix is the refactor in item 1 above.~~
+  Closed 2026-05-07: subnational refactor + depto-day verification branch
+  bring 18 of 19 headline metrics within ±5%.
+- One Colombia per-cause metric (`inj_trans_road` heat YLL) still fails
+  at -11.76%. Hypothesized causes (mortality imputation, ERF
+  point-estimate convention, garbage-code redistribution, age
+  restrictions) documented in `colombia-validation-state.tex` Section 5.
 - Some methodology decisions hinge on what IHME shares (rates
   available? Vollset populations? alignment shift inputs?). The IHME
   data ask is in flight; depending on responses, several of the open
