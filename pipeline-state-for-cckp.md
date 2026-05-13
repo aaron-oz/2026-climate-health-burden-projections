@@ -129,17 +129,34 @@ GBD-location granularity globally.
 
 ### 3.3 Temperature
 
-- **Current input format the pipeline expects:**
+- **Pipeline-expected format:**
   `data/temperature/{LOCATION_ID}_daily_temp.rds` — one row per
   pixel-day with columns `pixel_id`, `date`, `daily_temp` (°C), `pop`
-  (pixel population)
-- **Resolution:** daily temporal, ~1 km spatial (matches WorldPop grid
-  used by IHME's appendix Section 2.1.6.7)
-- **For Colombia validation:** ~5.46 million rows for 1494 pixels ×
-  3650 days = 10 years
-- **Source for production:** Bias-corrected CMIP6 daily temperature,
-  from CCKP. Validation data came from Samuel's processed pipeline
-  (ERA5 historical).
+  (pixel population), optional `subloc_id`.
+- **For Colombia validation:** ~5.46 million rows for 1{,}494 pixels ×
+  3{,}650 days = 10 years (Samuel's bundled ERA5 historical at ~1 km,
+  matching WorldPop grid).
+- **Production source (CCKP CMIP6 daily, verified 2026-05-13):**
+  - S3: `https://wbg-cckp.s3.amazonaws.com/data/cmip6-daily-x0.25/{var}/{model-scenario}/`
+  - File-per-(model, scenario, year):
+    `timeseries-tas-daily-mean_cmip6-daily-x0.25_{model-scenario}_timeseries_mean_{year}.nc`
+    (~773 MB / file)
+  - **Grid:** 1{,}440 lon × 721 lat at 0.25°. Lat range -90..90 south-to-north;
+    lon range **-180..179.75** (CCKP applies `lonFlip`, not 0-360).
+  - **Variable name** matches filename prefix: `timeseries-tas-daily-mean`.
+  - **Units: °C** (not Kelvin — confirmed via annual-mean probe metadata).
+  - **Missing value:** 1e+20.
+  - **Calendar:** ⚠ varies by CMIP6 model (gregorian / 365_day / 360_day).
+    The annual climatology probe reports `gregorian`; daily files
+    per-model TBD until path-A daily file lands.
+  - **Models:** 34 in CCKP's archive (ACCESS-CM2, ACCESS-ESM1-5,
+    BCC-CSM2-MR, CanESM5, CMCC-ESM2, CNRM-CM6-1, EC-Earth3, …, UKESM1-0-LL).
+  - **Scenarios:** historical (1850-2014) + ssp126 / ssp245 / ssp370 / ssp585
+    (2015-2100).
+- **Adapter:** `global-scripts/util_convert_cckp_temperature.R` (added 2026-05-13)
+  converts NetCDF → pipeline RDS. Handles bbox subset to a `LOCATION_ID`,
+  optional admin-1 tagging via shapefile, calendar variants. Pixel-id encoded
+  as `lat_idx * 1440 + lon_idx` (stable across files / models).
 
 ### 3.4 Mortality
 
@@ -162,16 +179,25 @@ GBD-location granularity globally.
 
 ### 3.6 Population
 
-- **Currently:** Bundled with the temperature input (`pop` column in
-  `data/temperature/{LOCATION_ID}_daily_temp.rds`)
-- **For production:** Two separate population layers needed:
-  1. **Gridded population** (~1 km) for spatial weighting in the PAF
-     computation. Currently WorldPop. SSP-aligned options exist
-     (Jones-O'Neill / NCAR, Murakami) — open decision.
-  2. **Location × age × sex population** for converting rates to
-     counts in YLL and burden output. Currently national life-table-paired.
-     SSP-aligned options: IHME Vollset (if shared), Wittgenstein Centre,
-     IIASA SSP database — open decision.
+- **Bundled with temperature input:** `pop` column on
+  `data/temperature/{LOCATION_ID}_daily_temp.rds`.
+- **Production source (CCKP gridded, verified 2026-05-13):**
+  - S3: `https://wbg-cckp.s3.amazonaws.com/data/pop-x0.25/popcount/{dataset}-{scenario}/`
+  - Dataset: `gpw-v4-rev11` (Gridded Population of the World v4 rev 11).
+  - **SSP scenarios** in CCKP: ssp119 / ssp126 / ssp245 / ssp370 / ssp585 + historical.
+  - **Same grid as CCKP CMIP6 temp** (1{,}440 × 721 at 0.25°) — no regridding needed.
+  - File-per-(dataset, scenario, year-range):
+    `climatology-popcount-annual-mean_pop-x0.25_{dataset}-{scenario}_climatology_mean_{ystart}-{yend}.nc`
+    (~4.25 MB / file).
+  - **Variable name:** `climatology-popcount-annual-mean`. **Units:** persons per pixel
+    (count, not density). **Missing value:** 1e+20.
+  - **Sanity check (2020-2039 ssp245):** global sum 8.25B, max-pop pixel 10.7M.
+- **Two population roles in the math** (same SSP-gridded dataset serves both):
+  1. **Gridded population** for spatial weighting in the within-subloc PAF.
+  2. **Aggregated location × (age × sex) population** for converting rates
+     to counts. For the age × sex decomposition we still need an age/sex
+     distribution — open decision (Wittgenstein / IIASA SSP / IHME Vollset
+     if shared).
 
 ---
 
@@ -286,10 +312,10 @@ will need its own benchmarking.
 | ~~O1~~ | ~~Subnational aggregation level~~ | **Closed 2026-05-07.** Subnational dimension carried through PAF / SEV / burden / YLL. Verification mode adds a depto-day attribution branch. See locked decisions above. |
 | O2 | Heat / cold split for projections | IHME does not separate them. Our pipeline does. To report heat-attributable and cold-attributable separately, we apply our pipeline's split proportions to the combined IHME-anchored projection. To be confirmed in the deliverable spec. |
 | O3 | 17-vs-12 cause coverage | Burkart fits 17 causes; IHME's GBD 2021 forecast module fits 12. Five Burkart causes have no temperature signal in IHME's forecasts. Decision: include forward-only via our pipeline (with disclosure) or exclude. |
-| O4 | SSP-aligned gridded population source | Options: WorldPop held constant at 2020, WorldPop forward-extrapolated (no SSP variation), Jones-O'Neill / NCAR SSP-aligned 1km, Murakami SSP-aligned 1km. Impact on within-country spatial weighting is bounded but unverified. |
+| O4 | SSP-aligned gridded population source | CCKP publishes GPW v4 rev 11 with SSP scenarios on the same 0.25° grid as their CMIP6 temperature (verified 2026-05-13) — natural plug-in choice for grid consistency. Other options still on the table: WorldPop fixed-2020, Jones-O'Neill / NCAR, Murakami. Impact on within-country spatial weighting is bounded but unverified across choices. |
 | O5 | SSP-aligned location × age × sex population for rates → counts | Vollset (from IHME if shared, otherwise external Wittgenstein / IIASA SSP database). Determines whether projections include SSP demographic differences in the level. |
 | O6 | TMREL zone migration approach for forward projections | Pixels can move between mean-annual-temperature zones under warming. IHME uses a 10-year rolling mean to assign zones plus inter-zone interpolation for boundary cases. Our pipeline currently uses an annual mean per pixel-year with no inter-zone smoothing. Open methodology design. |
-| O7 | Bias-correction recipe for CMIP6 → ERA5 | IHME aligns at 2021. CCKP may have its own bias-corrected CMIP6 product — alignment of methodology is open. |
+| O7 | Bias-correction recipe for CMIP6 → ERA5 | CCKP's `cmip6-daily-x0.25` product is already downscaled and bias-corrected to 0.25° (verified 2026-05-13: tas attributes mention `tasmax & dtr` derivation and CMOR processing). IHME aligns at 2021 with their own bias-correction layer — open question whether CCKP's pre-applied correction matches IHME's, and how to reconcile if not. |
 | O8 | Forecast horizon | 2050 matches IHME's appendix horizon. 2100 requires a Wittgenstein-demographics + GBD-Foresight-cause-shares + Burkart-ERFs hybrid approach (sketched in `gbd/ihme-plan-b-prep.tex`, not implemented). |
 | O9 | Uncertainty representation in deliverable | Full draws? Mean + 95% CI? At what aggregation level? |
 | O10 | Workflow B mechanics | Anchor on IHME rates, apply our pipeline's cross-SSP scalar ratio, multiply by SSP-aligned population. Several open methodology questions for IHME tied to this — see `handoff-ihme-temp-unscaling-validity.md` and the in-flight rate ask. |
@@ -335,10 +361,12 @@ In rough priority order:
 1. ~~**Subnational refactor.** Add depto / admin-1 dimension through
    PAF, SEV, burden, YLL. Closes the 5–10% Colombia validation gap and
    is independently needed for global accuracy.~~ **Done 2026-05-07.**
-2. **Forward-projection inputs.** Pipeline currently expects historical
-   pixel-day temperature in a specific format. CMIP6 projection inputs
-   from CCKP need to plug in here — schema likely matches but may need
-   adapter.
+2. **Forward-projection inputs.** CCKP CMIP6 daily temperature + GPW
+   SSP gridded population formats verified 2026-05-13; adapter scaffolded
+   at `global-scripts/util_convert_cckp_temperature.R`. Calendar-variant
+   handling (gregorian / 365_day / 360_day) drafted but pending verification
+   against an actual daily file. Per-location run-driver loop (over years,
+   models, scenarios) still TBD.
 3. **IHME data integration.** Once the rate-level data ask is fulfilled,
    the Workflow B mechanics need to be wired into the pipeline (apply
    our cross-SSP scalar ratio to IHME's published rates, multiply by

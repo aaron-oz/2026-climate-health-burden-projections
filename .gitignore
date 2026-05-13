@@ -52,3 +52,6 @@ Thumbs.db
 # Keep the tex source and markdown
 !*.tex
 !*.md
+data/cmip6-scratch/
+data/shapefiles/gadm-colombia/
+data/shapefiles/colombia_divipola_admin1.gpkg
