@@ -362,11 +362,16 @@ In rough priority order:
    PAF, SEV, burden, YLL. Closes the 5–10% Colombia validation gap and
    is independently needed for global accuracy.~~ **Done 2026-05-07.**
 2. **Forward-projection inputs.** CCKP CMIP6 daily temperature + GPW
-   SSP gridded population formats verified 2026-05-13; adapter scaffolded
-   at `global-scripts/util_convert_cckp_temperature.R`. Calendar-variant
-   handling (gregorian / 365_day / 360_day) drafted but pending verification
-   against an actual daily file. Per-location run-driver loop (over years,
-   models, scenarios) still TBD.
+   SSP gridded population formats verified 2026-05-13; adapter at
+   `global-scripts/util_convert_cckp_temperature.R`. Calendar-variant
+   handling verified end-to-end against ACCESS-CM2 (proleptic_gregorian),
+   BCC-CSM2-MR (365_day), HadGEM3-GC31-LL (360_day) — 2026-05-26.
+   Run-driver at `global-scripts/util_run_cckp_pipeline.R` (2026-05-27):
+   iterates a (model × scenario × year) grid for one location, caches
+   NetCDF downloads, writes per-combo RDS at
+   `data/temperature/cckp/{LOCATION_ID}/{model}-{scenario}/daily_temp_{year}.rds`,
+   skips already-processed combos (idempotent), and emits a CSV
+   manifest. Sequential only; parallelism still open.
 3. **IHME data integration.** Once the rate-level data ask is fulfilled,
    the Workflow B mechanics need to be wired into the pipeline (apply
    our cross-SSP scalar ratio to IHME's published rates, multiply by
