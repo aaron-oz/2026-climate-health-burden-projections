@@ -35,6 +35,11 @@ suppressPackageStartupMessages({
   library(sf)
 })
 
+# Some GBD shapefile polygons have invalid loops under spherical geometry
+# (e.g., Brazilian state boundaries trip s2 with duplicate-vertex errors).
+# Planar geometry is fine for the bbox/intersect work we do here.
+sf_use_s2(FALSE)
+
 # =============================================================================
 # Constants for the CCKP 0.25° grid
 # =============================================================================

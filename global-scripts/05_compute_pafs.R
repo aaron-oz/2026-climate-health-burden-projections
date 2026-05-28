@@ -59,14 +59,17 @@ if (USE_DRAWS) {
     log_msg("RR curves rescaled to TMREL")
   }
 
-  # --- Aggregate temperature to (subloc, zone, daily_temp_10, draw, year) ---
+  # --- Aggregate temperature to (subloc, zone, daily_temp_10, year) ---
+  # temp does not carry a draw dim unless temperature uncertainty is enabled
+  # (USE_DRAWS && temp_sd in the input); RR/TMREL draws are broadcast in via
+  # the merge with rr below.
   temp_agg <- temp[, .(pr = sum(pr, na.rm = TRUE), pop = sum(pop, na.rm = TRUE)),
-                   by = .(subloc_id, zone, daily_temp_10, draw, year)]
+                   by = .(subloc_id, zone, daily_temp_10, year)]
 
   # --- Merge aggregated temperature with RR ---
   pafs <- merge(temp_agg, rr,
-                by.x = c("zone", "daily_temp_10", "draw", "year"),
-                by.y = c("zone", "daily_temp", "draw", "year_id"),
+                by.x = c("zone", "daily_temp_10", "year"),
+                by.y = c("zone", "daily_temp",    "year_id"),
                 all.x = TRUE, allow.cartesian = TRUE)
 
   # --- Classify heat/cold ---
@@ -98,6 +101,12 @@ if (USE_DRAWS) {
   paf_wide[, paf_mean  := rowMeans(.SD, na.rm = TRUE), .SDcols = draw_cols]
   paf_wide[, paf_lower := apply(.SD, 1, quantile, 0.025, na.rm = TRUE), .SDcols = draw_cols]
   paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975, na.rm = TRUE), .SDcols = draw_cols]
+
+  # Hand downstream code a frame keyed the same way summary mode does, with
+  # paf_mean (and lower/upper for diagnostics). The full per-draw frame is
+  # in paf_wide and would also be saved if we wanted full propagation.
+  paf_results <- paf_wide[, .(year, subloc_id, acause, risk,
+                              paf_mean, paf_lower, paf_upper)]
 
   log_msg("Draw-level PAFs computed")
 
