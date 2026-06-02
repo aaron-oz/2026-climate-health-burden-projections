@@ -12,7 +12,34 @@ source("config.R")
 
 library(data.table)
 
-log_msg("Loading ERF curves from", ERF_DIR)
+# Cache key encodes the config that affects the saved object's schema.
+# At cluster scale, build erf_curves once into a shared location and let
+# subsequent workers reuse it — the CSV-read + log-RR-exponentiation takes
+# ~90 s for 1000 draws and is the dominant per-process pipeline overhead.
+mode_tag  <- if (USE_DRAWS) paste0("draws_N", N_DRAWS) else "summary"
+cache_dir   <- file.path(ERF_DIR, "cache")
+cache_file  <- file.path(cache_dir, paste0("erf_curves_", mode_tag, ".rds"))
+temp_limits_cache <- file.path(cache_dir, paste0("temp_limits_", mode_tag, ".rds"))
+target_erf    <- file.path(INTERMEDIATE_DIR, "erf_curves.rds")
+target_limits <- file.path(INTERMEDIATE_DIR, "temp_limits.rds")
+
+if (file.exists(cache_file) && file.exists(temp_limits_cache)) {
+  log_msg("Cached ERF found at ", cache_file, "; skipping rebuild")
+  if (!file.exists(target_erf) ||
+      file.info(cache_file)$mtime > file.info(target_erf)$mtime) {
+    file.copy(cache_file,        target_erf,    overwrite = TRUE)
+    file.copy(temp_limits_cache, target_limits, overwrite = TRUE)
+    log_msg("Copied cached ERF to ", target_erf)
+  } else {
+    log_msg("Intermediate ERF already current; nothing to copy")
+  }
+  # Skip diagnostic plots when reusing cache (they were generated at build
+  # time); just exit cleanly so the rest of the pipeline can proceed.
+  quit(save = "no")
+}
+
+log_msg("Loading ERF curves from", ERF_DIR, "(no cache; will populate ", cache_file, ")")
+dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Load all cause-specific curve files
 erf <- rbindlist(lapply(GBD_CAUSES, function(cause) {
@@ -70,11 +97,16 @@ if (USE_DRAWS) {
 # Store temperature limits per zone (for truncation in later scripts)
 temp_limits <- erf[, .(min_temp = min(daily_temp), max_temp = max(daily_temp)), by = zone]
 
-# Save
-saveRDS(erf, file.path(INTERMEDIATE_DIR, "erf_curves.rds"))
-saveRDS(temp_limits, file.path(INTERMEDIATE_DIR, "temp_limits.rds"))
+# Save to both the per-run intermediate path (consumed by 05 / 06) and the
+# shared cache (reused by subsequent pipeline runs with the same N_DRAWS /
+# USE_DRAWS configuration).
+saveRDS(erf, target_erf)
+saveRDS(temp_limits, target_limits)
+saveRDS(erf, cache_file)
+saveRDS(temp_limits, temp_limits_cache)
 
-log_msg("ERF curves saved to", file.path(INTERMEDIATE_DIR, "erf_curves.rds"))
+log_msg("ERF curves saved to ", target_erf,
+        " and cached to ", cache_file)
 
 # =============================================================================
 # Diagnostic plots (if enabled)

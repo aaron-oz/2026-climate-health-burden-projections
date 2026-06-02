@@ -380,6 +380,15 @@ In rough priority order:
 4. **Cluster-portable environment.** `renv` lockfile or container image
    to ensure CCKP's cluster R doesn't differ from the validated local
    environment.
+4a. **First Caspar-side timing benchmark.** Before committing to a
+   wall-clock for the production run, the first deliverable from
+   Caspar's cluster should be a one-combo (one location × one model ×
+   one year) timing of the pipeline with our final config (cause-
+   chunking on, 500 draws, shared ERF). Wall-clock on local desktop
+   transfers loosely to server CPUs (NUMA, memory bandwidth, BLAS
+   build, single-core clock all differ); a single hard measurement on
+   his hardware is worth more than any extrapolation. ~5 min of work,
+   anchors the rest of the schedule.
 5. **Methodology document.** One place that covers all the decisions
    above with the supporting reasoning. The CCKP team will want this
    for their own review and reproducibility records.

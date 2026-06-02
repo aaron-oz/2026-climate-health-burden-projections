@@ -53,9 +53,12 @@ DIAGNOSTICS_DIR <- file.path(OUTPUT_DIR, "diagnostics")
 USE_DRAWS <- FALSE
 
 # Number of draws (only used when USE_DRAWS = TRUE).
-# ERF curves have 1000 draws, but TMREL files only have 100 (tmrel_0 to tmrel_99).
-# When USE_DRAWS = TRUE, TMREL draws are recycled 10× to match. See 02_load_tmrel.R.
-N_DRAWS <- 1000
+# ERF curves have 1000 draws, TMREL files have 100 (recycled to N_DRAWS), and
+# IHME's mortality-rate forecasts come at 500 draws. Default to 500 to match
+# the rate-limiting input — running 1000 ERF draws against 500-draw rates is
+# wasted precision. Override via --n_draws=1000 if pure ERF-side uncertainty
+# propagation is the goal.
+N_DRAWS <- 500
 
 # Run descriptive/diagnostic plots (set FALSE to skip for production runs)
 RUN_DIAGNOSTICS <- TRUE

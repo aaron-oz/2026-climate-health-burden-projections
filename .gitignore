@@ -56,4 +56,5 @@ data/cmip6-scratch/
 data/shapefiles/gadm-colombia/
 data/shapefiles/colombia_divipola_admin1.gpkg
 data/temperature/cckp/
+data/erf/cache/
 output/cckp_run_manifest.csv
