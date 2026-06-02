@@ -42,56 +42,80 @@ setDT(erf); setDT(tmrel); setDT(temp); setDT(mort)
 # =============================================================================
 
 if (USE_DRAWS) {
-  log_msg("Running in DRAW mode (", N_DRAWS, " draws)")
+  log_msg("Running in DRAW mode (", N_DRAWS, " draws, cause-chunked)")
 
-  # --- Merge RR draws with TMREL draws ---
-  rr <- merge(erf, tmrel[, .(zone, year_id, draw, tmrel)],
-              by = c("zone", "draw"), all = TRUE, allow.cartesian = TRUE)
-
-  # --- Rescale RR to 1.0 at the TMREL ---
-  if (COLOMBIA_VERIFICATION) {
-    log_msg("COLOMBIA_VERIFICATION: skipping RR rescaling at TMREL")
-  } else {
-    rr[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
-       by = .(zone, acause, draw, year_id)]
-    rr[rr_ref > 0, rr := rr / rr_ref]
-    rr[, rr_ref := NULL]
-    log_msg("RR curves rescaled to TMREL")
-  }
-
-  # --- Aggregate temperature to (subloc, zone, daily_temp_10, year) ---
+  # --- Aggregate temperature once (no draw / cause dim) ---
   # temp does not carry a draw dim unless temperature uncertainty is enabled
-  # (USE_DRAWS && temp_sd in the input); RR/TMREL draws are broadcast in via
-  # the merge with rr below.
+  # (USE_DRAWS && temp_sd in the input). RR/TMREL draws and cause dim are
+  # broadcast in inside the per-cause loop below.
   temp_agg <- temp[, .(pr = sum(pr, na.rm = TRUE), pop = sum(pop, na.rm = TRUE)),
                    by = .(subloc_id, zone, daily_temp_10, year)]
 
-  # --- Merge aggregated temperature with RR ---
-  pafs <- merge(temp_agg, rr,
-                by.x = c("zone", "daily_temp_10", "year"),
-                by.y = c("zone", "daily_temp",    "year_id"),
-                all.x = TRUE, allow.cartesian = TRUE)
+  # Process one cause at a time. Peak memory at 1000 draws scales with
+  # (zones * daily_temps * subloc * year * draws) per chunk — ~17x smaller
+  # than materializing all causes at once, fitting on memory-constrained
+  # hosts. The intermediate per-cause PAFs are collapsed before rbinding.
+  causes <- sort(unique(erf$acause))
+  paf_per_cause <- vector("list", length(causes))
 
-  # --- Classify heat/cold ---
-  pafs[, risk := ifelse(daily_temp_10 < tmrel, "cold",
-                        ifelse(daily_temp_10 > tmrel, "heat", NA_character_))]
-  pafs <- pafs[!is.na(risk)]
+  for (i in seq_along(causes)) {
+    cause <- causes[i]
+    t0 <- Sys.time()
+    log_msg(sprintf("  [%d/%d] cause: %s", i, length(causes), cause))
 
-  # --- Compute PAFs per (subloc, draw, year, cause, risk) ---
-  if (COLOMBIA_VERIFICATION) {
-    pafs[, paf_contrib := pmax(0, fifelse(rr >= 1,
-                                          pr * (rr - 1) / rr,
-                                          pr * -1 * ((1/rr) - 1) / (1/rr)))]
-    paf_results <- pafs[, .(paf = sum(paf_contrib, na.rm = TRUE)),
-                        by = .(acause, risk, subloc_id, draw, year)]
-    log_msg("COLOMBIA_VERIFICATION: PAF contributions floored at 0 per row before summing")
-  } else {
-    paf_results <- pafs[, .(paf = sum(ifelse(rr >= 1,
+    erf_c <- erf[acause == cause]
+
+    # Merge RR(cause) draws with TMREL draws
+    rr_c <- merge(erf_c, tmrel[, .(zone, year_id, draw, tmrel)],
+                  by = c("zone", "draw"), allow.cartesian = TRUE)
+
+    # Rescale RR to 1.0 at the TMREL
+    if (COLOMBIA_VERIFICATION) {
+      # verification: skip rescaling (Samuel uses raw RR)
+    } else {
+      rr_c[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
+           by = .(zone, draw, year_id)]
+      rr_c[rr_ref > 0, rr := rr / rr_ref]
+      rr_c[, rr_ref := NULL]
+    }
+
+    # Merge aggregated temperature with this cause's RR
+    pafs_c <- merge(temp_agg, rr_c,
+                    by.x = c("zone", "daily_temp_10", "year"),
+                    by.y = c("zone", "daily_temp",    "year_id"),
+                    all.x = TRUE, allow.cartesian = TRUE)
+
+    pafs_c[, risk := ifelse(daily_temp_10 < tmrel, "cold",
+                            ifelse(daily_temp_10 > tmrel, "heat", NA_character_))]
+    pafs_c <- pafs_c[!is.na(risk)]
+
+    if (COLOMBIA_VERIFICATION) {
+      pafs_c[, paf_contrib := pmax(0, fifelse(rr >= 1,
                                               pr * (rr - 1) / rr,
-                                              pr * -1 * ((1/rr) - 1) / (1/rr)),
-                                      na.rm = TRUE)),
-                        by = .(acause, risk, subloc_id, draw, year)]
+                                              pr * -1 * ((1/rr) - 1) / (1/rr)))]
+      paf_per_cause[[i]] <- pafs_c[, .(acause = cause,
+                                       paf = sum(paf_contrib, na.rm = TRUE)),
+                                   by = .(risk, subloc_id, draw, year)]
+    } else {
+      paf_per_cause[[i]] <- pafs_c[, .(acause = cause,
+                                       paf = sum(ifelse(rr >= 1,
+                                                        pr * (rr - 1) / rr,
+                                                        pr * -1 * ((1/rr) - 1) / (1/rr)),
+                                                 na.rm = TRUE)),
+                                   by = .(risk, subloc_id, draw, year)]
+    }
+
+    rm(erf_c, rr_c, pafs_c)
+    invisible(gc(verbose = FALSE))
+    log_msg(sprintf("    chunk done in %.1fs", as.numeric(Sys.time() - t0, units = "secs")))
   }
+
+  if (COLOMBIA_VERIFICATION) {
+    log_msg("COLOMBIA_VERIFICATION: PAF contributions floored at 0 per row before summing")
+  }
+
+  paf_results <- rbindlist(paf_per_cause)
+  rm(paf_per_cause); invisible(gc(verbose = FALSE))
 
   # Reshape draws to wide and summarize per (year, subloc, cause, risk)
   paf_wide <- dcast(paf_results,
@@ -108,7 +132,7 @@ if (USE_DRAWS) {
   paf_results <- paf_wide[, .(year, subloc_id, acause, risk,
                               paf_mean, paf_lower, paf_upper)]
 
-  log_msg("Draw-level PAFs computed")
+  log_msg("Draw-level PAFs computed (cause-chunked)")
 
 # =============================================================================
 # SUMMARY MODE
