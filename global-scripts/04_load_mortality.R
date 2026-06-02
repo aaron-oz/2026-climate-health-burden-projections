@@ -17,17 +17,33 @@ library(data.table)
 log_msg("Loading mortality data for location", LOCATION_ID)
 
 # --- Load mortality data ---
-mort_file_rds <- file.path(MORTALITY_DIR, paste0(LOCATION_ID, "_mortality.rds"))
-mort_file_csv <- file.path(MORTALITY_DIR, paste0(LOCATION_ID, "_mortality.csv"))
-
-if (file.exists(mort_file_rds)) {
-  mort <- readRDS(mort_file_rds)
+# If MORTALITY_FILE is set (via --mortality_file=... or in config), use it.
+# Otherwise look for the canonical {LOCATION_ID}_mortality.{rds,csv} in
+# MORTALITY_DIR. Multiple files can be passed as a comma-separated list
+# (--mortality_file=file1,file2,...) to combine per-cause IHME forecasts
+# into one mortality frame.
+override <- if (exists("MORTALITY_FILE", envir = globalenv())) get("MORTALITY_FILE", envir = globalenv()) else NULL
+if (!is.null(override) && nzchar(as.character(override))) {
+  paths <- strsplit(as.character(override), ",", fixed = TRUE)[[1]]
+  log_msg("Using MORTALITY_FILE override(s): ", paste(paths, collapse = "; "))
+  parts <- lapply(paths, function(p) {
+    if (!file.exists(p)) stop(paste("MORTALITY_FILE override does not exist:", p))
+    if (grepl("\\.csv$", p, ignore.case = TRUE)) fread(p) else readRDS(p)
+  })
+  mort <- rbindlist(parts, use.names = TRUE, fill = TRUE)
   setDT(mort)
-} else if (file.exists(mort_file_csv)) {
-  mort <- fread(mort_file_csv)
 } else {
-  stop(paste("No mortality file found for location", LOCATION_ID,
-             "- expected", mort_file_rds, "or", mort_file_csv))
+  mort_file_rds <- file.path(MORTALITY_DIR, paste0(LOCATION_ID, "_mortality.rds"))
+  mort_file_csv <- file.path(MORTALITY_DIR, paste0(LOCATION_ID, "_mortality.csv"))
+  if (file.exists(mort_file_rds)) {
+    mort <- readRDS(mort_file_rds)
+    setDT(mort)
+  } else if (file.exists(mort_file_csv)) {
+    mort <- fread(mort_file_csv)
+  } else {
+    stop(paste("No mortality file found for location", LOCATION_ID,
+               "- expected", mort_file_rds, "or", mort_file_csv))
+  }
 }
 
 log_msg("Loaded", nrow(mort), "mortality rows")
