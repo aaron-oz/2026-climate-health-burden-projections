@@ -23,7 +23,9 @@ temp_limits_cache <- file.path(cache_dir, paste0("temp_limits_", mode_tag, ".rds
 target_erf    <- file.path(INTERMEDIATE_DIR, "erf_curves.rds")
 target_limits <- file.path(INTERMEDIATE_DIR, "temp_limits.rds")
 
-if (file.exists(cache_file) && file.exists(temp_limits_cache)) {
+cache_hit <- file.exists(cache_file) && file.exists(temp_limits_cache)
+
+if (cache_hit) {
   log_msg("Cached ERF found at ", cache_file, "; skipping rebuild")
   if (!file.exists(target_erf) ||
       file.info(cache_file)$mtime > file.info(target_erf)$mtime) {
@@ -33,13 +35,12 @@ if (file.exists(cache_file) && file.exists(temp_limits_cache)) {
   } else {
     log_msg("Intermediate ERF already current; nothing to copy")
   }
-  # Skip diagnostic plots when reusing cache (they were generated at build
-  # time); just exit cleanly so the rest of the pipeline can proceed.
-  quit(save = "no")
-}
-
-log_msg("Loading ERF curves from", ERF_DIR, "(no cache; will populate ", cache_file, ")")
-dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
+  # Cache hit: skip rebuild and diagnostics. Cannot `quit()` here because this
+  # script is sourced into run_location.R via `source(..., local = new.env())`
+  # and quit() would kill the whole pipeline process.
+} else {
+  log_msg("Loading ERF curves from", ERF_DIR, "(no cache; will populate ", cache_file, ")")
+  dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Load all cause-specific curve files
 erf <- rbindlist(lapply(GBD_CAUSES, function(cause) {
@@ -145,3 +146,4 @@ if (RUN_DIAGNOSTICS) {
 
   log_msg("ERF diagnostic plots saved to", DIAGNOSTICS_DIR)
 }
+}  # end of else (cache miss)

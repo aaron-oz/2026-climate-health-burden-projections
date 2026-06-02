@@ -18,17 +18,27 @@ library(data.table)
 log_msg("Loading temperature data for location", LOCATION_ID)
 
 # --- Load temperature data ---
-temp_file_rds <- file.path(TEMP_DIR, paste0(LOCATION_ID, "_daily_temp.rds"))
-temp_file_csv <- file.path(TEMP_DIR, paste0(LOCATION_ID, "_daily_temp.csv"))
-
-if (file.exists(temp_file_rds)) {
-  temp <- readRDS(temp_file_rds)
+# If TEMP_FILE is set (via --temp_file=... or in config), use it directly.
+# Otherwise look for the canonical {LOCATION_ID}_daily_temp.{rds,csv} in TEMP_DIR.
+override <- if (exists("TEMP_FILE", envir = globalenv())) get("TEMP_FILE", envir = globalenv()) else NULL
+if (!is.null(override) && nzchar(as.character(override))) {
+  override <- as.character(override)
+  if (!file.exists(override)) stop(paste("TEMP_FILE override does not exist:", override))
+  log_msg("Using TEMP_FILE override: ", override)
+  temp <- if (grepl("\\.csv$", override, ignore.case = TRUE)) fread(override) else readRDS(override)
   setDT(temp)
-} else if (file.exists(temp_file_csv)) {
-  temp <- fread(temp_file_csv)
 } else {
-  stop(paste("No temperature file found for location", LOCATION_ID,
-             "- expected", temp_file_rds, "or", temp_file_csv))
+  temp_file_rds <- file.path(TEMP_DIR, paste0(LOCATION_ID, "_daily_temp.rds"))
+  temp_file_csv <- file.path(TEMP_DIR, paste0(LOCATION_ID, "_daily_temp.csv"))
+  if (file.exists(temp_file_rds)) {
+    temp <- readRDS(temp_file_rds)
+    setDT(temp)
+  } else if (file.exists(temp_file_csv)) {
+    temp <- fread(temp_file_csv)
+  } else {
+    stop(paste("No temperature file found for location", LOCATION_ID,
+               "- expected", temp_file_rds, "or", temp_file_csv))
+  }
 }
 
 log_msg("Loaded", nrow(temp), "pixel-day rows")
