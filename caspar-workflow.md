@@ -29,9 +29,29 @@ https://github.com/aaron-oz/2026-climate-health-burden-projections
 
 ## 3. Set up the R environment
 
-We'll provide an `renv` lockfile and/or a container image to keep
-R / `data.table` / `sf` versions matching what we validated on. Main
-dependencies: `data.table`, `ncdf4`, `sf`, `readxl`.
+The repo ships an `renv` lockfile (`renv.lock`) that pins every package
+version we validated against. When you start R in the project directory,
+`.Rprofile` automatically activates renv. To install the locked versions
+on a fresh machine:
+
+```bash
+# From inside the project directory, first time only:
+Rscript -e 'install.packages("renv", repos="https://cloud.r-project.org")'
+Rscript -e 'renv::restore(prompt = FALSE)'
+```
+
+That pulls everything in `renv.lock` into a project-local library (under
+`renv/library/`, gitignored). Subsequent R sessions in the project will
+auto-activate it.
+
+R version: **4.5.2**. Main runtime dependencies pinned in the lockfile:
+`data.table`, `ncdf4`, `sf`, `readxl`, `ggplot2`, `jsonlite`,
+`RColorBrewer`, plus their transitive deps.
+
+If you'd rather use system-level R packages instead of renv's isolated
+library, delete `.Rprofile` from your clone and the auto-activation
+won't trigger. Then make sure your system has compatible package
+versions (the lockfile lists them).
 
 ## 4. Convert IHME CSVs to pipeline-format mortality
 
