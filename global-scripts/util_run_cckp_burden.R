@@ -37,7 +37,13 @@ defaults <- list(
   OUTPUT_ROOT_CCKP = file.path(RESULTS_DIR, "cckp"),
   BURDEN_MANIFEST = file.path(OUTPUT_DIR, "cckp_burden_manifest.csv"),
   USE_DRAWS_RUN   = TRUE,   # forwarded as --use_draws to run_location.R
-  N_DRAWS_RUN     = N_DRAWS # forwarded as --n_draws
+  N_DRAWS_RUN     = N_DRAWS,# forwarded as --n_draws
+  MORTALITY_FILE  = NULL    # forwarded as --mortality_file; comma-separated
+                            # list of per-cause IHME-derived RDS files
+                            # supported (04 rbinds them). When NULL, the
+                            # pipeline falls back to the canonical
+                            # data/mortality/{LOC}_mortality.rds (Samuel /
+                            # GBD-historical workflow).
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) {
@@ -96,6 +102,9 @@ run_one_combo <- function(loc, model, scen, year) {
             paste0("--n_draws=",    N_DRAWS_RUN),
             paste0("--temp_file=",  cckp_temp),
             "--run_diagnostics=FALSE")
+  if (!is.null(MORTALITY_FILE) && nzchar(as.character(MORTALITY_FILE))) {
+    args <- c(args, paste0("--mortality_file=", as.character(MORTALITY_FILE)))
+  }
 
   exit_code <- system2("Rscript", args,
                        stdout = file.path(out_dir, sprintf("run_%d.log", year)),

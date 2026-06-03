@@ -252,6 +252,80 @@ distrobox enter emacs-r -- Rscript global-scripts/util_compare_to_samuel.R
 emits the pass/fail diff against Samuel's published Colombia 2010-2019
 numbers.
 
+### 5.1 Workflow B: IHME-anchored projection chain
+
+The projection chain takes IHME's published rate forecasts as the
+mortality anchor and applies our pipeline's temperature signal under
+the chosen SSP-RCP scenario. The reference math is in
+`gbd/ihme-plan-b-prep.tex`. Two formulations are implemented:
+
+- **Formulation 2 (default; single pipeline run).** Counts
+  $m^T_{c,X,l,a,s,t} = \text{rate}_{c,\text{IHME}} \times \text{pop}_{l,a,s,t} \times \text{PAF}_{X,c,l,t}$.
+  The pipeline already produces this directly: if 04 is fed IHME-
+  derived counts (`rate × pop`) and 03 is fed CCKP scenario-X
+  temperature, then `burden_{LOC}.rds`'s `deaths_nonopt` column is the
+  Formulation-2 attributable burden.
+- **Formulation 4 (canonical; two pipeline runs + ratio).**
+  $m^T_{c,X} = m^T_{c,SSP2,\text{IHME}} \times (\tilde{S}^X_c / \tilde{S}^{SSP2}_c)$
+  where $\tilde{S}$ is our pipeline's attributable-PAF aggregate.
+  Requires running the pipeline twice (SSP2 reference + target X),
+  then applying `util_workflow_b_ratio.R` to combine with IHME counts.
+
+Operational chain (Formulation 2):
+
+```
+# 1. Convert IHME rate × pop forecasts to pipeline counts per cause
+Rscript global-scripts/util_convert_ihme_forecast.R \
+  --location_id=125 \
+  --cause_file=data/gbd-forecasts/ischemic_heart_disease.csv \
+  --acause=cvd_ihd
+
+# (repeat for the other 16 causes once their CSVs land)
+
+# 2. Pull CCKP CMIP6 daily temp + GPW SSP pop into pipeline format
+Rscript global-scripts/util_run_cckp_pipeline.R \
+  --location_id=125 \
+  --models=access-cm2-r1i1p1f1 \
+  --scenarios=ssp245 \
+  --years=2022-2050 \
+  --shapefile=data/shapefiles/GBD2023_mapping_final.shp
+
+# 3. Run the burden pipeline with IHME mortality + CCKP temp,
+#    one combo (model x scenario x year) at a time
+Rscript global-scripts/util_run_cckp_burden.R \
+  --location_id=125 \
+  --models=access-cm2-r1i1p1f1 \
+  --scenarios=ssp245 \
+  --years=2022-2050 \
+  --mortality_file=data/mortality/125_mortality_ihme_cvd_ihd.rds,...
+```
+
+Outputs land at
+`output/results/cckp/{LOCATION_ID}/{model}-{scenario}/burden_{year}.rds`.
+
+For Formulation 4, run step 3 twice (once with `--scenarios=ssp245` and
+once with the target scenario), then:
+
+```
+Rscript global-scripts/util_workflow_b_ratio.R \
+  --location_id=125 \
+  --ref_burden=output/results/cckp/125/access-cm2-r1i1p1f1-ssp245/burden_2030.rds \
+  --target_burden=output/results/cckp/125/access-cm2-r1i1p1f1-ssp585/burden_2030.rds \
+  --ihme_mortality=data/mortality/125_mortality_ihme_cvd_ihd.rds \
+  --output=output/results/workflow_b/125_ssp585_2030.rds
+```
+
+Output carries both `deaths_nonopt_F2` and `deaths_nonopt_F4` columns
+for direct comparison. F2 is the simpler interpretation; F4 is what
+the methodology doc canonically recommends.
+
+**Known simplifications of Formulation 2:** uses IHME's pop (implicit
+SSP2 demographics) for the count denominator rather than CCKP's SSP-X
+pop. CCKP's GPW SSP pop is only pixel-total (no age × sex × year
+breakdown), so a clean SSP-X count requires either (a) coarser
+population accounting at country-year level, or (b) an additional age
+× sex distribution source — see O5 in §7.
+
 ---
 
 ## 6. Compute footprint
