@@ -4,12 +4,17 @@
 #
 # Caspar's workflow:
 #   1. Download the 17 cause-specific CSVs and the population CSV from
-#      IHME's GBD Results Tool into data/gbd-forecasts/. Expected filenames
-#      are in config.R::IHME_CAUSE_FILES (edit there if IHME's UI gives
-#      different names).
-#   2. Run this script once. It reads each cause CSV ~once, iterates all
-#      ~205 IHME locations internally, and writes per-(location, cause)
-#      RDS files to data/mortality/{LOC}_mortality_ihme_{acause}{,_draws}.rds.
+#      IHME's GBD Results Tool into ANY directory he likes.
+#   2. Run this script with --source_dir=<that path>. It reads each cause
+#      CSV ~once, iterates all ~205 IHME locations internally, and writes
+#      per-(location, cause) RDS files to
+#      data/mortality/{LOC}_mortality_ihme_{acause}{,_draws}.rds.
+#
+# File-name matching: config.R::IHME_CAUSE_FILES has expected filenames per
+# cause, but those are used as SUBSTRING PATTERNS — so an IHME-UI-generated
+# name like "IHME-GBD_2021_DATA-ischemic_heart_disease-1.csv" still matches
+# the "ischemic_heart_disease" pattern for cvd_ihd. The discovered file map
+# is printed up front so any mismatches are visible before the run starts.
 #
 # Naive looping (calling util_convert_ihme_forecast.R 17 × 205 = 3,485
 # times) would re-read the 6 GB CSV ~205 times per cause. This batch script
@@ -19,10 +24,14 @@
 # re-run after a partial failure.
 #
 # Usage:
-#   Rscript global-scripts/util_convert_ihme_batch.R
-#   Rscript global-scripts/util_convert_ihme_batch.R --causes=cvd_ihd,cvd_stroke
-#   Rscript global-scripts/util_convert_ihme_batch.R --locations=125,135,102
-#   Rscript global-scripts/util_convert_ihme_batch.R --force=TRUE   # ignore cache
+#   Rscript global-scripts/util_convert_ihme_batch.R \
+#     --source_dir=/path/to/where/csvs/were/downloaded
+#   Rscript global-scripts/util_convert_ihme_batch.R \
+#     --source_dir=... --causes=cvd_ihd,cvd_stroke
+#   Rscript global-scripts/util_convert_ihme_batch.R \
+#     --source_dir=... --locations=125,135,102
+#   Rscript global-scripts/util_convert_ihme_batch.R \
+#     --source_dir=... --force=TRUE   # ignore existing outputs
 
 source("config.R")
 source("util_convert_ihme_forecast.R")
@@ -32,9 +41,10 @@ suppressPackageStartupMessages({
 })
 
 defaults <- list(
-  CAUSES    = paste(GBD_CAUSES, collapse = ","),
-  LOCATIONS = "",   # blank means "all locations from the IHME hierarchy"
-  FORCE     = FALSE
+  SOURCE_DIR = file.path(DATA_DIR, "gbd-forecasts"),
+  CAUSES     = paste(GBD_CAUSES, collapse = ","),
+  LOCATIONS  = "",   # blank means "all locations from the IHME hierarchy"
+  FORCE      = FALSE
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
@@ -148,6 +158,61 @@ batch_convert <- function() {
          paste(unknown_causes, collapse = ", "))
   }
 
+  source_dir <- as.character(SOURCE_DIR)
+  if (!dir.exists(source_dir)) {
+    stop("source_dir does not exist: ", source_dir)
+  }
+  log_msg("Scanning source dir: ", source_dir)
+  csvs_in_dir <- list.files(source_dir, pattern = "\\.csv$",
+                            full.names = TRUE, ignore.case = TRUE)
+  if (length(csvs_in_dir) == 0) {
+    stop("No CSV files found in source_dir: ", source_dir)
+  }
+
+  # Cause-file discovery: for each cause's expected filename, try (a) exact
+  # match in source_dir, then (b) substring match against the basename of
+  # files in source_dir. The basename of the expected filename (without
+  # extension) is the pattern. The first single match wins; multi-matches
+  # warn and pick the first.
+  discover_file <- function(expected_filename) {
+    exact <- file.path(source_dir, expected_filename)
+    if (file.exists(exact)) return(exact)
+    pattern <- tools::file_path_sans_ext(basename(expected_filename))
+    matches <- csvs_in_dir[grepl(pattern, basename(csvs_in_dir),
+                                  fixed = TRUE, ignore.case = TRUE)]
+    if (length(matches) == 0) return(NA_character_)
+    if (length(matches) >  1) {
+      warning(sprintf("Multiple files match '%s' (using first): %s",
+                      pattern, paste(basename(matches), collapse = ", ")))
+    }
+    matches[1]
+  }
+
+  # Build cause -> file map and print before any heavy work.
+  cause_file_map <- vapply(causes,
+    function(c) discover_file(IHME_CAUSE_FILES[[c]]),
+    character(1))
+  pop_file_path <- discover_file("population.csv")
+
+  cat("\n--- File discovery ---\n")
+  cat(sprintf("%-18s | %-50s | %s\n", "cause", "expected pattern", "matched file"))
+  cat(strrep("-", 95), "\n", sep = "")
+  for (c in causes) {
+    cat(sprintf("%-18s | %-50s | %s\n",
+                c, IHME_CAUSE_FILES[[c]],
+                if (is.na(cause_file_map[c])) "*** NOT FOUND ***"
+                else basename(cause_file_map[c])))
+  }
+  cat(sprintf("%-18s | %-50s | %s\n",
+              "(population)", "population.csv",
+              if (is.na(pop_file_path)) "*** NOT FOUND ***"
+              else basename(pop_file_path)))
+  cat("\n")
+  if (is.na(pop_file_path)) {
+    stop("Population file not found in ", source_dir,
+         ". Expected a CSV whose name contains 'population'.")
+  }
+
   age_map <- build_age_map()
   loc_map <- build_loc_map(file.path(PROJECT_ROOT, "from-samuel",
                                      "IHME_GBD_2023_HIERARCHIES_Y2025M10D23.XLSX"))
@@ -162,19 +227,13 @@ batch_convert <- function() {
                   length(causes), length(location_ids),
                   length(causes) * length(location_ids)))
 
-  pop_file_path <- file.path(DATA_DIR, "gbd-forecasts", "population.csv")
-  if (!file.exists(pop_file_path)) {
-    stop("Pop file not found: ", pop_file_path)
-  }
-
   summary_rows <- list()
   for (i in seq_along(causes)) {
     cause <- causes[i]
-    cause_file_path <- file.path(DATA_DIR, "gbd-forecasts",
-                                 IHME_CAUSE_FILES[[cause]])
-    if (!file.exists(cause_file_path)) {
-      log_msg(sprintf("[%s] CAUSE FILE NOT FOUND at %s -- skipping",
-                      cause, cause_file_path))
+    cause_file_path <- cause_file_map[cause]
+    if (is.na(cause_file_path)) {
+      log_msg(sprintf("[%s] CAUSE FILE NOT FOUND (pattern '%s') -- skipping",
+                      cause, IHME_CAUSE_FILES[[cause]]))
       summary_rows[[i]] <- data.table(acause = cause, done = 0L, skipped = 0L,
                                       missing = NA, file_missing = TRUE)
       next
