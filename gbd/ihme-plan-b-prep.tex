@@ -1,0 +1,154 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\title{IHME Plan B: Climate Burden Projections via Back-Out and Re-Multiply}
+\author{Prep brief for IHME call}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+
+Charlie's proposal leverages GBD 2021 forecasted mortality (reference scenario, SSP2-RCP4.5) as a baseline, then re-attributes temperature burden under alternative SSP-RCP climate scenarios using our own Burkart-2021-based pipeline. Mathematically: divide GBD's published cause-specific mortality $m^T$ by the implicit SSP2 temperature scalar $S^{SSP2}_{temp}$ baked into it, then re-multiply by an SSP-X scalar we compute from alternative climate inputs.
+
+This brief covers (i) the mathematical setup, (ii) the operational procedure, (iii) why we use our Burkart ERFs rather than GBD's, (iv) why we don't need IHME population data, and (v) the minimum data ask for the call.
+
+\section{Mathematical setup}
+
+GBD forecasts cause-specific mortality as (eqs.~43--44 of the GBD 2021 forecast appendix):
+\begin{equation}
+\ln(m^T_{c,l,a,s,t}) = \ln(m^U_{c,l,a,s,t}) + \ln(S_{c,l,a,s,t}) + \varepsilon_{c,l,a,s,t}
+\end{equation}
+where $m^T$ is total cause-specific mortality, $m^U$ is risk-deleted ("underlying") mortality driven by SDI and temporal trends, $S = 1/(1 - \text{PAF}_\text{total})$ is the all-risk scalar, and $\varepsilon$ is residual.
+
+Within GBD's mediation DAG, temperature is a non-mediated risk that enters the all-risk PAF aggregation as a single multiplicative factor:
+\begin{equation}
+1 - \text{PAF}_\text{total} = (1 - \text{PAF}_{temp}) \times \prod_\text{others}(1 - \text{PAF}_\text{other})
+\end{equation}
+Therefore $S = S_{temp} \times S_{ee}$, where $S_{temp} = 1/(1 - \text{PAF}_{temp})$ and $S_{ee}$ collects every other risk factor.
+
+In log space:
+\begin{equation}
+\ln(m^T) = \ln(m^U) + \ln(S_{temp}) + \ln(S_{ee}) + \varepsilon
+\end{equation}
+This decomposition is exact, conditional on temperature being non-mediated --- which we verified against the appendix (temperature appears in no mediation matrix in Figure F).
+
+\section{Workflow B: self-consistent ratio}
+
+We compute both $\tilde{S}^{SSP2}_{temp}$ and $\tilde{S}^X_{temp}$ using \emph{our} pipeline (Burkart ERFs, WorldPop, bias-corrected CMIP6). The projection under any alternative SSP-X is:
+\begin{equation}
+\boxed{m^T_{c,X} = m^T_{c,SSP2,\text{GBD}} \times \frac{\tilde{S}^X_{temp,c}}{\tilde{S}^{SSP2}_{temp,c}}}
+\end{equation}
+
+\textbf{Key property:} pipeline-specific drift (different ERFs, different bias correction, different population recipe) appears \emph{identically} in numerator and denominator and cancels in the ratio. The result is internally consistent --- our predicted SSP-X mortality is anchored to GBD's SSP2 baseline level via $m^T_{c,SSP2,\text{GBD}}$, while the climate-scenario differential is purely our pipeline's signal.
+
+\subsection{Operational steps}
+
+For each cause $c$ (17 Burkart causes), location $l$, age $a$, sex $s$, year $t \in [2022, 2050]$, draw $d \in [1, 500]$:
+
+\begin{enumerate}
+\item \textbf{Pull GBD's published $m^T_{c,SSP2}$} (cause-specific mortality counts under reference scenario, all 500 draws).
+\item \textbf{Compute $\tilde{S}^{SSP2}_{temp,c,l,t}$:} Apply Burkart ERFs and Burkart-derived TMRELs to bias-corrected CMIP6 SSP2-RCP4.5 daily temperature. Compute pixel-day PAFs, population-weight to GBD location level using WorldPop, aggregate over the year.
+\item \textbf{Compute $\tilde{S}^X_{temp,c,l,t}$:} Same pipeline, SSP-X CMIP6 inputs. Use SSP-aligned gridded population if available; otherwise extrapolated WorldPop.
+\item \textbf{Construct SSP-X mortality (draw level):}
+  \begin{equation}
+  m^T_{c,X,l,a,s,t,d} = m^T_{c,SSP2,\text{GBD},l,a,s,t,d} \times \frac{\tilde{S}^X_{temp,c,l,t,d}}{\tilde{S}^{SSP2}_{temp,c,l,t,d}}
+  \end{equation}
+\item \textbf{Heat-attributable burden:}
+  \begin{equation}
+  \text{HA}_{c,X} = m^T_{c,X} \times \left(1 - \frac{1}{\tilde{S}^{X,\text{heat-only}}_{temp,c}}\right)
+  \end{equation}
+  using heat-only PAFs computed from the same pipeline.
+\item \textbf{All-cause SSP-X mortality} (for total-mortality reporting):
+  \begin{equation}
+  m^T_{\text{all},X} = m^T_{\text{all},SSP2,\text{GBD}} + \sum_{c \in 17} m^T_{c,SSP2,\text{GBD}} \times \left(\frac{\tilde{S}^X_{temp,c}}{\tilde{S}^{SSP2}_{temp,c}} - 1\right)
+  \end{equation}
+  Adjusts only the 17 temperature-sensitive causes; the other ${\sim}260$ causes are unchanged from SSP2 baseline (subsumed in the all-cause SSP2 baseline).
+\item \textbf{Aggregate} across causes, locations, ages, sexes for reporting.
+\end{enumerate}
+
+\section{Why Burkart ERFs, not GBD's forecast ERFs}
+
+\begin{itemize}
+\item Burkart 2021: 9 countries, 64.9M deaths, 17 causes met inclusion criteria.
+\item GBD 2021 forecast: 8 countries, 58.9M deaths, 12 causes met inclusion criteria.
+\end{itemize}
+Same MR-BRT methodology, same monotonicity priors, but different data subsets and cause-selection thresholds. Different fitted surfaces.
+
+\textbf{Implications of using Burkart throughout:}
+\begin{itemize}
+\item \textbf{Pipeline drift cancels in ratios, differences, and trends.} For cross-scenario, cross-region, or temporal comparisons, the calibration factor $r_c = S^{SSP2}_{\text{GBD},c}/\tilde{S}^{SSP2}_c$ multiplies both terms equivalently and drops out (or nearly so, in the multiplicative-scaling case).
+\item \textbf{Absolute levels carry small calibration drift.} Likely within $\pm 5\%$ for moderate exposures. Could be larger at extreme high-T tails --- but capping the forecast horizon at 2050 keeps us within the historical exposure envelope where both ERFs were fit.
+\item \textbf{17 vs 12 cause coverage.} Our totals exceed what a strict GBD-12-cause analysis would produce. Methodology disclosure must flag this --- our heat-attributable totals aren't directly comparable to GBD-published numbers without adjustment.
+\end{itemize}
+
+The deliverable is built around comparisons (SSP-X vs SSP2 baseline, heat-attributable as a fraction of all-cause, regional or temporal differentials). Calibration drift cancels for these.
+
+\section{Why we don't need IHME population data}
+
+The forward computation of $\tilde{S}^X_{temp}$ requires \emph{gridded} (1km) population to weight pixel-day PAFs up to the GBD location level. \textbf{This gridded population does not need to come from GBD.}
+
+Three reasons:
+\begin{enumerate}
+\item \textbf{Workflow B doesn't require replication.} Same cancellation argument as for ERFs: WorldPop-vs-GBD-population drift appears in both numerator ($\tilde{S}^X$) and denominator ($\tilde{S}^{SSP2}$) of our ratio and cancels.
+
+\item \textbf{WorldPop is public and the recipe is documented.} GBD used WorldPop Global 1 unconstrained 1km mosaic (last updated November 2021). The annualization recipe in their appendix (p.~26): linear interpolation between 5-year bins (2000, 2005, 2010, 2015, 2020), 2000--2005 growth rate for back-casting before 2000. We can recreate this without their involvement.
+
+\item \textbf{GBD's rasters wouldn't help for SSP-X anyway.} GBD extrapolated WorldPop forward without SSP-specific demographic redistribution (urbanization patterns differ across SSPs). For SSP-X projection, we'd ideally use SSP-aligned gridded population (Jones-O'Neill or Murakami) --- which GBD doesn't have either. Their rasters would only help with the SSP2 baseline leg, where drift cancels in the ratio anyway.
+\end{enumerate}
+
+What we \emph{do} want is the methodology question on how exactly they handled WorldPop annualization and forecast extrapolation --- a clarifying answer, not a data export.
+
+\textbf{For rate denominators} (if rates are reported), GBD's all-cause mortality \emph{count} (item~2 in the ask) plus a separately-sourced population gives us rates. Or we report counts as the primary metric and avoid the rate-denominator question entirely.
+
+\section{Minimum data ask}
+
+\subsection{Tier 1: must-have}
+
+\begin{enumerate}
+\item \textbf{Cause-specific mortality forecasts under SSP2-RCP4.5}, all 17 Burkart causes, by GBD location $\times$ age group $\times$ sex $\times$ year, 2022--2050, all 500 posterior draws.
+\item \textbf{All-cause mortality forecasts under SSP2-RCP4.5}, same dimensions and granularity, all 500 draws.
+\end{enumerate}
+
+That's it. Two series.
+
+\subsection{Tier 2: methodology questions (no data export)}
+
+\begin{enumerate}
+\item Are TMREL temperature zones fixed at a historical baseline year, or do they shift annually as pixels migrate between mean-annual-temperature zones under warming?
+\item Does the Section~6 post-processing alignment with GBD~2021 estimates touch the temperature scalar, or only the final cause-specific mortality at GBD-location scale?
+\item How exactly was WorldPop annualized, smoothed, and forecast-extrapolated for the temperature pipeline?
+\item Are heat-attributable and cold-attributable PAFs retained separately at the location-year level, or only the combined non-optimal-temperature PAF?
+\item Bias-correction recipe specifics: historical reference period, applied to absolute T or anomalies, GCMs averaged or kept separate?
+\item Are temperature scalars all-age or age-stratified within a location-year?
+\end{enumerate}
+
+\subsection{What we are NOT asking for}
+
+\begin{itemize}
+\item GBD's $S^{SSP2}_{temp}$ (Workflow B doesn't need it; likely not saved anyway).
+\item GBD's MR-BRT ERF surfaces or TMRELs (we use Burkart 2021 versions).
+\item GBD's bias-corrected SSP2 temperature rasters (we apply our own bias correction to public CMIP6).
+\item GBD's WorldPop processing or population aggregates (we pull WorldPop directly).
+\item Other risk factors' PAFs (we treat $S_{ee}$ as constant across SSPs by construction).
+\item Cause-specific mortality for the other ${\sim}270$ causes (only 17 + all-cause needed).
+\end{itemize}
+
+\section{Bottom line for the call}
+
+\begin{itemize}
+\item \textbf{The ask is light:} two mortality series, draw level, under their reference scenario. Almost certainly already exists in their Foresight outputs.
+\item \textbf{No bespoke pipeline reproduction, no custom rasters, no bespoke ERF/TMREL exports.} We do all the temperature-pipeline work ourselves on public CMIP6 + Burkart ERFs + WorldPop.
+\item \textbf{Methodological clarifications matter as much as the data} --- the six questions above shape how cleanly we can interpret residual differences between our reproduction and their published numbers.
+\item \textbf{We've accepted small calibration drift on absolute levels} in exchange for using Burkart ERFs and our own population processing. The deliverable is built around comparisons, where this drift largely cancels.
+\item \textbf{Forecast horizon capped at 2050} (matches GBD's). Extension to 2100 would be a separate methodological problem (likely the Wittgenstein-demographics + GBD-Foresight-cause-shares + Burkart-ERFs hybrid we discussed earlier).
+\end{itemize}
+
+\end{document}

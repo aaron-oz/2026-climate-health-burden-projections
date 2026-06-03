@@ -58,3 +58,32 @@ data/shapefiles/colombia_divipola_admin1.gpkg
 data/temperature/cckp/
 data/erf/cache/
 output/cckp_run_manifest.csv
+output/cckp_burden_manifest.csv
+
+# Personal notes and meeting prep — not for collaborators
+aoz-notes.org
+samuel-meeting-agenda.md
+
+# Duplicate / stale scratch
+GBD2023 Shape/
+daily-cmip6-download (1).R
+heatwaves/
+
+# Emacs autosaves / backup files (note: leading # must be escaped or git
+# treats the whole line as a comment)
+\#*\#
+.\#*
+
+# Copyrighted / not-for-redistribution references
+from-samuel/burkart-paper.txt
+gbd/gbd-appendix.txt
+
+# Shapefile dir clutter — symlinks into the duplicate GBD2023 Shape/ tree,
+# auxiliary metadata (.CPG, .shp.xml, etc.), and one-off test scripts. The
+# canonical GBD shapefile is downloaded fresh per user; nothing here should
+# be tracked except .gitkeep.
+data/shapefiles/GBD2023_mapping_final.*
+data/shapefiles/test-gbd-*
+data/shapefiles/*.xml
+data/shapefiles/*.CPG
+data/mortality/citation.txt
