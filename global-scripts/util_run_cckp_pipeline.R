@@ -92,16 +92,27 @@ cckp_pop_url <- function(pop_dataset, year, scenario) {
 ensure_download <- function(url, cache_dir) {
   dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
   dest <- file.path(cache_dir, basename(url))
-  if (file.exists(dest) && file.info(dest)$size > 0) return(dest)
+  if (file.exists(dest) && file.info(dest)$size > 0) {
+    log_msg("Cached (skip download): ", basename(url),
+            " [", format(file.info(dest)$size / 1e6, digits = 4), " MB]")
+    return(dest)
+  }
   log_msg("Downloading ", basename(url))
+  t0 <- Sys.time()
   status <- system2("curl",
                     c("-sS", "--retry", "5", "--retry-all-errors",
                       "--retry-delay", "10", "--continue-at", "-",
                       "--max-time", "7200",
                       "-o", shQuote(dest), shQuote(url)))
+  elapsed <- as.numeric(Sys.time() - t0, units = "secs")
   if (status != 0 || !file.exists(dest) || file.info(dest)$size == 0) {
     stop("Download failed for ", url, " (curl exit ", status, ")")
   }
+  size_mb <- file.info(dest)$size / 1e6
+  throughput <- if (elapsed > 0) size_mb / elapsed else NA_real_
+  log_msg(sprintf("Downloaded %s [%.1f MB] in %.1fs (%.1f MB/s)",
+                  basename(url), size_mb, elapsed,
+                  if (is.na(throughput)) 0 else throughput))
   dest
 }
 
