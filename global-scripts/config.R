@@ -132,6 +132,27 @@ GBD_CAUSES <- c(
   "resp_copd"         # Chronic obstructive pulmonary disease
 )
 
+# Subset of GBD_CAUSES for which IHME's GBD 2021 forecast applies a
+# temperature-scalar adjustment internally. Workflow B's reference/target
+# ratio (S_X / S_SSP2) is meaningful only for these causes -- it cancels
+# out the temperature signal IHME already baked into the forecast and
+# replaces it with our scenario-X signal. The other 5 causes
+# (CAUSES_IHME_NOT_TEMP_SCALED below) get the identity ratio (1.0) so the
+# Workflow B formula collapses to plain m_IHME * PAF_X for them.
+#
+# *** PLACEHOLDER LIST -- needs confirmation from IHME via Charlie. ***
+# This is a best guess based on Burkart 2021 vs GBD 2021 forecast cause
+# coverage; we should replace with the authoritative list before any
+# production run.
+CAUSES_IHME_TEMP_SCALED <- c(
+  "ckd", "cvd_cmp", "cvd_htn", "cvd_ihd", "cvd_stroke", "diabetes",
+  "inj_drowning", "inj_homicide", "inj_othunintent", "inj_suicide",
+  "lri", "resp_copd"
+)
+CAUSES_IHME_NOT_TEMP_SCALED <- setdiff(GBD_CAUSES, CAUSES_IHME_TEMP_SCALED)
+# Expected: c("inj_animal", "inj_disaster", "inj_mech",
+#             "inj_trans_other", "inj_trans_road") — 5 causes
+
 # Temperature zone range (Burkart uses 6-28°C)
 TEMP_ZONE_MIN <- 6
 TEMP_ZONE_MAX <- 28

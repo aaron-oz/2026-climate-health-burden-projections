@@ -1,36 +1,48 @@
 # util_workflow_b_ratio.R — Apply the Workflow B cross-scenario ratio to
-# IHME-derived mortality counts.
+# IHME-derived mortality counts and return attributable burden under scenario X.
 #
 # Reference: gbd/ihme-plan-b-prep.tex, "Workflow B: self-consistent ratio".
 #
-# Math:
-#   m^T_{c,X,l,a,s,t} = m^T_{c,SSP2,IHME}{l,a,s,t} * (S_X(l,t,c) / S_SSP2(l,t,c))
+# Math, per cause:
 #
-# where S_Y(l,t,c) is our pipeline's pop-weighted attributable-PAF aggregate
-# at (location, year, cause) under scenario Y. The ratio cancels pipeline-
-# specific drift (different ERFs / bias correction / pop recipe than IHME)
-# because both numerator and denominator come from the same pipeline.
+#   For causes in CAUSES_IHME_TEMP_SCALED (IHME applied a temp-scalar to the
+#   forecast for these):
+#     scale_factor(c, l, t) = S_X(c, l, t) / S_SSP2(c, l, t)
+#     m_X(c, l, a, s, t)    = m_IHME(c, l, a, s, t) * scale_factor(c, l, t)
+#     deaths_heat_X         = m_X * paf_heat_X
+#     deaths_cold_X         = m_X * paf_cold_X
+#
+#   For causes in CAUSES_IHME_NOT_TEMP_SCALED (IHME did not apply a temp
+#   scalar), Workflow B's ratio is the identity (S_SSP2 = 1 conceptually
+#   because there's no IHME temp signal to cancel), so:
+#     scale_factor = 1
+#     deaths_heat_X         = m_IHME * paf_heat_X
+#     deaths_cold_X         = m_IHME * paf_cold_X
+#
+# S_Y is the pipeline's pop-weighted attributable-PAF aggregate at
+# (year, subloc, cause) under scenario Y. The ratio cancels pipeline-specific
+# calibration drift (different ERFs / bias correction / pop recipe than IHME)
+# for the temp-scaled causes -- both numerator and denominator come from the
+# same pipeline and the constant factor drops out.
+#
+# Heat and cold attributable burden are reported separately. Users can sum
+# them downstream for non-optimal total; we keep them split because that's
+# the more flexible reporting shape.
 #
 # Inputs:
-#   --ref_burden=PATH        Pipeline burden output for the reference scenario
-#                            (typically SSP2-RCP4.5). One file per year, RDS.
-#                            Multiple files comma-separated; concatenated.
+#   --ref_burden=PATH        Pipeline burden output(s) for the reference
+#                            scenario (SSP2-RCP4.5). RDS; comma-separated
+#                            list supported (concatenated).
 #   --target_burden=PATH     Same for the target scenario X.
 #   --ihme_mortality=PATH    IHME-derived counts at (year, age, sex, acause)
 #                            granularity. Output of util_convert_ihme_forecast.R.
 #                            Comma-separated list supported (per-cause files).
-#   --output=PATH            Where to save the Formulation-4 attributable
+#   --output=PATH            Where to save the Workflow B attributable
 #                            burden RDS.
 #
 # Burden file schema (from 05_compute_pafs.R):
 #   year, subloc_id, age_group_id, sex_id, acause, deaths, paf_heat, paf_cold,
 #   paf_nonopt, deaths_heat, deaths_cold, deaths_nonopt, location_id
-#
-# The ratio uses deaths_nonopt (cause-specific, summed across heat+cold)
-# divided by deaths (the cause-specific mortality denominator the pipeline
-# saw). For Formulation 2 the answer is just `deaths_nonopt` from the target
-# run; F4 adjusts for IHME's true reference counts being different from what
-# the pipeline saw.
 
 source("config.R")
 suppressPackageStartupMessages(library(data.table))
@@ -56,6 +68,27 @@ load_rds_list <- function(paths_csv) {
   rbindlist(parts, use.names = TRUE, fill = TRUE)
 }
 
+# Pipeline-side S: pop-weighted attributable-PAF aggregate at (year, subloc,
+# cause). Collapse age × sex from the burden frame because PAF is broadcast
+# across them in the pipeline. We use sum(deaths_nonopt) / sum(deaths) so the
+# aggregate is mortality-weighted across age/sex (matches what the pipeline
+# would produce if you computed PAF at the country level directly).
+compute_S <- function(b) {
+  b[, .(num = sum(deaths_nonopt, na.rm = TRUE),
+        den = sum(deaths,        na.rm = TRUE)),
+    by = .(year, subloc_id, acause)][
+    , .(year, subloc_id, acause, S = num / pmax(den, 1))]
+}
+
+# Per-cause PAFs (heat / cold) from the target burden, at (year, subloc,
+# cause). The pipeline broadcasts these across age/sex, so first() within a
+# group recovers the (year, subloc, cause) value.
+compute_pafs <- function(b) {
+  b[, .(paf_heat = first(paf_heat),
+        paf_cold = first(paf_cold)),
+    by = .(year, subloc_id, acause)]
+}
+
 apply_ratio <- function() {
   if (is.null(REF_BURDEN) || is.null(TARGET_BURDEN) ||
       is.null(IHME_MORTALITY) || is.null(OUTPUT)) {
@@ -70,46 +103,55 @@ apply_ratio <- function() {
   log_msg("Loading IHME mortality file(s)")
   ihme <- load_rds_list(IHME_MORTALITY)
 
-  # Pipeline-side S: PAF aggregate at (year, subloc, acause). Collapse the
-  # age x sex granularity from burden by summing deaths_nonopt / deaths.
-  S <- function(b) {
-    b[, .(num = sum(deaths_nonopt, na.rm = TRUE),
-          den = sum(deaths,        na.rm = TRUE)),
-      by = .(year, subloc_id, acause)][
-      , .(year, subloc_id, acause, S = num / pmax(den, 1))]
-  }
-  S_ref <- S(ref); setnames(S_ref, "S", "S_ref")
-  S_tgt <- S(tgt); setnames(S_tgt, "S", "S_tgt")
+  S_ref <- compute_S(ref); setnames(S_ref, "S", "S_ref")
+  S_tgt <- compute_S(tgt); setnames(S_tgt, "S", "S_tgt")
+  paf_tgt <- compute_pafs(tgt)
 
-  ratio <- merge(S_ref, S_tgt,
-                 by = c("year", "subloc_id", "acause"), all = TRUE)
-  ratio[, ratio := fifelse(S_ref > 0, S_tgt / S_ref, NA_real_)]
+  ratio_tbl <- merge(S_ref, S_tgt,
+                     by = c("year", "subloc_id", "acause"), all = TRUE)
+  # Identity ratio for non-temp-scaled causes -- IHME didn't bake in a temp
+  # signal for these, so we don't divide out a denominator we don't have.
+  ratio_tbl[, scale_factor := fifelse(
+    acause %in% CAUSES_IHME_NOT_TEMP_SCALED, 1.0,
+    fifelse(S_ref > 0, S_tgt / S_ref, NA_real_))]
 
-  # Map IHME's year_id -> burden year. IHME mortality is at country grain,
-  # so subloc_id from the burden frame broadcasts (we apply the same ratio
-  # to all subloc within a country-year-cause).
+  # Pull PAFs onto the same (year, subloc, cause) frame.
+  ratio_tbl <- merge(ratio_tbl, paf_tgt,
+                     by = c("year", "subloc_id", "acause"), all.x = TRUE)
+  ratio_tbl[is.na(paf_heat), paf_heat := 0]
+  ratio_tbl[is.na(paf_cold), paf_cold := 0]
+
+  # IHME mortality is at country grain (no subloc), so we broadcast the
+  # cause/subloc-keyed pipeline rows across the (age, sex) frame of IHME's
+  # counts. The cartesian by (year, acause) is bounded since IHME has one
+  # row per (year, age, sex, cause) and the pipeline has one row per
+  # (year, subloc, cause) (subloc typically = 1 country code).
   ihme_keyed <- ihme[, .(year = year_id, age_group_id, sex_id, acause,
                          ihme_deaths = deaths)]
-
-  out <- merge(ihme_keyed, ratio,
+  out <- merge(ihme_keyed,
+               ratio_tbl[, .(year, subloc_id, acause,
+                             scale_factor, paf_heat, paf_cold)],
                by = c("year", "acause"),
                allow.cartesian = TRUE)
-  out[, deaths_nonopt_F4 := ihme_deaths * ratio]
 
-  # Also compute Formulation 2 (target-burden-only) for comparison:
-  # F2 attributable = pipeline target's deaths_nonopt directly, summed
-  # to the same (year, subloc, age, sex, cause) grain.
-  f2 <- tgt[, .(deaths_nonopt_F2 = sum(deaths_nonopt, na.rm = TRUE)),
-            by = .(year, subloc_id, age_group_id, sex_id, acause)]
-  out <- merge(out, f2,
-               by = c("year", "subloc_id", "age_group_id", "sex_id", "acause"),
-               all.x = TRUE)
-
+  out[, m_scaled := ihme_deaths * scale_factor]
+  out[, `:=`(deaths_heat_attrib = m_scaled * paf_heat,
+             deaths_cold_attrib = m_scaled * paf_cold)]
+  out[, deaths_nonopt_attrib := deaths_heat_attrib + deaths_cold_attrib]
   out[, location_id := LOCATION_ID]
+
   saveRDS(out, OUTPUT)
   log_msg("Saved Workflow B output (", nrow(out), " rows) -> ", OUTPUT)
-  log_msg("F4 total attributable: ", round(sum(out$deaths_nonopt_F4, na.rm = TRUE), 1),
-          " | F2 total attributable: ", round(sum(out$deaths_nonopt_F2, na.rm = TRUE), 1))
+  log_msg(sprintf(
+    "Totals: heat=%.0f  cold=%.0f  non-optimal=%.0f",
+    sum(out$deaths_heat_attrib,   na.rm = TRUE),
+    sum(out$deaths_cold_attrib,   na.rm = TRUE),
+    sum(out$deaths_nonopt_attrib, na.rm = TRUE)))
+  n_temp <- sum(out$acause %in% CAUSES_IHME_TEMP_SCALED)
+  n_not  <- sum(out$acause %in% CAUSES_IHME_NOT_TEMP_SCALED)
+  log_msg(sprintf(
+    "Rows by cause-type: temp-scaled (ratio applied) = %d | not-temp-scaled (identity) = %d",
+    n_temp, n_not))
   invisible(out)
 }
 
