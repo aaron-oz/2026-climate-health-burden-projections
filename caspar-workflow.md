@@ -29,10 +29,27 @@ https://github.com/aaron-oz/2026-climate-health-burden-projections
 
 ## 3. Set up the R environment
 
-The repo ships an `renv` lockfile (`renv.lock`) that pins every package
-version we validated against. When you start R in the project directory,
-`.Rprofile` automatically activates renv. To install the locked versions
-on a fresh machine:
+The repo ships an `renv` lockfile (`renv.lock`) pinning every R package
+version we validated against. R version: **4.5.2**. Main runtime
+dependencies: `data.table`, `ncdf4`, `sf`, `readxl`, `ggplot2`,
+`jsonlite`, `RColorBrewer`, plus all transitive deps (~40 packages
+total).
+
+When you start R in the project directory, `.Rprofile` automatically
+activates renv.
+
+R-package-level reproducibility is handled by renv. **System-level
+libraries** (GDAL, GEOS, PROJ, libudunits2, libnetcdf) that `sf` and
+`ncdf4` depend on are NOT something renv can pin — those need to be
+present on the OS. Three options for handling that, in increasing order
+of effort:
+
+### Option A — Try `renv::restore()` and see what happens
+
+If your workstation already has compatible versions of `libgdal`,
+`libgeos`, `libproj`, `libudunits2`, and `libnetcdf` (likely, given you
+run CMIP6 work), the restore just works. Most R-on-Linux setups that
+have ever touched climate or geospatial data already have these:
 
 ```bash
 # From inside the project directory, first time only:
@@ -40,18 +57,67 @@ Rscript -e 'install.packages("renv", repos="https://cloud.r-project.org")'
 Rscript -e 'renv::restore(prompt = FALSE)'
 ```
 
-That pulls everything in `renv.lock` into a project-local library (under
-`renv/library/`, gitignored). Subsequent R sessions in the project will
-auto-activate it.
+The two packages that would fail loudly if system libs are missing are
+`sf` and `ncdf4`. If those install cleanly, everything else will too.
 
-R version: **4.5.2**. Main runtime dependencies pinned in the lockfile:
-`data.table`, `ncdf4`, `sf`, `readxl`, `ggplot2`, `jsonlite`,
-`RColorBrewer`, plus their transitive deps.
+**Effort: zero.** Just try it.
 
-If you'd rather use system-level R packages instead of renv's isolated
-library, delete `.Rprofile` from your clone and the auto-activation
-won't trigger. Then make sure your system has compatible package
-versions (the lockfile lists them).
+### Option B — Install the system libs via OS package manager, then restore
+
+If `sf` or `ncdf4` fail during option A, install the missing system
+libraries first. One command per OS:
+
+**Ubuntu / Debian:**
+```bash
+sudo apt install libgdal-dev libgeos-dev libproj-dev \
+                 libudunits2-dev libnetcdf-dev
+```
+
+**RHEL / Rocky / Alma / Fedora:**
+```bash
+sudo dnf install gdal-devel geos-devel proj-devel \
+                 udunits2-devel netcdf-devel
+```
+
+**Arch:**
+```bash
+sudo pacman -S gdal geos proj udunits netcdf
+```
+
+Then re-run `renv::restore(prompt = FALSE)`. The R-package install will
+succeed against the freshly-installed system libs.
+
+**Effort: ~5 minutes** if you have sudo on the workstation. This is the
+standard approach for R + geospatial work on Linux and what we'd
+recommend by default if A doesn't immediately work.
+
+### Option C — Singularity / Apptainer container
+
+Maximum reproducibility: a container recipe pins the OS, R version, all
+R packages, and all system libraries. You build the image once (~30 min)
+and run the pipeline inside it. The image is portable; if you ever move
+to a different machine, the container goes with it.
+
+We haven't built the container recipe yet. Worth it if (1) you want
+exact reproducibility for the deliverable, (2) the workstation might be
+reimaged or shared, or (3) the pipeline gets handed to a third party who
+may not have the system libs. Not necessary for a single-shot analysis
+run on a known machine.
+
+**Effort: ~half a day** of build + smoke test on your end after we ship
+a `Singularity.def`. Ping us if you want this.
+
+### Recommendation
+
+**Try A first; fall back to B if it errors.** Container (C) only if
+there's a specific reason to want full OS-level reproducibility.
+
+### Bypassing renv
+
+If you'd rather use system-level R packages directly instead of renv's
+isolated library, delete `.Rprofile` from your clone and the
+auto-activation won't trigger. Then ensure your system R has compatible
+package versions (the lockfile lists them).
 
 ## 4. Convert IHME CSVs to pipeline-format mortality
 
