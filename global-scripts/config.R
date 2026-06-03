@@ -60,6 +60,17 @@ USE_DRAWS <- FALSE
 # propagation is the goal.
 N_DRAWS <- 500
 
+# Inner draw-chunk size for 05_compute_pafs.R DRAW mode. The PAF computation
+# is cause-chunked already (one cause at a time). Within each cause, the
+# (zones × daily_temps × draws) merge can also be sub-chunked across draws.
+# At full 500 draws on a medium country, cause-chunked alone peaks ~5 GB per
+# worker; cause+draw-chunked (e.g., 5 chunks of 100 draws) peaks ~1 GB per
+# worker, letting more workers fit in fixed cluster RAM. Trade-off is per-
+# chunk loop overhead (small in practice). Set to N_DRAWS to disable draw
+# chunking; smaller values increase worker concurrency at the cost of some
+# total wall-clock.
+DRAW_CHUNK_SIZE <- 100L
+
 # Run descriptive/diagnostic plots (set FALSE to skip for production runs)
 RUN_DIAGNOSTICS <- TRUE
 

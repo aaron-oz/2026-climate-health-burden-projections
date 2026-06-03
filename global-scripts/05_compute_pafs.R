@@ -58,54 +58,74 @@ if (USE_DRAWS) {
   causes <- sort(unique(erf$acause))
   paf_per_cause <- vector("list", length(causes))
 
+  # Inner draw-chunk schedule: split draws into batches of DRAW_CHUNK_SIZE so
+  # the (zones * daily_temps * draws) merge inside each cause stays within a
+  # smaller memory envelope. Per-chunk overhead is small (a few dcasts and
+  # gc cycles). Setting DRAW_CHUNK_SIZE = N_DRAWS recovers the unchunked
+  # (cause-only) behavior.
+  chunk_size <- max(1L, min(N_DRAWS, as.integer(DRAW_CHUNK_SIZE)))
+  draw_starts <- seq(0L, N_DRAWS - 1L, by = chunk_size)
+  draw_chunks <- lapply(draw_starts, function(s) s:min(s + chunk_size - 1L, N_DRAWS - 1L))
+  log_msg(sprintf("Cause + draw chunked: %d causes x %d draw-chunks of <= %d draws each",
+                  length(causes), length(draw_chunks), chunk_size))
+
   for (i in seq_along(causes)) {
     cause <- causes[i]
     t0 <- Sys.time()
     log_msg(sprintf("  [%d/%d] cause: %s", i, length(causes), cause))
 
     erf_c <- erf[acause == cause]
+    paf_per_draw_chunk <- vector("list", length(draw_chunks))
 
-    # Merge RR(cause) draws with TMREL draws
-    rr_c <- merge(erf_c, tmrel[, .(zone, year_id, draw, tmrel)],
-                  by = c("zone", "draw"), allow.cartesian = TRUE)
+    for (j in seq_along(draw_chunks)) {
+      draws_keep <- draw_chunks[[j]]
+      erf_cd  <- erf_c[draw %in% draws_keep]
+      tmrel_d <- tmrel[draw %in% draws_keep]
 
-    # Rescale RR to 1.0 at the TMREL
-    if (COLOMBIA_VERIFICATION) {
-      # verification: skip rescaling (Samuel uses raw RR)
-    } else {
-      rr_c[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
-           by = .(zone, draw, year_id)]
-      rr_c[rr_ref > 0, rr := rr / rr_ref]
-      rr_c[, rr_ref := NULL]
+      # Merge RR(cause, draw-batch) with TMREL(draw-batch)
+      rr_cd <- merge(erf_cd, tmrel_d[, .(zone, year_id, draw, tmrel)],
+                     by = c("zone", "draw"), allow.cartesian = TRUE)
+
+      # Rescale RR to 1.0 at the TMREL
+      if (COLOMBIA_VERIFICATION) {
+        # verification: skip rescaling (Samuel uses raw RR)
+      } else {
+        rr_cd[, rr_ref := sum(rr * (daily_temp == tmrel), na.rm = TRUE),
+              by = .(zone, draw, year_id)]
+        rr_cd[rr_ref > 0, rr := rr / rr_ref]
+        rr_cd[, rr_ref := NULL]
+      }
+
+      pafs_cd <- merge(temp_agg, rr_cd,
+                       by.x = c("zone", "daily_temp_10", "year"),
+                       by.y = c("zone", "daily_temp",    "year_id"),
+                       all.x = TRUE, allow.cartesian = TRUE)
+      pafs_cd[, risk := ifelse(daily_temp_10 < tmrel, "cold",
+                               ifelse(daily_temp_10 > tmrel, "heat", NA_character_))]
+      pafs_cd <- pafs_cd[!is.na(risk)]
+
+      if (COLOMBIA_VERIFICATION) {
+        pafs_cd[, paf_contrib := pmax(0, fifelse(rr >= 1,
+                                                 pr * (rr - 1) / rr,
+                                                 pr * -1 * ((1/rr) - 1) / (1/rr)))]
+        paf_per_draw_chunk[[j]] <- pafs_cd[, .(acause = cause,
+                                               paf = sum(paf_contrib, na.rm = TRUE)),
+                                           by = .(risk, subloc_id, draw, year)]
+      } else {
+        paf_per_draw_chunk[[j]] <- pafs_cd[, .(acause = cause,
+                                               paf = sum(ifelse(rr >= 1,
+                                                                pr * (rr - 1) / rr,
+                                                                pr * -1 * ((1/rr) - 1) / (1/rr)),
+                                                         na.rm = TRUE)),
+                                           by = .(risk, subloc_id, draw, year)]
+      }
+
+      rm(erf_cd, tmrel_d, rr_cd, pafs_cd)
+      invisible(gc(verbose = FALSE))
     }
 
-    # Merge aggregated temperature with this cause's RR
-    pafs_c <- merge(temp_agg, rr_c,
-                    by.x = c("zone", "daily_temp_10", "year"),
-                    by.y = c("zone", "daily_temp",    "year_id"),
-                    all.x = TRUE, allow.cartesian = TRUE)
-
-    pafs_c[, risk := ifelse(daily_temp_10 < tmrel, "cold",
-                            ifelse(daily_temp_10 > tmrel, "heat", NA_character_))]
-    pafs_c <- pafs_c[!is.na(risk)]
-
-    if (COLOMBIA_VERIFICATION) {
-      pafs_c[, paf_contrib := pmax(0, fifelse(rr >= 1,
-                                              pr * (rr - 1) / rr,
-                                              pr * -1 * ((1/rr) - 1) / (1/rr)))]
-      paf_per_cause[[i]] <- pafs_c[, .(acause = cause,
-                                       paf = sum(paf_contrib, na.rm = TRUE)),
-                                   by = .(risk, subloc_id, draw, year)]
-    } else {
-      paf_per_cause[[i]] <- pafs_c[, .(acause = cause,
-                                       paf = sum(ifelse(rr >= 1,
-                                                        pr * (rr - 1) / rr,
-                                                        pr * -1 * ((1/rr) - 1) / (1/rr)),
-                                                 na.rm = TRUE)),
-                                   by = .(risk, subloc_id, draw, year)]
-    }
-
-    rm(erf_c, rr_c, pafs_c)
+    paf_per_cause[[i]] <- rbindlist(paf_per_draw_chunk)
+    rm(erf_c, paf_per_draw_chunk)
     invisible(gc(verbose = FALSE))
     log_msg(sprintf("    chunk done in %.1fs", as.numeric(Sys.time() - t0, units = "secs")))
   }
@@ -114,11 +134,11 @@ if (USE_DRAWS) {
     log_msg("COLOMBIA_VERIFICATION: PAF contributions floored at 0 per row before summing")
   }
 
-  paf_results <- rbindlist(paf_per_cause)
+  paf_results_draws <- rbindlist(paf_per_cause)
   rm(paf_per_cause); invisible(gc(verbose = FALSE))
 
   # Reshape draws to wide and summarize per (year, subloc, cause, risk)
-  paf_wide <- dcast(paf_results,
+  paf_wide <- dcast(paf_results_draws,
                     year + subloc_id + acause + risk ~ paste0("draw_", draw),
                     value.var = "paf")
   draw_cols <- paste0("draw_", 0:(N_DRAWS - 1))
@@ -127,8 +147,8 @@ if (USE_DRAWS) {
   paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975, na.rm = TRUE), .SDcols = draw_cols]
 
   # Hand downstream code a frame keyed the same way summary mode does, with
-  # paf_mean (and lower/upper for diagnostics). The full per-draw frame is
-  # in paf_wide and would also be saved if we wanted full propagation.
+  # paf_mean (and lower/upper for diagnostics). The per-draw long form remains
+  # in paf_results_draws for per-draw burden computation below.
   paf_results <- paf_wide[, .(year, subloc_id, acause, risk,
                               paf_mean, paf_lower, paf_upper)]
 
@@ -366,7 +386,22 @@ if (do_daily_verif) {
   # ---------------------------------------------------------------------------
   # Annual branch (production + verification fallback when daily mort missing)
   # ---------------------------------------------------------------------------
-  burden <- merge(mort[, .(year_id, subloc_id, age_group_id, sex_id, acause, deaths)],
+  # If mort carries per-draw rows (from IHME rate * pop per draw), collapse
+  # to per-row mean for the summary-burden path so the merge with paf_combined
+  # (one row per year/subloc/cause) doesn't cartesian-explode. The per-draw
+  # rows are retained in `mort_full` for per-draw burden computation below.
+  has_mort_draws <- "draw" %in% names(mort)
+  if (has_mort_draws) {
+    mort_full <- mort
+    mort_for_summary <- mort[, .(deaths = mean(deaths, na.rm = TRUE)),
+                             by = .(year_id, subloc_id, age_group_id, sex_id, acause)]
+  } else {
+    mort_full <- NULL
+    mort_for_summary <- mort[, .(year_id, subloc_id, age_group_id, sex_id,
+                                  acause, deaths)]
+  }
+
+  burden <- merge(mort_for_summary,
                   paf_combined[, .(year, subloc_id, acause, paf_heat, paf_cold, paf_nonopt)],
                   by.x = c("year_id", "subloc_id", "acause"),
                   by.y = c("year", "subloc_id", "acause"),
@@ -407,6 +442,69 @@ if (do_daily_verif) {
   log_msg("Attributable burden saved to ",
           file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
           " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
+
+  # ---------------------------------------------------------------------------
+  # Per-draw burden (only when both mortality and PAFs have per-draw rows)
+  # ---------------------------------------------------------------------------
+  # We pair draws 1:1 between mortality and PAFs. Rate-and-PAF draws are
+  # independent (IHME's rate draws vs our pipeline's ERF/TMREL draws), so
+  # matched pairing is valid: the mean of the product equals the product of
+  # the means (independent factors), and the variance reflects both sources
+  # of uncertainty propagated together.
+  if (USE_DRAWS && exists("paf_results_draws") && !is.null(mort_full) &&
+      !COLOMBIA_VERIFICATION) {
+    log_msg("Computing per-draw burden (mort_draws x paf_draws)")
+
+    # paf_results_draws is long: (acause, risk, subloc_id, draw, year, paf)
+    paf_combined_draws <- dcast(paf_results_draws,
+                                year + subloc_id + acause + draw ~ risk,
+                                value.var = "paf", fill = 0)
+    if (!"heat" %in% names(paf_combined_draws)) paf_combined_draws[, heat := 0]
+    if (!"cold" %in% names(paf_combined_draws)) paf_combined_draws[, cold := 0]
+    setnames(paf_combined_draws, c("heat", "cold"), c("paf_heat", "paf_cold"))
+    paf_combined_draws[, paf_nonopt := paf_heat + paf_cold]
+
+    burden_draws <- merge(
+      mort_full[, .(year_id, subloc_id, age_group_id, sex_id, acause, draw, deaths)],
+      paf_combined_draws[, .(year, subloc_id, acause, draw,
+                             paf_heat, paf_cold, paf_nonopt)],
+      by.x = c("year_id", "subloc_id", "acause", "draw"),
+      by.y = c("year",    "subloc_id", "acause", "draw"),
+      all.x = TRUE)
+    burden_draws[is.na(paf_heat),   paf_heat   := 0]
+    burden_draws[is.na(paf_cold),   paf_cold   := 0]
+    burden_draws[is.na(paf_nonopt), paf_nonopt := 0]
+    burden_draws[, `:=`(deaths_heat   = deaths * paf_heat,
+                        deaths_cold   = deaths * paf_cold,
+                        deaths_nonopt = deaths * paf_nonopt)]
+
+    setnames(burden_draws, "year_id", "year")
+    burden_draws[, location_id := LOCATION_ID]
+    draws_path <- file.path(RESULTS_DIR,
+                            paste0("burden_draws_", LOCATION_ID, ".rds"))
+    saveRDS(burden_draws, draws_path)
+    log_msg("Per-draw burden saved (", nrow(burden_draws), " rows, ",
+            uniqueN(burden_draws$draw), " draws) -> ", draws_path)
+
+    # Overwrite the summary burden with the mean across per-draw products.
+    # That equals (mean mort * mean PAF) under independence — which it is for
+    # independent draws — but is more numerically stable than the separate
+    # summary path when the draw means are not exactly equal to the per-draw
+    # averages.
+    burden_mean <- burden_draws[, .(deaths        = mean(deaths,        na.rm = TRUE),
+                                    deaths_heat   = mean(deaths_heat,   na.rm = TRUE),
+                                    deaths_cold   = mean(deaths_cold,   na.rm = TRUE),
+                                    deaths_nonopt = mean(deaths_nonopt, na.rm = TRUE),
+                                    paf_heat      = mean(paf_heat,      na.rm = TRUE),
+                                    paf_cold      = mean(paf_cold,      na.rm = TRUE),
+                                    paf_nonopt    = mean(paf_nonopt,    na.rm = TRUE)),
+                                by = .(year, subloc_id, age_group_id, sex_id, acause)]
+    burden_mean[, location_id := LOCATION_ID]
+    saveRDS(burden_mean,
+            file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
+    log_msg("Summary burden_<id>.rds overwritten with per-draw mean (",
+            nrow(burden_mean), " rows)")
+  }
 }
 
 # =============================================================================

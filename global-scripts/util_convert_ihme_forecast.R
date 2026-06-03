@@ -149,30 +149,56 @@ convert_one <- function() {
          "Suggests one file is missing rows the other has.")
   }
 
-  # Element-wise count_draw_i = rate_draw_i * pop_draw_i, then collapse to
-  # the per-row mean across draws. (Per-draw mortality propagation is a
-  # follow-on; today's pipeline doesn't carry a mortality-draw dim, so we
-  # save the mean of the count distribution.)
+  # Element-wise per-draw counts: count_draw_i = rate_draw_i * pop_draw_i.
+  # Emit long-form (year, age, sex, draw, deaths). Two sink files:
+  #   {LOC}_mortality_ihme_{acause}.rds         — mean across draws (back-
+  #       compat for code paths that don't yet handle mortality draws)
+  #   {LOC}_mortality_ihme_{acause}_draws.rds    — per-draw long form
+  # The pipeline's 04 picks whichever the user points it at via
+  # --mortality_file=.
   counts_mat <- as.matrix(rate[, ..draw_cols]) * as.matrix(pop[, ..draw_cols])
   out <- rate[, ..key_cols]
-  out[, deaths_mean := rowMeans(counts_mat, na.rm = TRUE)]
   out[, age_group_id := age_map$age_group_id[match(age_text, age_map$age_text)]]
   out[, sex_id := sex_map(sex_text)]
+  out[, age_text := NULL]
+  out[, sex_text := NULL]
 
-  # Collapse source bins that share a target age_group_id (e.g., "<1 year" +
-  # "1 to 4" both map to id=0; "80 to 84" + "85 to 89" + ... + "95 plus"
-  # collapse to id=80). Sum of counts is the right aggregation here.
-  mort <- out[, .(deaths = sum(deaths_mean, na.rm = TRUE)),
-              by = .(year_id, age_group_id, sex_id)]
-  mort[, acause := ACAUSE]
-  mort[, location_id := LOCATION_ID]
+  # --- per-draw long form ---
+  draws_long <- cbind(out, as.data.table(counts_mat))
+  draws_long <- melt(draws_long,
+                     id.vars = c("year_id", "age_group_id", "sex_id"),
+                     variable.name = "draw_text", value.name = "deaths",
+                     variable.factor = FALSE)
+  draws_long[, draw := as.integer(sub("^draw_", "", draw_text))]
+  draws_long[, draw_text := NULL]
+  # Collapse source bins that share a target age_group_id (sum within draw).
+  draws_long <- draws_long[, .(deaths = sum(deaths, na.rm = TRUE)),
+                           by = .(year_id, age_group_id, sex_id, draw)]
+  draws_long[, acause := ACAUSE]
+  draws_long[, location_id := LOCATION_ID]
 
-  out_path <- file.path(MORTALITY_DIR,
-                        sprintf("%d_mortality_ihme_%s.rds", LOCATION_ID, ACAUSE))
-  saveRDS(mort, out_path)
-  log_msg("Saved ", nrow(mort), " rows (", uniqueN(mort$year_id), " years x ",
-          uniqueN(mort$age_group_id), " age bins x 2 sexes) -> ", out_path)
-  invisible(mort)
+  draws_path <- file.path(MORTALITY_DIR,
+                          sprintf("%d_mortality_ihme_%s_draws.rds",
+                                  LOCATION_ID, ACAUSE))
+  saveRDS(draws_long, draws_path)
+  log_msg("Saved per-draw long form (", nrow(draws_long), " rows = ",
+          uniqueN(draws_long$year_id), " yrs x ",
+          uniqueN(draws_long$age_group_id), " ages x 2 sexes x ",
+          uniqueN(draws_long$draw), " draws) -> ", draws_path)
+
+  # --- mean across draws (back-compat) ---
+  mort_mean <- draws_long[, .(deaths = mean(deaths, na.rm = TRUE)),
+                          by = .(year_id, age_group_id, sex_id)]
+  mort_mean[, acause := ACAUSE]
+  mort_mean[, location_id := LOCATION_ID]
+
+  mean_path <- file.path(MORTALITY_DIR,
+                         sprintf("%d_mortality_ihme_%s.rds",
+                                 LOCATION_ID, ACAUSE))
+  saveRDS(mort_mean, mean_path)
+  log_msg("Saved mean form (", nrow(mort_mean), " rows) -> ", mean_path)
+
+  invisible(list(mean = mort_mean, draws = draws_long))
 }
 
 if (sys.nframe() == 0L) {
