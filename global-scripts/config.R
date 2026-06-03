@@ -158,6 +158,65 @@ TEMP_ZONE_MIN <- 6
 TEMP_ZONE_MAX <- 28
 
 # =============================================================================
+# CCKP CMIP6 model list — the 29 distinct models in CCKP's daily archive at
+# https://wbg-cckp.s3.amazonaws.com/data/cmip6-daily-x0.25/ (verified
+# 2026-06-03 from the daily-cmip6-download script). Each model appears with
+# multiple scenario suffixes (historical, ssp126, ssp245, ssp370, ssp585) on
+# S3 — we keep the bare model name here and the run-driver composes the full
+# {model}-{scenario} URL fragment.
+#
+# Not every model publishes every scenario. Known gaps (as of 2026-06-03):
+#   gfdl-cm4-r1i1p1f1          — only ssp245, ssp585 (no ssp126, ssp370)
+#   hadgem3-gc31-ll-r1i1p1f3   — only ssp126, ssp245, ssp585 (no ssp370)
+#   hadgem3-gc31-mm-r1i1p1f3   — only ssp126, ssp585
+#   nesm3-r1i1p1f1             — no ssp370
+#   taiesm1-r1i1p1f1           — no ssp245
+# The run-driver should skip missing (model, scenario) pairs gracefully.
+MODELS_ALL <- c(
+  "access-cm2-r1i1p1f1",         "access-esm1-5-r1i1p1f1",
+  "bcc-csm2-mr-r1i1p1f1",        "canesm5-r1i1p1f1",
+  "cmcc-esm2-r1i1p1f1",          "cnrm-cm6-1-r1i1p1f2",
+  "cnrm-esm2-1-r1i1p1f2",        "ec-earth3-r1i1p1f1",
+  "ec-earth3-veg-lr-r1i1p1f1",   "fgoals-g3-r3i1p1f1",
+  "gfdl-cm4-r1i1p1f1",           "gfdl-esm4-r1i1p1f1",
+  "giss-e2-1-g-r1i1p1f2",        "hadgem3-gc31-ll-r1i1p1f3",
+  "hadgem3-gc31-mm-r1i1p1f3",    "inm-cm4-8-r1i1p1f1",
+  "inm-cm5-0-r1i1p1f1",          "ipsl-cm6a-lr-r1i1p1f1",
+  "kace-1-0-g-r1i1p1f1",         "miroc6-r1i1p1f1",
+  "miroc-es2l-r1i1p1f2",         "mpi-esm1-2-hr-r1i1p1f1",
+  "mpi-esm1-2-lr-r1i1p1f1",      "mri-esm2-0-r1i1p1f1",
+  "nesm3-r1i1p1f1",              "noresm2-lm-r1i1p1f1",
+  "noresm2-mm-r1i1p1f1",         "taiesm1-r1i1p1f1",
+  "ukesm1-0-ll-r1i1p1f2"
+)
+
+# =============================================================================
+# IHME cause-file name map — maps our pipeline's acause codes to the filename
+# IHME's GBD Results Tool downloads use. Caspar can edit if his download
+# names don't match (IHME's UI sometimes appends timestamps or numbers).
+# Placeholder list — names may need tweaking once we see the full set of
+# downloaded CSVs.
+IHME_CAUSE_FILES <- c(
+  ckd              = "chronic_kidney_disease.csv",
+  cvd_cmp          = "cardiomyopathy_and_myocarditis.csv",
+  cvd_htn          = "hypertensive_heart_disease.csv",
+  cvd_ihd          = "ischemic_heart_disease.csv",
+  cvd_stroke       = "stroke.csv",
+  diabetes         = "diabetes_mellitus.csv",
+  inj_animal       = "animal_contact.csv",
+  inj_disaster     = "exposure_to_forces_of_nature.csv",
+  inj_drowning     = "drowning.csv",
+  inj_homicide     = "interpersonal_violence.csv",
+  inj_mech         = "exposure_to_mechanical_forces.csv",
+  inj_othunintent  = "other_unintentional_injuries.csv",
+  inj_suicide      = "self_harm.csv",
+  inj_trans_other  = "other_transport_injuries.csv",
+  inj_trans_road   = "road_injuries.csv",
+  lri              = "lower_respiratory_infections.csv",
+  resp_copd        = "chronic_obstructive_pulmonary_disease.csv"
+)
+
+# =============================================================================
 # Command-line argument parsing (override config values)
 # =============================================================================
 

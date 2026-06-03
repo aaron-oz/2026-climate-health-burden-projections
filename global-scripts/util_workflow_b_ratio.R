@@ -89,19 +89,23 @@ compute_pafs <- function(b) {
     by = .(year, subloc_id, acause)]
 }
 
-apply_ratio <- function() {
-  if (is.null(REF_BURDEN) || is.null(TARGET_BURDEN) ||
-      is.null(IHME_MORTALITY) || is.null(OUTPUT)) {
-    stop("Required: --ref_burden=... --target_burden=... ",
-         "--ihme_mortality=... --output=...")
+apply_ratio <- function(ref_burden     = REF_BURDEN,
+                        target_burden  = TARGET_BURDEN,
+                        ihme_mortality = IHME_MORTALITY,
+                        output         = OUTPUT,
+                        location_id    = LOCATION_ID,
+                        verbose        = TRUE) {
+  if (is.null(ref_burden) || is.null(target_burden) ||
+      is.null(ihme_mortality) || is.null(output)) {
+    stop("Required: ref_burden, target_burden, ihme_mortality, output")
   }
 
-  log_msg("Loading reference-scenario burden(s)")
-  ref <- load_rds_list(REF_BURDEN)
-  log_msg("Loading target-scenario burden(s)")
-  tgt <- load_rds_list(TARGET_BURDEN)
-  log_msg("Loading IHME mortality file(s)")
-  ihme <- load_rds_list(IHME_MORTALITY)
+  if (verbose) log_msg("Loading reference-scenario burden(s)")
+  ref <- load_rds_list(ref_burden)
+  if (verbose) log_msg("Loading target-scenario burden(s)")
+  tgt <- load_rds_list(target_burden)
+  if (verbose) log_msg("Loading IHME mortality file(s)")
+  ihme <- load_rds_list(ihme_mortality)
 
   S_ref <- compute_S(ref); setnames(S_ref, "S", "S_ref")
   S_tgt <- compute_S(tgt); setnames(S_tgt, "S", "S_tgt")
@@ -138,20 +142,23 @@ apply_ratio <- function() {
   out[, `:=`(deaths_heat_attrib = m_scaled * paf_heat,
              deaths_cold_attrib = m_scaled * paf_cold)]
   out[, deaths_nonopt_attrib := deaths_heat_attrib + deaths_cold_attrib]
-  out[, location_id := LOCATION_ID]
+  out[, location_id := location_id]
 
-  saveRDS(out, OUTPUT)
-  log_msg("Saved Workflow B output (", nrow(out), " rows) -> ", OUTPUT)
-  log_msg(sprintf(
-    "Totals: heat=%.0f  cold=%.0f  non-optimal=%.0f",
-    sum(out$deaths_heat_attrib,   na.rm = TRUE),
-    sum(out$deaths_cold_attrib,   na.rm = TRUE),
-    sum(out$deaths_nonopt_attrib, na.rm = TRUE)))
-  n_temp <- sum(out$acause %in% CAUSES_IHME_TEMP_SCALED)
-  n_not  <- sum(out$acause %in% CAUSES_IHME_NOT_TEMP_SCALED)
-  log_msg(sprintf(
-    "Rows by cause-type: temp-scaled (ratio applied) = %d | not-temp-scaled (identity) = %d",
-    n_temp, n_not))
+  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)
+  saveRDS(out, output)
+  if (verbose) {
+    log_msg("Saved Workflow B output (", nrow(out), " rows) -> ", output)
+    log_msg(sprintf(
+      "Totals: heat=%.0f  cold=%.0f  non-optimal=%.0f",
+      sum(out$deaths_heat_attrib,   na.rm = TRUE),
+      sum(out$deaths_cold_attrib,   na.rm = TRUE),
+      sum(out$deaths_nonopt_attrib, na.rm = TRUE)))
+    n_temp <- sum(out$acause %in% CAUSES_IHME_TEMP_SCALED)
+    n_not  <- sum(out$acause %in% CAUSES_IHME_NOT_TEMP_SCALED)
+    log_msg(sprintf(
+      "Rows by cause-type: temp-scaled (ratio applied) = %d | not-temp-scaled (identity) = %d",
+      n_temp, n_not))
+  }
   invisible(out)
 }
 
