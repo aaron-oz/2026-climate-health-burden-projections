@@ -37,6 +37,29 @@ if (has_sevs) {
   setDT(sevs)
 }
 
+# If burden / ylls carry a draw column (per-draw output from 05), collapse
+# to per-row mean for the CSV summaries below. The summaries we emit here
+# are point-estimate roll-ups intended for quick inspection / sanity-checks;
+# proper uncertainty bands come from the workflow_b output downstream.
+collapse_draws <- function(dt, value_cols) {
+  if (!"draw" %in% names(dt)) return(dt)
+  group_cols <- setdiff(names(dt), c("draw", value_cols))
+  dt[, lapply(.SD, function(x) mean(x, na.rm = TRUE)),
+     by = group_cols, .SDcols = value_cols]
+}
+burden_value_cols <- intersect(names(burden),
+                               c("deaths", "deaths_heat", "deaths_cold",
+                                 "deaths_nonopt", "paf_heat", "paf_cold",
+                                 "paf_nonopt", "sev"))
+burden <- collapse_draws(burden, burden_value_cols)
+if (has_ylls) {
+  yll_value_cols <- intersect(names(ylls),
+                              c("yll_heat", "yll_cold", "yll_nonopt",
+                                "deaths", "deaths_heat", "deaths_cold",
+                                "deaths_nonopt", "ex"))
+  ylls <- collapse_draws(ylls, yll_value_cols)
+}
+
 # =============================================================================
 # Per-subloc summary (year x subloc x cause)
 # =============================================================================

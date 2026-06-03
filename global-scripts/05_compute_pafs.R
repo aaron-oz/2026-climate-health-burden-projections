@@ -436,21 +436,19 @@ if (do_daily_verif) {
                   deaths_nonopt = deaths * paf_nonopt)]
   }
 
-  setnames(burden, "year_id", "year")
-  burden[, location_id := LOCATION_ID]
-  saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
-  log_msg("Attributable burden saved to ",
-          file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
-          " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
-
   # ---------------------------------------------------------------------------
-  # Per-draw burden (only when both mortality and PAFs have per-draw rows)
+  # Per-draw burden when both mortality and PAFs have per-draw rows
   # ---------------------------------------------------------------------------
-  # We pair draws 1:1 between mortality and PAFs. Rate-and-PAF draws are
+  # We pair draws 1:1 between mortality and PAFs. Rate and PAF draws are
   # independent (IHME's rate draws vs our pipeline's ERF/TMREL draws), so
   # matched pairing is valid: the mean of the product equals the product of
   # the means (independent factors), and the variance reflects both sources
   # of uncertainty propagated together.
+  #
+  # If both inputs have draws, the canonical burden_<LOC>.rds carries a
+  # `draw` column. Downstream (07/08) detects the column and either rolls
+  # up to summary or carries draws through. Summaries can always be derived
+  # from draws; the reverse is not true.
   if (USE_DRAWS && exists("paf_results_draws") && !is.null(mort_full) &&
       !COLOMBIA_VERIFICATION) {
     log_msg("Computing per-draw burden (mort_draws x paf_draws)")
@@ -464,46 +462,34 @@ if (do_daily_verif) {
     setnames(paf_combined_draws, c("heat", "cold"), c("paf_heat", "paf_cold"))
     paf_combined_draws[, paf_nonopt := paf_heat + paf_cold]
 
-    burden_draws <- merge(
+    burden <- merge(
       mort_full[, .(year_id, subloc_id, age_group_id, sex_id, acause, draw, deaths)],
       paf_combined_draws[, .(year, subloc_id, acause, draw,
                              paf_heat, paf_cold, paf_nonopt)],
       by.x = c("year_id", "subloc_id", "acause", "draw"),
       by.y = c("year",    "subloc_id", "acause", "draw"),
       all.x = TRUE)
-    burden_draws[is.na(paf_heat),   paf_heat   := 0]
-    burden_draws[is.na(paf_cold),   paf_cold   := 0]
-    burden_draws[is.na(paf_nonopt), paf_nonopt := 0]
-    burden_draws[, `:=`(deaths_heat   = deaths * paf_heat,
-                        deaths_cold   = deaths * paf_cold,
-                        deaths_nonopt = deaths * paf_nonopt)]
+    burden[is.na(paf_heat),   paf_heat   := 0]
+    burden[is.na(paf_cold),   paf_cold   := 0]
+    burden[is.na(paf_nonopt), paf_nonopt := 0]
+    burden[, `:=`(deaths_heat   = deaths * paf_heat,
+                  deaths_cold   = deaths * paf_cold,
+                  deaths_nonopt = deaths * paf_nonopt)]
+    setnames(burden, "year_id", "year")
+    burden[, location_id := LOCATION_ID]
 
-    setnames(burden_draws, "year_id", "year")
-    burden_draws[, location_id := LOCATION_ID]
-    draws_path <- file.path(RESULTS_DIR,
-                            paste0("burden_draws_", LOCATION_ID, ".rds"))
-    saveRDS(burden_draws, draws_path)
-    log_msg("Per-draw burden saved (", nrow(burden_draws), " rows, ",
-            uniqueN(burden_draws$draw), " draws) -> ", draws_path)
-
-    # Overwrite the summary burden with the mean across per-draw products.
-    # That equals (mean mort * mean PAF) under independence — which it is for
-    # independent draws — but is more numerically stable than the separate
-    # summary path when the draw means are not exactly equal to the per-draw
-    # averages.
-    burden_mean <- burden_draws[, .(deaths        = mean(deaths,        na.rm = TRUE),
-                                    deaths_heat   = mean(deaths_heat,   na.rm = TRUE),
-                                    deaths_cold   = mean(deaths_cold,   na.rm = TRUE),
-                                    deaths_nonopt = mean(deaths_nonopt, na.rm = TRUE),
-                                    paf_heat      = mean(paf_heat,      na.rm = TRUE),
-                                    paf_cold      = mean(paf_cold,      na.rm = TRUE),
-                                    paf_nonopt    = mean(paf_nonopt,    na.rm = TRUE)),
-                                by = .(year, subloc_id, age_group_id, sex_id, acause)]
-    burden_mean[, location_id := LOCATION_ID]
-    saveRDS(burden_mean,
+    saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
+    log_msg("Per-draw burden saved (", nrow(burden), " rows, ",
+            uniqueN(burden$draw), " draws) -> ",
             file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
-    log_msg("Summary burden_<id>.rds overwritten with per-draw mean (",
-            nrow(burden_mean), " rows)")
+  } else {
+    # Summary path (no per-draw mort, or in verification mode)
+    setnames(burden, "year_id", "year")
+    burden[, location_id := LOCATION_ID]
+    saveRDS(burden, file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")))
+    log_msg("Attributable burden saved to ",
+            file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
+            " (", nrow(burden), " rows at year x subloc x age x sex x cause)")
   }
 }
 

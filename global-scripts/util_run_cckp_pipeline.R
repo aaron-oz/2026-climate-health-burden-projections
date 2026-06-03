@@ -99,14 +99,27 @@ ensure_download <- function(url, cache_dir) {
   }
   log_msg("Downloading ", basename(url))
   t0 <- Sys.time()
+  # --fail makes curl exit 22 on HTTP 4xx/5xx (e.g., 404 for a missing
+  # (model, scenario) combo on S3) without writing a body. We retry on
+  # transient failures but not on 404 -- 404 means the file genuinely
+  # doesn't exist; retrying won't change that.
   status <- system2("curl",
-                    c("-sS", "--retry", "5", "--retry-all-errors",
-                      "--retry-delay", "10", "--continue-at", "-",
-                      "--max-time", "7200",
+                    c("-sS", "--fail",
+                      "--retry", "5", "--retry-delay", "10",
+                      "--continue-at", "-", "--max-time", "7200",
                       "-o", shQuote(dest), shQuote(url)))
   elapsed <- as.numeric(Sys.time() - t0, units = "secs")
   if (status != 0 || !file.exists(dest) || file.info(dest)$size == 0) {
-    stop("Download failed for ", url, " (curl exit ", status, ")")
+    # Soft failure: log a missing-on-s3 message and return NA. The caller
+    # checks for NA and records a missing-on-s3 status to the manifest,
+    # rather than aborting the whole grid loop on the first 404. Known
+    # gaps (see MODELS_ALL comments in config.R): gfdl-cm4 lacks ssp126/
+    # ssp370; hadgem3-gc31-mm lacks ssp245/ssp370; nesm3 lacks ssp370;
+    # taiesm1 lacks ssp245.
+    log_msg(sprintf("MISSING-ON-S3: %s (curl exit %d, %.1fs)",
+                    basename(url), status, elapsed))
+    if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
+    return(NA_character_)
   }
   size_mb <- file.info(dest)$size / 1e6
   throughput <- if (elapsed > 0) size_mb / elapsed else NA_real_
@@ -175,6 +188,16 @@ run_cckp_grid <- function() {
       pop_url  <- cckp_pop_url(POP_DATASET, g$year, g$scenario)
       temp_nc <- ensure_download(temp_url, CCKP_CACHE)
       pop_nc  <- ensure_download(pop_url,  CCKP_CACHE)
+      if (is.na(temp_nc) || is.na(pop_nc)) {
+        # ensure_download returned NA on 404 / size-0 -- the combo isn't on
+        # S3 (known gaps for some model x scenario pairs; see MODELS_ALL in
+        # config.R). Record and move on rather than crashing the grid.
+        log_msg("  -> MISSING-ON-S3 (skipping)")
+        return(data.table(grid[i], status = "missing-on-s3", out_path = out_path,
+                          rows = NA_integer_,
+                          message = if (is.na(temp_nc)) basename(temp_url)
+                                    else basename(pop_url)))
+      }
       dt <- convert_cckp(temp_nc_path = temp_nc,
                          pop_nc_path  = pop_nc,
                          location_id  = LOCATION_ID,
@@ -200,9 +223,10 @@ run_cckp_grid <- function() {
   manifest[, run_ts := format(Sys.time(), "%Y-%m-%dT%H:%M:%S")]
   fwrite(manifest, MANIFEST, append = file.exists(MANIFEST))
   log_msg("Manifest: ", nrow(manifest), " combos | ",
-          sum(manifest$status == "ok"),   " ok | ",
-          sum(manifest$status == "skip"), " skip | ",
-          sum(manifest$status == "fail"), " fail -> ", MANIFEST)
+          sum(manifest$status == "ok"),            " ok | ",
+          sum(manifest$status == "skip"),          " skip | ",
+          sum(manifest$status == "missing-on-s3"), " missing-on-s3 | ",
+          sum(manifest$status == "fail"),          " fail -> ", MANIFEST)
   invisible(manifest)
 }
 

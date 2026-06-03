@@ -136,22 +136,39 @@ GBD_CAUSES <- c(
 # temperature-scalar adjustment internally. Workflow B's reference/target
 # ratio (S_X / S_SSP2) is meaningful only for these causes -- it cancels
 # out the temperature signal IHME already baked into the forecast and
-# replaces it with our scenario-X signal. The other 5 causes
+# replaces it with our scenario-X signal. The other causes
 # (CAUSES_IHME_NOT_TEMP_SCALED below) get the identity ratio (1.0) so the
 # Workflow B formula collapses to plain m_IHME * PAF_X for them.
 #
-# *** PLACEHOLDER LIST -- needs confirmation from IHME via Charlie. ***
-# This is a best guess based on Burkart 2021 vs GBD 2021 forecast cause
-# coverage; we should replace with the authoritative list before any
-# production run.
+# Source: GBD 2021 forecast appendix (gbd/gbd-2021-forecast-appendix.pdf),
+# Section 2.1.6.7 "Non-optimal temperature PAFs", which enumerates the 12
+# IHME-forecast temperature-related causes:
+#   "ischaemic heart disease, stroke, hypertensive heart disease, diabetes,
+#    chronic kidney disease, lower respiratory infection, chronic obstructive
+#    pulmonary disease, homicide, suicide, mechanical injuries,
+#    transport-related injuries, and drowning."
+# "Transport-related injuries" is IHME's umbrella cause; we split it into
+# inj_trans_road and inj_trans_other, both treated as temp-scaled here.
+# So 12 IHME causes -> 13 of our acause codes.
 CAUSES_IHME_TEMP_SCALED <- c(
-  "ckd", "cvd_cmp", "cvd_htn", "cvd_ihd", "cvd_stroke", "diabetes",
-  "inj_drowning", "inj_homicide", "inj_othunintent", "inj_suicide",
-  "lri", "resp_copd"
+  "ckd",            # chronic kidney disease
+  "cvd_htn",        # hypertensive heart disease
+  "cvd_ihd",        # ischaemic heart disease
+  "cvd_stroke",     # stroke
+  "diabetes",       # diabetes
+  "inj_drowning",   # drowning
+  "inj_homicide",   # interpersonal violence (homicide)
+  "inj_mech",       # mechanical injuries
+  "inj_suicide",    # self-harm (suicide)
+  "inj_trans_other",# transport-related injuries (other) — umbrella in IHME
+  "inj_trans_road", # transport-related injuries (road) — umbrella in IHME
+  "lri",            # lower respiratory infections
+  "resp_copd"       # chronic obstructive pulmonary disease
 )
 CAUSES_IHME_NOT_TEMP_SCALED <- setdiff(GBD_CAUSES, CAUSES_IHME_TEMP_SCALED)
-# Expected: c("inj_animal", "inj_disaster", "inj_mech",
-#             "inj_trans_other", "inj_trans_road") — 5 causes
+# Result: c("cvd_cmp", "inj_animal", "inj_disaster", "inj_othunintent")
+# — 4 causes. Workflow B ratio is identity (1.0) for these; m_IHME * PAF_X
+# applied directly.
 
 # Temperature zone range (Burkart uses 6-28°C)
 TEMP_ZONE_MIN <- 6
