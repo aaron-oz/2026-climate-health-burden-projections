@@ -12,6 +12,8 @@ population from the World Bank Climate Change Knowledge Portal (CCKP).
 
 ## Where to start
 
+- **Production workflow / step-by-step commands (start here if you're Caspar):**
+  [`caspar-workflow.md`](caspar-workflow.md)
 - **Overview, architecture, and run instructions:**
   [`pipeline-state-for-cckp.md`](pipeline-state-for-cckp.md)
 - **Methodology memo (Workflow B, ratio approach):**
