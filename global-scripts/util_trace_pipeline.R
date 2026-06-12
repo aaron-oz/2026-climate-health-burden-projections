@@ -238,13 +238,34 @@ trace_pipeline <- function() {
   # ==========================================================================
   # Country burden totals (from burden_<id>.rds)
   # ==========================================================================
+  # If burden carries a draw column (per-draw output from 05), we sum within
+  # draw and then take mean across draws. Plain sum across the whole frame
+  # would double-count by N_DRAWS.
   write_section(con, "4. Country burden totals (from burden_<id>.rds)")
+  has_draws <- "draw" %in% names(burden)
   burden_yr <- burden[year == YEAR & acause %in% causes]
-  totals <- burden_yr[, .(deaths        = sum(deaths,        na.rm = TRUE),
-                          deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
-                          deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
-                          deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE)),
-                      by = acause]
+  if (has_draws) {
+    per_draw <- burden_yr[, .(deaths        = sum(deaths,        na.rm = TRUE),
+                              deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
+                              deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+                              deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE)),
+                          by = .(acause, draw)]
+    totals <- per_draw[, .(deaths        = mean(deaths,        na.rm = TRUE),
+                           deaths_heat   = mean(deaths_heat,   na.rm = TRUE),
+                           deaths_cold   = mean(deaths_cold,   na.rm = TRUE),
+                           deaths_nonopt = mean(deaths_nonopt, na.rm = TRUE)),
+                       by = acause]
+  } else {
+    totals <- burden_yr[, .(deaths        = sum(deaths,        na.rm = TRUE),
+                            deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
+                            deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+                            deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE)),
+                        by = acause]
+  }
+  if (has_draws) {
+    cat("(Burden carries draws; values below are mean across draws of the within-draw sum.)\n\n",
+        file = con)
+  }
   write_table_header(con, c("cause", "total deaths (pipeline input)",
                             "heat attributable", "cold attributable",
                             "non-optimal attributable"))
@@ -258,18 +279,31 @@ trace_pipeline <- function() {
 
   write_section(con, "5. Sanity checks")
   burden_yr_all <- burden[year == YEAR]
-  all_totals <- burden_yr_all[, .(deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
-                                  deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
-                                  deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE))]
+  if (has_draws) {
+    per_draw_all <- burden_yr_all[, .(deaths        = sum(deaths,        na.rm = TRUE),
+                                      deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
+                                      deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+                                      deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE)),
+                                  by = draw]
+    all_totals <- per_draw_all[, .(deaths        = mean(deaths,        na.rm = TRUE),
+                                   deaths_heat   = mean(deaths_heat,   na.rm = TRUE),
+                                   deaths_cold   = mean(deaths_cold,   na.rm = TRUE),
+                                   deaths_nonopt = mean(deaths_nonopt, na.rm = TRUE))]
+  } else {
+    all_totals <- burden_yr_all[, .(deaths        = sum(deaths,        na.rm = TRUE),
+                                    deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
+                                    deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+                                    deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE))]
+  }
   consistency_err <- abs(all_totals$deaths_heat + all_totals$deaths_cold -
                            all_totals$deaths_nonopt)
   write_kv(con, "Sum(heat) + Sum(cold) matches Sum(non-opt)",
            if (consistency_err < 1) "YES (within rounding)" else
              sprintf("NO (off by %.2f)", consistency_err))
-  write_kv(con, "Country-aggregate non-opt deaths (all 17 causes)",
+  write_kv(con, "Country-aggregate non-opt deaths (all causes in burden)",
            fmt_num(round(all_totals$deaths_nonopt)))
-  write_kv(con, "Country deaths (pipeline mortality input, all 17 causes)",
-           fmt_num(round(burden_yr_all[, sum(deaths, na.rm = TRUE)])))
+  write_kv(con, "Country deaths (pipeline mortality input, all causes)",
+           fmt_num(round(all_totals$deaths)))
 
   invisible(NULL)
 }

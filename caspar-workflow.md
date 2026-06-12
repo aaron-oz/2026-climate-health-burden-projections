@@ -203,6 +203,59 @@ total time estimates:
 - The download timing logged by `util_run_cckp_pipeline.R` (the
   `Downloaded ... in <X>s` lines)
 
+## 6.5. Trace-verify the math on the benchmark output
+
+Before scaling out to the full production run, walk one pixel × one
+cause through every stage of the pipeline and verify each value by hand.
+This catches lookup / index / formula bugs that would otherwise hide
+behind plausible-looking aggregates. **This step was your idea.**
+
+```bash
+Rscript global-scripts/util_trace_pipeline.R \
+  --pixel_ids=<comma,separated,pixel_ids> \
+  --year=2022 \
+  --causes=cvd_ihd \
+  --draws_summary=summary \
+  --output=output/trace_benchmark.md
+```
+
+The script reads the saved intermediate / results RDS files (no re-running
+of the pipeline needed) and writes a structured markdown report with:
+
+- Per-pixel inputs and zone assignment
+- Per-(pixel × cause) RR lookup, TMREL, heat/cold classification, and PAF
+  contribution
+- Country-aggregate PAFs and burden totals
+- Sanity checks: sum(heat) + sum(cold) should equal sum(non-opt)
+
+To pick illuminating pixels, choose a contrasting set — e.g., a
+high-altitude metro (cool, cold-attributable PAF should dominate), a
+tropical lowland (warm, heat side dominates), and a moderate climate.
+You can get good candidates with:
+
+```r
+library(data.table)
+t <- setDT(readRDS("output/intermediate/temperature.rds"))
+yr <- t[year == 2022, .(annual_mean = mean(daily_temp),
+                        pop = first(pop), zone = first(zone)), by = pixel_id]
+# Cold/high-pop pixel:
+head(yr[zone <= 14][order(-pop)], 1)
+# Hot/high-pop pixel:
+head(yr[zone >= 25][order(-pop)], 1)
+# Moderate-zone:
+head(yr[zone %in% 20:22][order(-pop)], 1)
+```
+
+For a worked example of hand verification of one row,
+[`pipeline-math-verification.md`](pipeline-math-verification.md) walks
+through pixel 527 in Colombia 2010 with cvd_ihd, showing the
+recomputation for every one of the 8 stages between raw input and per-row
+PAF contribution. All 8 match the trace tool's reported values.
+
+You don't need to redo this hand verification on every combo — once on a
+representative sample (say 3–5 pixels in your benchmark run) is enough to
+confirm the math hasn't drifted on your hardware.
+
 ## 7. Launch the full SSP2-RCP4.5 reference run
 
 All 200 locations, 29 models, 29 years (2022–2050).

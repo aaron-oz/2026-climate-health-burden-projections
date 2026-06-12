@@ -21,6 +21,11 @@ population from the World Bank Climate Change Knowledge Portal (CCKP).
 - **Validation status (Colombia 2010–2019):**
   [`colombia-validation-state.tex`](colombia-validation-state.tex)
   (18 of 19 headline metrics within ±5% of Samuel Cuervo's published numbers)
+- **End-to-end math verification (worked-example walkthrough):**
+  [`pipeline-math-verification.md`](pipeline-math-verification.md) —
+  hand-verifies all 8 stages between raw input and per-row PAF
+  contribution; produced by `util_trace_pipeline.R` then independently
+  recomputed
 - **Data inputs and layout:**
   [`data/README.md`](data/README.md)
 
