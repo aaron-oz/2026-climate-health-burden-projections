@@ -177,30 +177,59 @@ trace_pipeline <- function() {
               trace_zone, trace_dt10, trace_dt10 / 10))
     write_kv(con, "Within-subloc pop fraction (pr)", sprintf("%.6f", trace_pr))
 
+    cat(paste0(
+      "\n**Important**: outside of COLOMBIA_VERIFICATION mode, the pipeline rescales ",
+      "RR so that RR(TMREL) = 1 before computing PAF (see 05_compute_pafs.R). The ",
+      "trace shows both the raw RR (from the ERF curve) and the rescaled RR (raw / ",
+      "raw_at_TMREL) — the rescaled value is what the saved PAFs use. In ",
+      "verification mode, the rescaling is skipped and raw RR is used directly.\n\n"),
+        file = con)
+
     write_table_header(con,
-      c("cause", "RR (from ERF curve)", "TMREL", "risk",
-        "PAF contribution = pr × (RR-1)/RR"))
+      c("cause", "raw RR", "RR at TMREL", "rescaled RR",
+        "TMREL", "risk", "PAF contrib using rescaled RR"))
 
     for (cause in causes) {
       erf_row <- erf[zone == trace_zone & daily_temp == trace_dt10 &
                        acause == cause]
       tmrel_row <- tmrel[zone == trace_zone & year_id == trace_year]
       if (nrow(erf_row) == 0 || nrow(tmrel_row) == 0) {
-        write_table_row(con, c(cause, "NA (no ERF/TMREL match)", "—", "—", "—"))
+        write_table_row(con, c(cause, "NA (no ERF/TMREL match)", "—", "—", "—", "—", "—"))
         next
       }
       rr_vals    <- erf_row[[rr_col]]
       tmrel_vals <- if ("tmrel" %in% names(tmrel_row)) tmrel_row$tmrel else tmrel_row$tmrel_mean_10
-      rr_summary <- draws_summary(rr_vals)
-      tm_summary <- draws_summary(tmrel_vals)
+      mean_tm    <- mean(tmrel_vals, na.rm = TRUE)
+      mean_rr_raw <- mean(rr_vals, na.rm = TRUE)
 
-      mean_tm <- mean(tmrel_vals, na.rm = TRUE)
-      risk <- if (trace_dt10 < mean_tm) "cold" else if (trace_dt10 > mean_tm) "heat" else "at-tmrel"
-      mean_rr <- mean(rr_vals, na.rm = TRUE)
-      paf_contrib <- if (!is.na(mean_rr) && mean_rr > 0) trace_pr * (mean_rr - 1) / mean_rr else NA_real_
+      # Look up the raw RR at the TMREL temperature for this (zone, cause).
+      # This is what the pipeline divides by to rescale.
+      erf_at_tmrel <- erf[zone == trace_zone &
+                          daily_temp == as.integer(round(mean_tm)) &
+                          acause == cause]
+      rr_at_tmrel <- if (nrow(erf_at_tmrel) > 0)
+        mean(erf_at_tmrel[[rr_col]], na.rm = TRUE) else NA_real_
+
+      mean_rr_rescaled <- if (!is.na(rr_at_tmrel) && rr_at_tmrel > 0)
+        mean_rr_raw / rr_at_tmrel else NA_real_
+
+      risk <- if (trace_dt10 < mean_tm) "cold"
+              else if (trace_dt10 > mean_tm) "heat" else "at-tmrel"
+
+      # Per the pipeline's non-verification PAF formula
+      paf_contrib <- if (!is.na(mean_rr_rescaled) && mean_rr_rescaled >= 1) {
+        trace_pr * (mean_rr_rescaled - 1) / mean_rr_rescaled
+      } else if (!is.na(mean_rr_rescaled) && mean_rr_rescaled > 0) {
+        trace_pr * -1 * ((1/mean_rr_rescaled) - 1) / (1/mean_rr_rescaled)
+      } else NA_real_
 
       write_table_row(con,
-        c(cause, rr_summary, tm_summary, risk,
+        c(cause,
+          sprintf("%.6g", mean_rr_raw),
+          if (is.na(rr_at_tmrel)) "NA" else sprintf("%.6g", rr_at_tmrel),
+          if (is.na(mean_rr_rescaled)) "NA" else sprintf("%.6g", mean_rr_rescaled),
+          sprintf("%.4g", mean_tm),
+          risk,
           if (is.na(paf_contrib)) "NA" else sprintf("%.6g", paf_contrib)))
     }
   }

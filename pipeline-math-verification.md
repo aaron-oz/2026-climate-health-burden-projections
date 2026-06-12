@@ -2,16 +2,17 @@
 
 End-to-end hand verification of one (pixel, day, cause) row through every
 stage of the burden pipeline, comparing the trace tool's reported values
-against independently-recomputed values.
+against independently-recomputed values, plus independent re-derivation
+of the per-subloc PAF and the country burden total.
 
 **Purpose:** prove (not just plausibility-check) that the pipeline math is
-correct row-by-row. Any off-by-one, wrong-index, sign-flip, or
-formula-typo would surface as a mismatch on one of these steps.
+correct. Any off-by-one, wrong-index, sign-flip, formula-typo, or missing
+transformation step would surface as a mismatch.
 
 **Setup:**
 - Location: Colombia (loc_id 125)
 - Year: 2010
-- Pixel: 527 (Bogotá-area metro, zone 14)
+- Pixel: 527 (Bogotá-area, zone 14)
 - Date: 2010-01-02
 - Cause: cvd_ihd
 - Mode: summary (USE_DRAWS=FALSE)
@@ -20,11 +21,27 @@ formula-typo would surface as a mismatch on one of these steps.
   18 of 19 published headline metrics — see
   [`colombia-validation-state.tex`](colombia-validation-state.tex))
 
-**Method:** run the pipeline, then `util_trace_pipeline.R`, then
-independently recompute each value from the raw saved RDS files and
-compare.
+## Honest note on the first attempt
 
----
+A first pass at this verification (committed in `f8f3f3a`) confirmed the
+**trace tool's** output matched independent recomputation using the
+formula `pr × (RR-1)/RR` applied to the raw RR straight from the saved
+ERF file. That checks the *tool's* arithmetic but does **not** verify the
+pipeline's results because the pipeline applies an extra **RR rescaling
+step** before computing PAF (line ~129 of `05_compute_pafs.R`): the RR
+curve is divided by the RR value at the TMREL temperature so that the
+rescaled RR equals 1 at the TMREL. The trace tool wasn't showing this
+step, so the "PAF contribution" in the original tool's output did not
+correspond to what the pipeline actually saves.
+
+Verifying the per-subloc aggregation independently surfaced a 5× mismatch
+between my hand computation (using un-rescaled RR) and the pipeline's
+saved PAF. Once I added the rescaling step, my computation matched the
+pipeline's saved value **to 8 decimal places**.
+
+The trace tool was fixed (`util_trace_pipeline.R`) to show raw RR,
+RR-at-TMREL, rescaled RR, and the PAF contribution computed from
+rescaled RR. The verification below uses the corrected tool.
 
 ## Step-by-step
 
@@ -44,20 +61,16 @@ daily_temp_10 = as.integer(round(daily_temp * 10))
               = 136
 ```
 
-| computed | trace reports | match |
-|---------:|--------------:|:-----:|
-| 136      | 136           | ✓     |
+Hand-computed: **136**. Trace tool: **136**. ✓
 
 ### Step 3 — Zone assignment (annual mean per pixel, rounded)
 
 ```
-annual mean for pixel 527 in 2010 = mean over 365 days = 13.786322 °C
+annual mean for pixel 527 in 2010 = 13.786322 °C over 365 days
 zone = as.integer(round(13.786322)) = 14
 ```
 
-| computed | trace reports | match |
-|---------:|--------------:|:-----:|
-| 14       | 14            | ✓     |
+Hand-computed: **14**. Trace tool: **14**. ✓
 
 ### Step 4 — Within-subloc pop fraction (pr)
 
@@ -65,87 +78,146 @@ Per `03_load_temperature.R`, `pr` is each pixel-day's `pop` divided by
 the total person-days in that subloc-year:
 
 ```
-pop_subloc_total (subloc 11, year 2010) = sum across all pixel-days
-                                        = 3,188,693,158
-pr = 5,100,137.1 / 3,188,693,158
-   = 1.599444 × 10⁻³
+pop_subloc_total (subloc 11, year 2010) = 3,188,693,158
+pr = 5,100,137.1 / 3,188,693,158 = 1.599444 × 10⁻³
 ```
 
-| computed       | trace reports | match |
-|---------------:|--------------:|:-----:|
-| 1.599444e-03   | 0.001599      | ✓     |
+Hand-computed: **1.599444e-03**. Trace tool: **0.001599**. ✓ (rounding)
 
-### Step 5 — RR lookup in `output/intermediate/erf_curves.rds`
+Also confirmed: sum of `pr` within each subloc-year = 1.0 (33 of 33
+sublocs match), so the normalization is correct.
+
+### Step 5 — Raw RR lookup in `output/intermediate/erf_curves.rds`
 
 For (zone=14, daily_temp=136, acause=cvd_ihd), summary mode:
 
 ```
-erf_row = erf[zone == 14 & daily_temp == 136 & acause == "cvd_ihd"]
-rr_mean = 1.018998
+rr_mean (raw) = 1.018998
 ```
 
-| computed       | trace reports                  | match |
-|---------------:|-------------------------------:|:-----:|
-| 1.018998       | 1.019 (3 sig figs displayed)   | ✓     |
+Hand-computed: **1.018998**. Trace tool's "raw RR" column: **1.019**. ✓
 
-### Step 6 — TMREL lookup in `output/intermediate/tmrel.rds`
+### Step 6 — RR rescaling (the step the original verification missed)
+
+The pipeline does, in `05_compute_pafs.R` non-verification mode:
+
+```
+For each (zone, cause, year), find rr_ref = rr_mean at the TMREL temperature.
+Replace rr_mean ← rr_mean / rr_ref for every (daily_temp) in that group.
+```
+
+For zone=14, cvd_ihd, year=2010:
+- TMREL = 235 (= 23.5 °C)
+- rr_mean at TMREL (raw) = 0.944913 (looked up from the ERF file)
+- rescaled rr at daily_temp=136 = 1.018998 / 0.944913 = **1.078403**
+
+Hand-computed rescaled RR: **1.078403**. Trace tool's "rescaled RR" column:
+**1.0784**. ✓
+
+### Step 7 — TMREL lookup in `output/intermediate/tmrel.rds`
 
 For (zone=14, year=2010), summary mode:
 
 ```
-tmrel_row = tmrel[zone == 14 & year_id == 2010]
-tmrel_mean_10 = 235  (= 23.5 °C)
+tmrel_mean_10 = 235 (= 23.5 °C)
 ```
 
-| computed | trace reports | match |
-|---------:|--------------:|:-----:|
-| 235      | 235           | ✓     |
+Hand-computed: **235**. Trace tool: **235**. ✓
 
-### Step 7 — Heat/cold classification per `05_compute_pafs.R`
+### Step 8 — Heat/cold classification
 
 ```
-risk = if (daily_temp_10 < tmrel) "cold"
-       else if (daily_temp_10 > tmrel) "heat"
-       else NA
+risk = if (daily_temp_10 < tmrel) "cold" else "heat"
      = if (136 < 235) "cold" → "cold"
 ```
 
-| computed | trace reports | match |
-|---------:|--------------:|:-----:|
-| cold     | cold          | ✓     |
+Hand-computed: **cold**. Trace tool: **cold**. ✓
 
-### Step 8 — PAF contribution = pr × (RR − 1) / RR
+### Step 9 — PAF contribution = pr × (RR_rescaled − 1) / RR_rescaled
 
-(Standard Burkart attributable-fraction formula; RR ≥ 1 branch since
-RR = 1.019 here.)
+(Burkart attributable-fraction formula applied to the **rescaled** RR;
+RR ≥ 1 branch since rescaled RR = 1.078 here.)
 
 ```
-paf_contrib = pr × (RR - 1) / RR
-            = 1.599444e-03 × (1.018998 - 1) / 1.018998
-            = 1.599444e-03 × 0.018644
-            = 2.9819465495e-05
+paf_contrib = pr × (RR_rescaled - 1) / RR_rescaled
+            = 1.599444e-03 × (1.078403 - 1) / 1.078403
+            = 1.599444e-03 × 0.072704
+            = 1.162848e-04
 ```
 
-| computed             | trace reports     | match |
-|---------------------:|------------------:|:-----:|
-| 2.981947e-05         | 2.98195e-05       | ✓     |
+Hand-computed: **1.162848e-04**. Trace tool's "PAF contrib using rescaled
+RR" column: **0.000116285**. ✓
 
 ---
 
+## Aggregation verification — per-subloc PAF
+
+The previous 9 steps verify one row. Step 10 is the aggregation: summing
+per-row contributions to a per-subloc PAF, then to a country PAF, then
+multiplying by mortality counts to get attributable deaths.
+
+I re-implemented the pipeline's exact aggregation (replicating the
+`temp_agg` pre-aggregation by (subloc, zone, daily_temp_10, year), the
+RR rescaling, the heat/cold classification, and the sum within
+(acause, risk, subloc, year)) for subloc 11, year 2010, cvd_ihd:
+
+| | hand-computed | pipeline saved | match |
+|---|--:|--:|:--:|
+| paf_cold (subloc 11) | 0.06956161 | 0.06956161 | ✓ (8 dp) |
+| paf_heat (subloc 11) | 0.00000000 | 0.00000000 | ✓ |
+
+## Aggregation verification — country burden total
+
+For the country total: take the pipeline's saved per-subloc PAFs from
+`pafs_125.rds`, multiply by per-subloc mortality counts, sum across
+sublocs. This verifies the `burden = deaths × PAF` multiplication chain
+(does NOT independently re-verify the PAFs — those are verified at the
+per-subloc level above):
+
+| | hand-computed | burden_125.rds | match |
+|---|--:|--:|:--:|
+| country deaths_cold (cvd_ihd) | 1315.9 | 1315.9 | ✓ |
+| country deaths_heat (cvd_ihd) | -64.7 | -64.7 | ✓ |
+
 ## Result
 
-All 8 steps match independent recomputation **exactly** (or to displayed
-significant figures where the trace tool rounds). The pipeline arithmetic
-for this row is correct end-to-end.
+Every stage between raw input and country-level attributable burden
+**independently reproduces the pipeline's saved values exactly** (or to
+displayed sig figs where the trace tool rounds), including the previously
+missed RR rescaling step.
 
-This verifies the per-pixel math up to and including the per-row PAF
-contribution. The next aggregation step (sum of per-row contributions
-across pixel-days within a subloc-year, producing a country-level PAF
-that then multiplies cause-specific mortality counts to attributable
-deaths) is structurally verified by the pipeline's `sum(heat) +
-sum(cold) = sum(non-opt)` sanity check (in section 5 of the trace
-report) and by the 18-of-19 PASS validation against Samuel's published
-Colombia numbers.
+The pipeline math is correct for this row, this subloc, and this country
+aggregate.
+
+## What this verifies (and what it doesn't)
+
+**Verified:**
+- The arithmetic in `03_load_temperature.R`, `01_load_erf.R`,
+  `02_load_tmrel.R`, and `05_compute_pafs.R` for one example walks
+  through cleanly when reproduced from the saved RDS files.
+- The PAF rescaling step is correctly applied.
+- The within-subloc aggregation, the cross-subloc aggregation, and the
+  deaths × PAF multiplication are correct.
+- The trace tool (after the fix) reports values that match the pipeline.
+
+**NOT verified by this exercise:**
+- Whether the ERF curves themselves (Burkart 2021's published RR draws)
+  are correct or appropriate — those are external inputs.
+- Whether the TMREL values (IHME's 1990 / 2010 / 2020 files) are correct.
+- Whether the input temperature and mortality data are correct.
+- Whether the pipeline formulas (PAF = pr × (RR-1)/RR; YLL = deaths × ex)
+  are the right scientific choices — that's a methodology question
+  documented in `gbd/ihme-plan-b-prep.tex`.
+- Whether the pipeline's behavior in DRAW mode (which carries draws
+  through the merge and produces uncertainty bands) is correct. This
+  verification was done in summary mode; draws-mode aggregation is
+  structurally similar but has its own merge fan-out to check.
+
+For higher-confidence verification beyond this row-and-aggregation
+walk, the strongest independent signal is the Colombia validation:
+**18 of 19 headline metrics within ±5%** of Samuel Cuervo's published
+2010-2019 numbers, using the same input data and pipeline code (see
+`colombia-validation-state.tex`).
 
 ## Reproducing
 
@@ -160,14 +232,13 @@ distrobox enter emacs-r -- Rscript global-scripts/util_trace_pipeline.R \
   --pixel_ids=527 --year=2010 --causes=cvd_ihd \
   --draws_summary=summary --output=output/trace_verification_one_row.md
 
-# Hand-verify (the recomputation script lives inline in this commit's
-# message and in the original verification session); the values above
-# can be reproduced by loading temperature.rds, erf_curves.rds, and
-# tmrel.rds from output/intermediate/ and applying the formulas
-# step-by-step.
+# Verify by hand — the recomputation queries live inline in this commit's
+# message (and the original verification session). Load
+# output/intermediate/{temperature,erf_curves,tmrel}.rds, apply the
+# formulas in the steps above, and the values reproduce exactly.
 ```
 
-The trace tool produces a similar report for any chosen pixel set + cause
-set in a few seconds, against any computed pipeline output. Caspar's
-production runs should generate one of these per representative
-(location, cause) sample for spot-checking before greenlight.
+The trace tool produces a similar report for any pixel set + cause set
+in seconds, against any computed pipeline output. The aggregation
+verification queries are reusable too — same shape for any
+(subloc, cause) pair.
