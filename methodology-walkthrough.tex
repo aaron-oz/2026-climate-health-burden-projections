@@ -1,0 +1,770 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black,
+  citecolor=blue!50!black,
+}
+
+\newcommand{\PAF}{\text{PAF}}
+\newcommand{\TMREL}{\text{TMREL}}
+\newcommand{\SSPtwo}{\text{SSP2{-}RCP4.5}}
+\newcommand{\mIHME}{m^{\text{IHME}}}
+\newcommand{\mAttr}{D^{\text{attr}}}
+
+\title{Methodology walkthrough \\
+\large World Bank climate-health burden projections, 2022--2050}
+\author{Aaron Osgood-Zimmerman, World Bank \\ \texttt{aaron.oz@worldbank.org}}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document explains the math the pipeline performs to project
+temperature-attributable mortality and years of life lost (YLLs) under
+SSP-RCP climate scenarios out to 2050. Three audiences are addressed:
+climatologists running the pipeline (Caspar), epidemiologists checking the
+attribution framework (Samuel), and project leads / future analysts
+reviewing the deliverable methodology (Charlie and others).
+
+Part~I covers background and formal math: the Burkart 2021 exposure-response
+framework, the IHME GBD 2021 forecast scaffolding, and the
+\emph{unscaling-rescaling} ratio that translates IHME's reference-scenario
+mortality into burden estimates under arbitrary SSP-RCP scenarios. Part~II
+walks through concrete worked examples drawn from the pipeline's trace
+output (Colombia 2010 Samuel-validated data) and a hypothetical
+cross-scenario example, showing each formula applied to real numbers.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+\section{Where this document fits}
+% =====================================================================
+
+This is the standalone methodology reference for the deliverable. It is
+self-contained: a reader following along should not need to look at the
+companion documents.
+
+For deeper reading, the supporting docs live in the project repository
+at \url{https://github.com/aaron-oz/2026-climate-health-burden-projections}:
+\begin{description}[style=multiline,leftmargin=4.2cm]
+  \item[\texttt{gbd/ihme-plan-b-prep.tex}] Original methodology memo
+    (denser, more abbreviated than this document).
+  \item[\texttt{colombia-validation-state.tex}] Empirical validation of
+    the pipeline against Samuel Cuervo's published Colombia 2010--2019
+    numbers; 18 of 19 headline metrics within $\pm 5\%$.
+  \item[\texttt{pipeline-math-verification.md}] Row-by-row independent
+    re-derivation of the per-pixel math.
+  \item[\texttt{pipeline-state-for-cckp.md}] Pipeline architecture,
+    script ordering, input file formats.
+  \item[\texttt{caspar-workflow.md}] Step-by-step production run
+    instructions.
+\end{description}
+
+\begin{tcolorbox}[colback=blue!5,colframe=blue!50!black,title=Scope: what
+this document is NOT]
+\textbf{Not in scope.} This document does not re-derive Burkart's
+MR-BRT exposure-response curve fitting, does not re-derive the IHME GBD
+forecast model, and does not re-justify the choice of TMREL definition or
+ERF cause set. Those are external inputs documented in Burkart et~al.\
+(2021) and the GBD 2021 forecast appendix; we use their published outputs
+as given. What \emph{is} in scope is the math we layer on top of those
+outputs to produce scenario-specific attributable-burden projections, and
+how each step is implemented in the pipeline.
+\end{tcolorbox}
+
+% =====================================================================
+\section{Notation}
+% =====================================================================
+
+\renewcommand{\arraystretch}{1.15}
+\begin{center}
+\begin{tabular}{l l}
+\toprule
+Symbol & Meaning \\
+\midrule
+$c$ & GBD cause (one of 17 temperature-sensitive causes) \\
+$l$ & Location (country, GBD location ID) \\
+$t$ & Year (1990--2050) \\
+$a$ & Age group (GBD 5-year bins: 0--4, 5--9, \ldots, 80+) \\
+$s$ & Sex (male, female) \\
+$d$ & Draw index ($0, \ldots, N_{\text{draws}}-1$; we use $N=500$) \\
+$X$ & Scenario (SSP1-RCP1.9, SSP2-RCP4.5, SSP3-RCP7.0, SSP5-RCP8.5) \\
+$\SSPtwo$ & Reference scenario for IHME's published forecasts \\
+\midrule
+$T_{l,t,p}$ & Daily-mean temperature ($^{\circ}$C) at pixel $p$ on day $t$ \\
+$z_{l,p,t}$ & Climate zone at pixel $p$ in year $t$ = round(annual mean $T$) \\
+$\tau_{z,t}$ & TMREL (theoretical minimum risk exposure level) for zone
+$z$, year $t$ \\
+$\pi_{l,t,p}$ & Within-location population weight; $\sum_{p} \pi = 1$
+within $(l, t)$ \\
+\midrule
+$\rho_c(z, T)$ & Raw relative risk for cause $c$, zone $z$, daily
+temperature $T$ (Burkart ERF) \\
+$\tilde\rho_c(z, T, t)$ & Rescaled RR: $\rho_c(z, T) /
+\rho_c(z, \tau_{z,t})$, so $\tilde\rho(z, \tau, t) = 1$ \\
+$\PAF^{\text{heat}}_{c,l,t}$ & Heat-attributable PAF for cause $c$,
+location $l$, year $t$ \\
+$\PAF^{\text{cold}}_{c,l,t}$ & Cold-attributable PAF, same indexing \\
+$\tilde S_{c,X,l,t}$ & Pipeline's pop-weighted PAF aggregate under
+scenario $X$ ($= \PAF^{\text{heat}} + \PAF^{\text{cold}}$) \\
+\midrule
+$\mIHME_{c,l,a,s,t,d}$ & IHME's forecast count of cause-$c$ deaths under
+their reference \\
+$\mAttr_{c,X,l,a,s,t,d}$ & Pipeline's projection: temperature-attributable
+deaths under scenario $X$ \\
+$\text{ex}_{l,a,s,t}$ & Remaining life expectancy at age of death (from
+life tables) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The pipeline's intermediate files store these in the same shape:
+pixel-day rows for $T$ and $\pi$, zone-keyed rows for $\tau$,
+$(z, T, c, d)$-keyed rows for $\rho$, and $(l, a, s, t, c, d)$-keyed
+rows for $\mIHME$ and $\mAttr$.
+
+% =====================================================================
+\part{The math}
+% =====================================================================
+
+\section{Background: how temperature attribution works}
+
+\subsection{Why ``attribution''}
+
+In epidemiology, an \emph{attributable fraction} answers the question
+``what share of deaths from cause $c$ would not have occurred if exposure
+were at some counterfactual level?'' For non-optimal temperature, the
+counterfactual is the TMREL --- the daily temperature at which mortality
+risk is minimized for that climate zone. A pixel-day where actual
+temperature equals the TMREL contributes zero attributable burden; a
+pixel-day at the cold or heat tail contributes positive attributable
+burden weighted by how much it raises relative risk.
+
+For an individual pixel-day with population weight $\pi$ and relative
+risk $\rho$, the attributable fraction is:
+\begin{equation}
+\text{AF}_{\text{pixel-day}} = \pi \cdot \frac{\rho - 1}{\rho}
+\quad \text{(if } \rho \geq 1)
+\label{eq:af-pixel}
+\end{equation}
+For $\rho < 1$ (a temperature \emph{below} the risk-minimum within a zone,
+which can happen for some causes), the sign flips: that pixel-day
+contributes a small \emph{negative} attributable burden (it would have
+been protective compared to TMREL).
+
+Summing Eq.~\eqref{eq:af-pixel} over all pixel-days in a location-year
+that fall on the cold side of TMREL gives the location-year
+cold-attributable PAF; summing over heat-side pixel-days gives the
+heat-attributable PAF. Multiplying by total cause-specific deaths yields
+attributable deaths.
+
+\subsection{Burkart's temperature exposure-response functions}
+
+Burkart et al.~(\textit{Lancet}, 2021) fit relative-risk curves
+$\rho_c(z, T)$ for 17 temperature-sensitive causes using meta-regression
+(MR-BRT) on cause-specific mortality data from 9 countries (64.9M
+deaths). The fit produces 1,000 posterior draws of $\rho_c$ for each
+combination of climate zone $z \in [6, 28]\,^{\circ}$C and daily
+temperature $T \in [-22, 47]\,^{\circ}$C. We use these curves directly;
+the pipeline does not refit them.
+
+The 17 causes split into three broad groups by mechanism:
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Cardiovascular} (5): ischemic heart disease, stroke,
+    hypertensive heart disease, cardiomyopathy, chronic kidney disease.
+  \item \textbf{Respiratory and metabolic} (3): lower respiratory
+    infections, chronic obstructive pulmonary disease, diabetes.
+  \item \textbf{Injuries} (9): homicide, suicide, mechanical injuries,
+    transport-road, transport-other, animal-related, disaster-related,
+    drowning, other-unintentional.
+\end{itemize}
+
+\subsection{Climate zones and TMREL}
+
+A pixel's climate zone $z$ is the rounded annual mean temperature for
+that pixel-year. Zones are integers spanning 6--28$\,^{\circ}$C; the
+Burkart ERF curves are zone-specific because the exposure-response
+relationship is shaped by acclimatization (people in cold zones tolerate
+cold differently than people in hot zones).
+
+The TMREL is the temperature that minimizes \emph{death-weighted}
+relative risk for a given zone and location. It is provided by IHME at
+1,034 GBD locations and three time points (1990, 2010, 2020); our
+pipeline averages these to one zone-specific TMREL used across the
+study period.\footnote{For Workflow~B's projections, we use the 2020
+TMREL throughout the 2022--2050 horizon. Decadal TMREL projections
+beyond 2020 are an open methodology choice; the IHME GBD 2021 forecast
+appendix Section~2.1.6.7 discusses a 10-year rolling mean approach.
+Within our pipeline the cross-scenario ratio cancels first-order TMREL
+drift (since both numerator and denominator use the same TMREL).}
+
+\subsection{The unscale/rescale problem}
+
+IHME's GBD 2021 forecast publishes cause-specific mortality rates under
+their reference scenario, which roughly corresponds to $\SSPtwo$. For 12
+of our 17 causes, IHME applied a temperature-scalar adjustment to the
+forecast (so the published count already reflects $\SSPtwo$ temperature
+effects). For the other 5, no temperature adjustment was applied.
+
+We want to project mortality \emph{under other climate scenarios}
+(SSP1-RCP1.9, SSP3-RCP7.0, SSP5-RCP8.5). IHME does not publish per-SSP
+forecasts. Our task: take the published $\SSPtwo$-anchored mortality and
+adjust it to reflect a different climate, using \emph{our} pipeline
+applied to bias-corrected CMIP6 temperature for the target scenario.
+
+This is Workflow~B (next section).
+
+% =====================================================================
+\section{The pipeline math, step by step}
+% =====================================================================
+
+For one (location, year, cause) tuple, the pipeline produces a
+$\PAF^{\text{heat}}$ and $\PAF^{\text{cold}}$ value, then multiplies by
+cause-specific mortality counts to get attributable deaths.
+Per-pixel-day:
+
+\subsection{Climate zone assignment}
+
+For each pixel $p$ in location $l$ in year $t$:
+\begin{equation}
+z_{l,p,t} = \text{round}\!\left( \frac{1}{N_{\text{days}}} \sum_{\text{day} \in t} T_{l,t,p,\text{day}} \right)
+\quad \text{clipped to } [6, 28]
+\label{eq:zone}
+\end{equation}
+The pipeline computes one zone per pixel per year. As climate warms, a
+pixel's zone shifts upward over time; this is automatic.
+
+\subsection{TMREL lookup and heat/cold classification}
+
+The TMREL is keyed by (zone, year). For pixel-day $i$ with zone
+$z_i$ and daily temperature $T_i$:
+\begin{equation}
+\text{risk}_i = \begin{cases}
+\text{cold} & T_i < \tau_{z_i, t} \\
+\text{heat} & T_i > \tau_{z_i, t} \\
+\text{at-TMREL} & T_i = \tau_{z_i, t}\ \text{(no contribution)}
+\end{cases}
+\end{equation}
+
+\subsection{RR rescaling at the TMREL}
+
+This step is easy to overlook. The pipeline divides the raw ERF curve
+$\rho_c(z, T)$ by its own value at $\tau_{z,t}$:
+\begin{equation}
+\tilde\rho_c(z, T, t) = \frac{\rho_c(z, T)}{\rho_c(z, \tau_{z,t})}
+\label{eq:rescale}
+\end{equation}
+After rescaling, $\tilde\rho_c(z, \tau, t) = 1$ exactly. This is the
+Burkart 2021 convention: relative risk is reported with the TMREL as the
+unit reference, not the curve fit's arbitrary baseline. \emph{All
+subsequent PAF computations use $\tilde\rho$, not $\rho$.}
+
+\subsection{Within-location PAF aggregation}
+
+For location $l$, year $t$, cause $c$:
+\begin{align}
+\PAF^{\text{cold}}_{c,l,t} &= \sum_{i \in \text{cold pixel-days}}
+    \pi_{l,t,p_i} \cdot \frac{\tilde\rho_c(z_i, T_i, t) - 1}{\tilde\rho_c(z_i, T_i, t)} \label{eq:paf-cold} \\
+\PAF^{\text{heat}}_{c,l,t} &= \sum_{i \in \text{heat pixel-days}}
+    \pi_{l,t,p_i} \cdot \frac{\tilde\rho_c(z_i, T_i, t) - 1}{\tilde\rho_c(z_i, T_i, t)} \label{eq:paf-heat}
+\end{align}
+The pop weights $\pi$ are computed in
+\texttt{03\_load\_temperature.R} as
+$\pi_{l,t,p,\text{day}} = \text{pop}_{l,t,p} \,/\, \sum_{p,\text{day}}
+\text{pop}$, summing to 1 over (pixel $\times$ day) within $(l, t)$. So
+the PAF is a pixel-day-weighted average attributable fraction.
+
+The pop-weighted aggregate non-optimal PAF that drives Workflow~B's ratio
+is:
+\begin{equation}
+\tilde S_{c,X,l,t} = \PAF^{\text{heat}}_{c,l,t} + \PAF^{\text{cold}}_{c,l,t}
+\quad \text{computed using scenario-}X\text{ temperature data}
+\label{eq:S}
+\end{equation}
+
+\subsection{Attributable deaths}
+
+For cause $c$, age $a$, sex $s$:
+\begin{align}
+\mAttr_{c,l,a,s,t}^{\text{cold}} &= m_{c,l,a,s,t} \cdot \PAF^{\text{cold}}_{c,l,t} \label{eq:attrib-cold} \\
+\mAttr_{c,l,a,s,t}^{\text{heat}} &= m_{c,l,a,s,t} \cdot \PAF^{\text{heat}}_{c,l,t} \label{eq:attrib-heat}
+\end{align}
+where $m_{c,l,a,s,t}$ is the cause-specific death count (which the
+pipeline reads from its mortality input). The PAF, being a location-year
+quantity, broadcasts across all (age, sex) cells. Attributable YLLs are
+then $\mAttr \times \text{ex}$.
+
+% =====================================================================
+\section{Workflow B: unscaling and rescaling}
+% =====================================================================
+
+\subsection{The setup}
+
+We have:
+\begin{itemize}[itemsep=2pt]
+  \item IHME's published mortality forecast $\mIHME_{c,l,a,s,t}$ ---
+    counts derived from rate $\times$ population, at the country level,
+    annual, 500 draws each.
+  \item Our pipeline applied to the bias-corrected CMIP6 temperature for
+    scenario $X$, producing $\PAF^{\text{heat}}_{c,X,l,t}$,
+    $\PAF^{\text{cold}}_{c,X,l,t}$, and $\tilde S_{c,X,l,t}$.
+  \item Our pipeline applied to $\SSPtwo$ CMIP6 temperature, producing
+    the same quantities under the reference scenario.
+\end{itemize}
+
+We want $\mAttr_{c,X,l,a,s,t}$, the temperature-attributable deaths from
+cause $c$ under scenario $X$.
+
+The challenge: IHME's $\mIHME_{c,l,a,s,t}$ already has $\SSPtwo$-climate
+effects baked in (for 12 of the 17 causes). If we just multiply by
+$\PAF_X$, we're double-counting some of the temperature signal. We need
+to first \emph{unscale} IHME's count to remove the $\SSPtwo$ temperature
+contribution, then \emph{rescale} to add scenario-$X$'s contribution.
+
+\subsection{The ratio formula}
+
+The ratio of pipeline-computed pop-weighted PAFs between scenarios is
+the scale factor:
+\begin{equation}
+r_{c,X,l,t} = \frac{\tilde S_{c,X,l,t}}{\tilde S_{c,\SSPtwo,l,t}}
+\label{eq:ratio}
+\end{equation}
+Then for the 12 temp-scaled causes:
+\begin{equation}
+\mAttr_{c,X,l,a,s,t}^{\text{heat}} = \mIHME_{c,l,a,s,t} \cdot r_{c,X,l,t} \cdot \PAF^{\text{heat}}_{c,X,l,t}
+\label{eq:wb-12}
+\end{equation}
+and analogously for cold. The product $\mIHME \cdot r$ is the
+scenario-$X$ ``total mortality envelope'' --- IHME's reference total
+adjusted upward (if scenario $X$ has more temperature exposure than
+$\SSPtwo$) or downward. Multiplying by scenario-$X$'s heat PAF gives the
+heat-attributable share of that adjusted total.
+
+\subsection{Why the ratio cancels calibration drift}
+
+A skeptical reader might object: ``You're using your own pipeline's PAFs
+in both numerator and denominator. Don't they need to match IHME's
+absolute calibration?''
+
+The answer is no, and it's the key advantage of the ratio formulation.
+Suppose our pipeline and IHME's compute PAFs that differ by some
+unknown multiplicative factor $k_{c,l,t}$ (because we use Burkart's ERFs
+and they use a slightly different fit, or because our bias-corrected
+CMIP6 differs subtly from theirs):
+\begin{equation*}
+\tilde S^{\text{ours}}_{c,X,l,t} = k_{c,l,t} \cdot \tilde S^{\text{true}}_{c,X,l,t}
+\quad\text{and}\quad
+\tilde S^{\text{ours}}_{c,\SSPtwo,l,t} = k_{c,l,t} \cdot \tilde S^{\text{true}}_{c,\SSPtwo,l,t}
+\end{equation*}
+Then in the ratio, $k$ cancels:
+\begin{equation*}
+\frac{\tilde S^{\text{ours}}_{c,X,l,t}}{\tilde S^{\text{ours}}_{c,\SSPtwo,l,t}}
+= \frac{\tilde S^{\text{true}}_{c,X,l,t}}{\tilde S^{\text{true}}_{c,\SSPtwo,l,t}}
+\end{equation*}
+The ratio carries pure cross-scenario information: how much more (or
+less) temperature-attributable burden there is under $X$ than under
+$\SSPtwo$, in proportional terms. The absolute level is anchored by
+IHME's $\mIHME$. This is a stronger position than trying to match IHME's
+absolute calibration.
+
+\subsection{The 12 temp-scaled vs 5 non-temp-scaled causes}
+
+The GBD 2021 forecast appendix (Section~2.1.6.7) lists 12 causes for
+which IHME applied a temperature-scalar adjustment internally:
+\begin{quote}
+``ischaemic heart disease, stroke, hypertensive heart disease, diabetes,
+chronic kidney disease, lower respiratory infection, chronic obstructive
+pulmonary disease, homicide, suicide, mechanical injuries,
+transport-related injuries, and drowning.''
+\end{quote}
+For these 12, Eq.~\eqref{eq:wb-12} applies as stated.
+
+The other 5 causes IHME forecasts (cardiomyopathy and myocarditis,
+animal-related injuries, disaster-related injuries, other unintentional
+injuries, other transport injuries\footnote{We split IHME's
+``transport-related injuries'' umbrella into road and other; both are
+treated as temp-scaled.}) are forecast \emph{without} a temperature
+adjustment. For these, IHME's $\mIHME$ has no temperature signal to
+``unscale,'' so the ratio collapses to identity:
+\begin{equation}
+\mAttr_{c \in \text{non-temp}, X, l, a, s, t}^{\text{heat}}
+= \mIHME_{c,l,a,s,t} \cdot \PAF^{\text{heat}}_{c,X,l,t}
+\label{eq:wb-5}
+\end{equation}
+This is Approach~1 (the simpler textbook attributable-fraction formula)
+applied to those 5 causes. From a code perspective it is the same
+pipeline; only the post-processing step in
+\texttt{util\_workflow\_b\_ratio.R} differs by branching on whether
+$c$ is in the temp-scaled set.
+
+\subsection{Workflow diagram}
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=1.0cm and 0.8cm,
+  box/.style={rectangle, draw, rounded corners, minimum height=0.8cm,
+              text width=4cm, align=center, font=\small},
+  bigbox/.style={rectangle, draw, rounded corners, minimum height=1.0cm,
+              text width=5cm, align=center, font=\small},
+  arrow/.style={-Stealth, thick}
+]
+\node[box] (ihmerate) {IHME forecast rate \\ $r_{c,l,a,s,t}$};
+\node[box, right=of ihmerate] (ihmepop) {IHME forecast pop \\ pop$_{c,l,a,s,t}$};
+\node[box, below=of ihmerate, xshift=2cm] (mihme) {$\mIHME_{c,l,a,s,t}$ \\ (under their $\SSPtwo$ reference)};
+\draw[arrow] (ihmerate) -- (mihme);
+\draw[arrow] (ihmepop)  -- (mihme);
+
+\node[box, below=of mihme, xshift=-5cm] (cckp2) {CCKP CMIP6 \\ $\SSPtwo$ temp};
+\node[box, below=of mihme, xshift= 5cm] (cckpx) {CCKP CMIP6 \\ scenario-$X$ temp};
+\node[bigbox, below=of cckp2] (pipe2) {Pipeline \\ (Eqs.~\ref{eq:zone}--\ref{eq:S}) \\ $\tilde S_{c,\SSPtwo,l,t}$};
+\node[bigbox, below=of cckpx] (pipex) {Pipeline \\ (Eqs.~\ref{eq:zone}--\ref{eq:S}) \\ $\tilde S_{c,X,l,t}$, $\PAF^{\text{heat}}_{c,X}$, $\PAF^{\text{cold}}_{c,X}$};
+\draw[arrow] (cckp2) -- (pipe2);
+\draw[arrow] (cckpx) -- (pipex);
+
+\node[bigbox, below=of mihme, yshift=-4.2cm] (ratio) {Ratio (Eq.~\ref{eq:ratio}) \\ $r_{c,X,l,t} = \tilde S_X / \tilde S_{\SSPtwo}$};
+\draw[arrow] (pipe2) -- (ratio);
+\draw[arrow] (pipex) -- (ratio);
+
+\node[bigbox, below=of ratio] (out) {
+$\mAttr_{c,X,l,a,s,t}^{\text{heat/cold}}$ \\
+$= \mIHME \cdot r \cdot \PAF^{\text{heat/cold}}_{c,X}$ \quad (Eq.~\ref{eq:wb-12}) \\
+\textit{or, for non-temp-scaled $c$:} \\
+$= \mIHME \cdot \PAF^{\text{heat/cold}}_{c,X}$ \quad (Eq.~\ref{eq:wb-5})
+};
+\draw[arrow] (mihme) -- (out.north);
+\draw[arrow] (ratio) -- (out);
+\draw[arrow] (pipex.east) to[bend left=45] node[midway, right] {$\PAF^{\text{heat/cold}}_{c,X}$} (out.east);
+\end{tikzpicture}
+\end{center}
+
+% =====================================================================
+\part{Worked examples}
+% =====================================================================
+
+The examples below use real values from the pipeline's trace tool applied
+to Colombia 2010 with Samuel's validated input data (the dataset where
+the pipeline matches Samuel's published numbers on 18 of 19 headline
+metrics, $\pm 5\%$). The cross-scenario example in
+Section~\ref{sec:wb-example} uses synthesized numbers because we don't
+yet have CCKP-driven production runs; the synthesized values are clearly
+flagged and will be updated with real production output when Caspar's
+runs complete.
+
+% =====================================================================
+\section{Within-pipeline trace: one pixel}
+% =====================================================================
+
+We trace pixel 527 in Colombia, a Bogotá D.C. metro pixel (subloc 11),
+in 2010. Following the math of Section~3:
+
+\textbf{Raw input} (pixel 527, 2010-01-02, from temperature.rds):
+\begin{itemize}[itemsep=0pt]
+  \item Daily temperature $T = 13.589\,^{\circ}$C
+  \item Pixel population: 5{,}100{,}137
+  \item Subloc: 11 (Bogotá D.C.)
+\end{itemize}
+
+\textbf{Step 1: daily-temp encoding} (pipeline stores
+\texttt{daily\_temp\_10 = round($T \cdot 10$)} to avoid floating-point
+issues in lookups):
+\[
+\text{daily\_temp\_10} = \text{round}(13.589 \cdot 10) = 136
+\]
+
+\textbf{Step 2: zone} (Eq.~\ref{eq:zone}):
+\[
+z_{l, p=527, t=2010} = \text{round}(13.786\,^{\circ}\text{C annual mean}) = 14
+\]
+
+\textbf{Step 3: pop weight} ($\pi_{l,t,p}$):
+\[
+\pi = \frac{5{,}100{,}137}{3{,}188{,}693{,}158\ \text{person-days in subloc 11, 2010}} = 1.599 \times 10^{-3}
+\]
+
+\textbf{Step 4: TMREL} for $(z=14, t=2010)$:
+$\tau = 235$ (= $23.5\,^{\circ}$C).
+
+\textbf{Step 5: raw RR} for cvd\_ihd at $(z=14, T=136)$:
+$\rho_{\text{cvd\_ihd}}(14, 136) = 1.018998$.
+
+\textbf{Step 6: rescale RR} (Eq.~\ref{eq:rescale}):
+\[
+\tilde\rho_{\text{cvd\_ihd}}(14, 136, 2010)
+= \frac{\rho_{\text{cvd\_ihd}}(14, 136)}{\rho_{\text{cvd\_ihd}}(14, 235)}
+= \frac{1.018998}{0.944913}
+= 1.078403
+\]
+The reference RR at TMREL (0.944913) is below 1 because the un-rescaled
+Burkart curve is fit with an arbitrary baseline; after rescaling, the
+curve reads RR = 1 at the TMREL by construction.
+
+\textbf{Step 7: heat/cold classification}: $T = 136 < \tau = 235$, so
+this pixel-day contributes to the \textbf{cold} side.
+
+\textbf{Step 8: PAF contribution} (Eq.~\ref{eq:af-pixel} with rescaled
+$\tilde\rho$):
+\[
+\text{AF}_{527,\ \text{2010-01-02},\ \text{cvd\_ihd}}
+= \pi \cdot \frac{\tilde\rho - 1}{\tilde\rho}
+= 1.599\!\times\!10^{-3} \cdot \frac{1.078403 - 1}{1.078403}
+= 1.163 \times 10^{-4}
+\]
+
+This is one cold-attributable contribution. The full
+$\PAF^{\text{cold}}_{\text{cvd\_ihd}, \text{Colombia}, 2010}$ in
+Eq.~\eqref{eq:paf-cold} is the sum of such contributions over all
+cold-classified pixel-days in 2010. The pipeline's trace tool reproduces
+each value above exactly; row-by-row independent re-derivation matches
+to 8 decimal places (see
+\texttt{pipeline-math-verification.md}).
+
+% =====================================================================
+\section{Within-pipeline trace: contrasting pixels}
+% =====================================================================
+
+The same trace tool applied to three contrasting pixels in Colombia 2010
+illustrates how the math handles different climate regimes. All values
+are for cause cvd\_ihd on the pixel's annual-median representative day:
+
+\begin{center}
+\small
+\begin{tabular}{r r r r r r r r r}
+\toprule
+pixel & zone & ann.\ mean & $T$ on rep day & TMREL & risk & raw $\rho$ & rescaled $\tilde\rho$ & AF (Eq.\ \ref{eq:af-pixel}) \\
+& & $^{\circ}$C & $^{\circ}$C & ($^{\circ}$C) & & & & \\
+\midrule
+527 (Bogotá) & 14 & 13.8 & 13.6 & 23.5 & cold & 1.019 & 1.078 & $+1.16\!\times\!10^{-4}$ \\
+639 (Andes ft.) & 22 & 22.0 & 22.0 & 25.2 & cold & 1.011 & 1.039 & $+5.42\!\times\!10^{-5}$ \\
+28 (Caribbean) & 27 & 27.2 & 27.2 & 25.1 & heat & 0.992 & 0.978 & $-3.76\!\times\!10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+What this shows:
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Pixel 527 (Bogotá, cool high altitude):} $T = 13.6\,^{\circ}$C
+    is far below TMREL = $23.5\,^{\circ}$C, so risk is ``cold.'' The
+    rescaled RR is 1.078 (~8\% excess risk vs TMREL). This pixel
+    contributes positively to cold-attributable burden.
+  \item \textbf{Pixel 639 (Andean foothills, moderate):} $T = 22.0\,^{\circ}$C
+    is 3 degrees below TMREL = $25.2\,^{\circ}$C; cold but mildly so.
+    Smaller positive contribution.
+  \item \textbf{Pixel 28 (Caribbean coast, hot tropical):} $T = 27.2\,^{\circ}$C
+    is just 2 degrees above TMREL = $25.1\,^{\circ}$C; heat but on the
+    flat shoulder of the cvd\_ihd ERF. Rescaled RR is 0.978 ($<1$), so
+    the AF is \emph{negative} --- this pixel-day would actually have
+    been associated with slightly lower mortality than the TMREL
+    reference for cvd\_ihd. The pipeline sums these signed contributions
+    in Eqs.~\eqref{eq:paf-cold}--\eqref{eq:paf-heat}, so negative
+    contributions partially cancel positive ones.
+\end{itemize}
+
+These illustrate why the country-aggregate $\PAF^{\text{heat}}$ for
+cvd\_ihd in Colombia 2010 is slightly negative ($-0.22\%$, see next
+section): Colombia's heat-side pixel-days are mostly on the flat
+shoulder where rescaled RR is close to or below 1.
+
+% =====================================================================
+\section{Country aggregate: Colombia 2010 cvd\_ihd}
+% =====================================================================
+
+Summing per-pixel-day contributions over all pixel-days in Colombia 2010
+(1{,}494 pixels $\times$ 365 days = 545{,}310 rows in the temperature
+intermediate), then grouping by (subloc, risk, cause), the pipeline
+saves at the country level:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{l r r r}
+\toprule
+& heat & cold & non-optimal \\
+\midrule
+$\PAF^{\cdot}_{\text{cvd\_ihd, Colombia, 2010}}$ & $-0.22\%$ & $+4.48\%$ & $+4.26\%$ \\
+\midrule
+& deaths\_heat & deaths\_cold & deaths\_non-opt \\
+$\mAttr$ for cvd\_ihd = $\mIHME \cdot \PAF$ & $-65$ & $+1{,}316$ & $+1{,}251$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Out of 29{,}364 total cvd\_ihd deaths in Colombia 2010, the pipeline
+attributes 4.3\% (1{,}251 deaths) to non-optimal temperature exposure ---
+nearly all on the cold side. The negative heat number reflects the flat
+shoulder of the cvd\_ihd ERF on the heat side combined with Colombia's
+modest heat-exposure in 2010.
+
+Independent re-derivation: summing my hand-computed AF contributions
+across all subloc-11 pixel-days for cvd\_ihd 2010 gives
+$\PAF^{\text{cold}}_{\text{subloc 11}} = 0.06956161$, which matches the
+pipeline's saved value to 8 decimal places. Multiplying by Colombia's
+per-subloc cvd\_ihd death counts and summing yields the country total of
+1{,}316 cold-attributable deaths, matching the pipeline's
+\texttt{burden\_125.rds} exactly.
+
+% =====================================================================
+\section{Cross-scenario worked example (Workflow B ratio)}
+\label{sec:wb-example}
+% =====================================================================
+
+\textit{Caveat: this section uses \textbf{synthesized illustrative
+values} for the cross-scenario numbers. Real production values will
+substitute these once Caspar's runs complete; the math is unchanged.}
+
+\subsection{Setup}
+
+Take Colombia in year 2030, cause cvd\_ihd, all ages \& sexes. Suppose
+IHME publishes a forecast count of cvd\_ihd deaths of:
+\[
+\mIHME_{\text{cvd\_ihd, Colombia, 2030}} = 38{,}000 \text{ deaths}
+\quad \text{(synthesized; IHME's actual forecast TBD)}
+\]
+This is under their reference scenario, approximately $\SSPtwo$.
+
+Run our pipeline twice: once with CCKP CMIP6 $\SSPtwo$ daily temperature
+for Colombia 2030, once with CCKP CMIP6 SSP5-RCP8.5 daily temperature for
+Colombia 2030. Suppose the pipeline outputs:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{l r r}
+\toprule
+& Reference $\SSPtwo$ & Target SSP5-RCP8.5 \\
+\midrule
+$\PAF^{\text{heat}}_{\text{cvd\_ihd, Colombia, 2030}}$ & $+0.5\%$ & $+1.8\%$ \\
+$\PAF^{\text{cold}}_{\text{cvd\_ihd, Colombia, 2030}}$ & $+4.2\%$ & $+3.2\%$ \\
+$\tilde S$ (heat + cold)                           & $+4.7\%$ & $+5.0\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In this hypothetical: SSP5-RCP8.5 in 2030 has more heat-attributable
+burden (more hot days above TMREL) and slightly less cold-attributable
+burden (fewer cold days below TMREL). The non-optimal total is just
+slightly higher under SSP5 than $\SSPtwo$ --- the heat increase mostly
+cancels with the cold decrease.
+
+\subsection{Apply the ratio}
+
+From Eq.~\eqref{eq:ratio}:
+\[
+r_{\text{cvd\_ihd, SSP5, Colombia, 2030}}
+= \frac{\tilde S_{\text{SSP5}}}{\tilde S_{\SSPtwo}}
+= \frac{0.050}{0.047}
+= 1.0638
+\]
+The total mortality envelope grows ~6.4\% under SSP5 vs $\SSPtwo$
+because the temperature signal is slightly stronger overall. cvd\_ihd
+is one of the 12 temp-scaled causes, so Eq.~\eqref{eq:wb-12} applies:
+\begin{align*}
+\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{heat}}
+&= \mIHME \cdot r \cdot \PAF^{\text{heat}}_{\text{SSP5}} \\
+&= 38{,}000 \cdot 1.0638 \cdot 0.018 \\
+&= 727 \text{ heat-attributable deaths} \\[2pt]
+\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{cold}}
+&= \mIHME \cdot r \cdot \PAF^{\text{cold}}_{\text{SSP5}} \\
+&= 38{,}000 \cdot 1.0638 \cdot 0.032 \\
+&= 1{,}294 \text{ cold-attributable deaths} \\[2pt]
+\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{non-opt}}
+&= 727 + 1{,}294 = 2{,}021 \text{ non-optimal-temperature deaths}
+\end{align*}
+
+\subsection{Compare to $\SSPtwo$ baseline}
+
+Under $\SSPtwo$ at the same location-year, applying the same formula
+(with $r = 1$ since reference equals reference):
+\begin{align*}
+\mAttr_{\text{cvd\_ihd}, \SSPtwo, 2030}^{\text{non-opt}}
+&= 38{,}000 \cdot 1.0 \cdot 0.047
+= 1{,}786 \text{ deaths}
+\end{align*}
+
+So SSP5-RCP8.5 produces ~235 more cvd\_ihd deaths attributable to
+non-optimal temperature in Colombia 2030 than $\SSPtwo$ does, with the
+\emph{composition} shifting toward heat (heat goes from ~$190$ to ~$727$,
+cold goes from ~$1{,}596$ to ~$1{,}294$).
+
+\subsection{The same exercise for a non-temp-scaled cause}
+
+For cardiomyopathy (cvd\_cmp), which is one of the 5 non-temp-scaled
+causes, IHME's forecast has no implicit temperature signal. The ratio
+collapses to identity per Eq.~\eqref{eq:wb-5}. Suppose
+$\mIHME_{\text{cvd\_cmp, Colombia, 2030}} = 5{,}000$ and our pipeline
+gives $\PAF^{\text{heat}}_{\text{cvd\_cmp, SSP5}} = 0.4\%$,
+$\PAF^{\text{cold}}_{\text{cvd\_cmp, SSP5}} = 1.8\%$ (synthesized
+values). Then:
+\begin{align*}
+\mAttr_{\text{cvd\_cmp, SSP5, 2030}}^{\text{heat}}
+&= 5{,}000 \cdot 0.004 = 20 \text{ deaths} \\
+\mAttr_{\text{cvd\_cmp, SSP5, 2030}}^{\text{cold}}
+&= 5{,}000 \cdot 0.018 = 90 \text{ deaths}
+\end{align*}
+No ratio applied; the formula reduces to ``IHME's mortality $\times$
+scenario-$X$ PAF.''
+
+% =====================================================================
+\section{Validation evidence}
+% =====================================================================
+
+The math above is verified empirically by reproducing Samuel Cuervo's
+published Colombia 2010--2019 temperature-attributable-mortality numbers
+to within $\pm 5\%$ on 18 of 19 headline metrics (\texttt{colombia-validation-state.tex} in the project repo). The one remaining discrepancy
+(road-injury heat YLLs, $-11.7\%$) is traced to upstream choices in
+Samuel's input data that we do not replicate; headline totals and top-3
+cause rankings all match.
+
+Row-by-row independent re-derivation of the per-pixel math against the
+pipeline's own saved values (Section~7 above; full details in
+\texttt{pipeline-math-verification.md}) confirms every formula in
+Section~3 is correctly implemented: 9 calculation stages match to 8+
+decimal places, and the within-subloc aggregation reproduces the
+pipeline's saved per-subloc PAF (0.06956161 vs 0.06956161 for Bogotá D.C.
+cvd\_ihd cold, 2010).
+
+% =====================================================================
+\section{Reproducing}
+% =====================================================================
+
+The pipeline runs from \texttt{global-scripts/run\_location.R} for a
+single location, or \texttt{global-scripts/util\_run\_global.R} for a
+production grid across locations. The Workflow~B ratio applicator is
+\texttt{global-scripts/util\_workflow\_b\_ratio.R}. The trace tool that
+generated the values in Sections~7 and~8 is
+\texttt{global-scripts/util\_trace\_pipeline.R}.
+
+Operational instructions for the full production run, including the
+single-combo benchmark and parallelization pattern, are in
+\texttt{caspar-workflow.md} in the project repository.
+
+\bigskip
+\hrule
+\smallskip
+
+\textit{Source repository:}
+\url{https://github.com/aaron-oz/2026-climate-health-burden-projections}
+
+\textit{Key references:}
+Burkart et al., ``Estimating the cause-specific relative risks of
+non-optimal temperature on daily mortality,''
+\textit{The Lancet}, 2021;
+Institute for Health Metrics and Evaluation, ``GBD 2021 Forecasting
+Methods Appendix,'' Section 2.1.6.7;
+World Bank Climate Change Knowledge Portal, CMIP6 daily-x0.25 data
+product.
+
+\end{document}
