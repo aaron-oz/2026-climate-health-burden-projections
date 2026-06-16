@@ -119,6 +119,26 @@ isolated library, delete `.Rprofile` from your clone and the
 auto-activation won't trigger. Then ensure your system R has compatible
 package versions (the lockfile lists them).
 
+## 3.5 Install the input-data bundle
+
+The large input datasets (ERF curves, TMRELs, GBD shapefile) are not in git
+(too large / redistribution). We ship them as a separate zip,
+`wb-pipeline-data.zip` (~1.1 GB). Unzip it at the **root** of your clone — it
+already contains the correct `data/` subpaths:
+
+```bash
+cd /path/to/2026-climate-health-burden-projections
+unzip /path/to/wb-pipeline-data.zip   # populates data/erf, data/tmrel, data/shapefiles
+```
+
+Life tables are already in the repo (`data/lifetables/`, UN WPP, all 198
+nations, 1990–2100) — nothing to install. The only inputs you still fetch
+yourself are the IHME forecast CSVs (step 1) and the CMIP6/population NetCDFs
+(downloaded automatically in step 6, see below).
+
+Note: the scripts resolve their own location, so you can run them from the repo
+root (as shown here) or from inside `global-scripts/` — either works.
+
 ## 4. Convert IHME CSVs to pipeline-format mortality
 
 Run the converter once to turn IHME's rate × pop format into the pipeline's
@@ -140,10 +160,30 @@ cause, so any mismatches are visible before the heavy reading work starts.
 If IHME's UI gave you filenames different from what we guessed in
 `config.R::IHME_CAUSE_FILES`, either rename or edit that list.
 
-## 5. Pull a single CMIP6 NetCDF for the benchmark
+## 5. CMIP6 temperature + gridded population (automatic)
 
-Pull a single (model, scenario, year) NetCDF from your S3 archive into a
-local cache directory — used by the next step.
+You do **not** pre-stage these. Step 6's `util_run_cckp_pipeline.R` downloads
+both the CMIP6 daily `tas` temperature and the GPW gridded population NetCDFs
+itself, via `curl`, from the **public** CCKP bucket
+(`https://wbg-cckp.s3.amazonaws.com/data`) — no credentials needed. Files are
+cached under `data/cmip6-scratch/cckp/` (skip-if-present), retried on transient
+errors, and combos that genuinely don't exist on S3 are logged `missing-on-s3`
+and skipped (known gaps: gfdl-cm4 lacks ssp126/ssp370; hadgem3-gc31-mm lacks
+ssp245/ssp370; nesm3 lacks ssp370; taiesm1 lacks ssp245).
+
+Requirements: `curl` on PATH and internet access.
+
+**If you have a local CCKP mirror** (faster than the public download), point the
+pipeline at it — it symlinks from your disk instead of downloading, falling back
+to the public bucket on any miss:
+
+```bash
+--cckp_local_root=/data --cckp_pop_local_root=/data/CRMe/data
+```
+
+(Separate roots because temp and pop may live under different prefixes; the
+relative paths below them must match the public CCKP layout
+`cmip6-daily-x0.25/tas/...` and `pop-x0.25/popcount/...`.)
 
 ## 6. Single-combo benchmark on your hardware
 
@@ -157,7 +197,11 @@ Rscript global-scripts/util_run_cckp_pipeline.R \
   --models=access-cm2-r1i1p1f1 \
   --scenarios=ssp245 \
   --years=2022 \
-  --shapefile=data/shapefiles/GBD2023_mapping_final.shp
+  --shapefile=data/shapefiles/GBD2023_mapping_final.shp \
+  --subnational=FALSE
+  # --subnational=FALSE (the default) tags pixels at national resolution to
+  #   match the national IHME mortality; use TRUE only with subnational deaths.
+  # Add --cckp_local_root=... --cckp_pop_local_root=... if using a local mirror.
 
 # Step 6b: Run the burden pipeline (01-08) on that combo using IHME's
 # cvd_ihd rates as the mortality input
