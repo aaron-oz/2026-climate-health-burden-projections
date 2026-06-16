@@ -23,8 +23,9 @@
 # NetCDFs after each successful conversion (saves disk; recompute requires
 # re-download).
 
-source("config.R")
-source("util_convert_cckp_temperature.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
+source(file.path(SCRIPTS_DIR, "util_convert_cckp_temperature.R"))
 
 suppressPackageStartupMessages(library(data.table))
 

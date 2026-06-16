@@ -44,7 +44,8 @@
 #   year, subloc_id, age_group_id, sex_id, acause, deaths, paf_heat, paf_cold,
 #   paf_nonopt, deaths_heat, deaths_cold, deaths_nonopt, location_id
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(

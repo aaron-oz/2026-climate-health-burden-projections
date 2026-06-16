@@ -5,6 +5,10 @@
 #   Rscript run_location.R --location_id=125 --use_draws=TRUE
 #   Rscript run_location.R --location_id=125 --run_diagnostics=FALSE
 
+# Resolve this script's own directory so the step scripts (and config) load
+# regardless of the working directory. Shared with the steps via SCRIPTS_DIR.
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+
 # Config is sourced by each script, but we parse args here first
 # to display what we're about to do
 args <- commandArgs(trailingOnly = TRUE)
@@ -31,7 +35,7 @@ for (script in scripts) {
   cat(paste0("\n--- Running ", script, " ---\n"))
   t0 <- Sys.time()
   tryCatch(
-    source(script, local = new.env()),
+    source(file.path(SCRIPTS_DIR, script), local = new.env()),
     error = function(e) {
       cat(paste0("ERROR in ", script, ": ", conditionMessage(e), "\n"))
       stop(e)

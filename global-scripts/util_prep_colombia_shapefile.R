@@ -14,7 +14,8 @@
 #   data/shapefiles/colombia_divipola_admin1.shp (+ companion files)
 #   has columns: NAME_1, divipola_code (chr, zero-padded "05" etc.), geometry
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
 suppressPackageStartupMessages({
   library(sf)

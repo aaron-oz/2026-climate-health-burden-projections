@@ -19,7 +19,8 @@
 #                                                       for downstream
 #                                                       backwards compat
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
 library(data.table)
 
@@ -30,8 +31,18 @@ burden <- readRDS(file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds"))
 setDT(burden)
 
 # --- Load life tables ---
-lt_file_rds <- file.path(LIFETABLE_DIR, paste0(LOCATION_ID, "_lifetable.rds"))
-lt_file_csv <- file.path(LIFETABLE_DIR, paste0(LOCATION_ID, "_lifetable.csv"))
+# Validation (COLOMBIA_VERIFICATION) uses Samuel's department-level life table,
+# which lives with the other validation inputs; production uses the canonical
+# UN WPP life tables in LIFETABLE_DIR. Separate directories avoid a same-path
+# collision at the validation location (125), where both a 2010-2019
+# subnational table and a 1990-2100 national table exist.
+lt_dir <- if (COLOMBIA_VERIFICATION) {
+  file.path(DATA_DIR, "columbia-data-for-verifying-pipeline", "colombia")
+} else {
+  LIFETABLE_DIR
+}
+lt_file_rds <- file.path(lt_dir, paste0(LOCATION_ID, "_lifetable.rds"))
+lt_file_csv <- file.path(lt_dir, paste0(LOCATION_ID, "_lifetable.csv"))
 
 if (file.exists(lt_file_rds)) {
   lt <- readRDS(lt_file_rds)

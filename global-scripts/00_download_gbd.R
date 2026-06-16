@@ -12,7 +12,8 @@
 #
 # Output: MORTALITY_DIR/{location_id}_mortality.csv
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
 library(data.table)
 library(httr)

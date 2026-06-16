@@ -15,12 +15,16 @@
 # Input:  INTERMEDIATE_DIR/erf_curves.rds, temperature.rds, tmrel.rds
 # Output: RESULTS_DIR/sevs_{LOCATION_ID}.rds — (year, subloc_id, acause)
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
+# SEVs are diagnostic-only in production. 06 runs before 05/07/08, so skipping
+# them must NOT quit() -- that exits the whole pipeline process (the footgun
+# documented in 01_load_erf.R). Guard the body with COMPUTE_SEVS instead, so a
+# FALSE just skips this step and the pipeline continues.
 if (!COMPUTE_SEVS) {
   log_msg("COMPUTE_SEVS = FALSE, skipping SEV calculation")
-  quit(save = "no")
-}
+} else {
 
 library(data.table)
 
@@ -178,3 +182,5 @@ if (RUN_DIAGNOSTICS) {
 
   log_msg("SEV diagnostic plot saved")
 }
+
+}  # end if (COMPUTE_SEVS)

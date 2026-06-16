@@ -25,7 +25,8 @@
 # moderate. Bogotá-area / Caribbean / Amazon trio for Colombia is a good
 # default set.
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(
@@ -39,10 +40,27 @@ defaults <- list(
   TMREL_INTERMEDIATE = file.path(INTERMEDIATE_DIR, "tmrel.rds"),
   MORT_INTERMEDIATE  = file.path(INTERMEDIATE_DIR, "mortality.rds"),
   PAFS_RESULTS       = file.path(RESULTS_DIR, paste0("pafs_",   LOCATION_ID, ".rds")),
-  BURDEN_RESULTS     = file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds"))
+  BURDEN_RESULTS     = file.path(RESULTS_DIR, paste0("burden_", LOCATION_ID, ".rds")),
+  MODEL              = "",   # set --model + --scenario to trace a CCKP forecast combo
+  SCENARIO           = ""
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
+}
+
+# CCKP forecast layout. The defaults above are the flat validation-pipeline
+# layout (results/pafs_<loc>.rds). When --model and --scenario are given, trace
+# a forecast benchmark instead: the burden runner writes per-(loc,model,scen)
+# results as results/cckp/<loc>/<model>-<scen>/{pafs,burden}_<year>.rds. An
+# explicit --pafs_results / --burden_results still wins over this.
+if (nzchar(as.character(MODEL)) && nzchar(as.character(SCENARIO))) {
+  .combo   <- paste0(MODEL, "-", SCENARIO)
+  .cckp    <- file.path(RESULTS_DIR, "cckp", LOCATION_ID, .combo)
+  if (identical(PAFS_RESULTS,   defaults$PAFS_RESULTS))
+    PAFS_RESULTS   <- file.path(.cckp, paste0("pafs_",   YEAR, ".rds"))
+  if (identical(BURDEN_RESULTS, defaults$BURDEN_RESULTS))
+    BURDEN_RESULTS <- file.path(.cckp, paste0("burden_", YEAR, ".rds"))
+  log_msg("CCKP forecast trace: reading results from ", .cckp)
 }
 
 # =============================================================================

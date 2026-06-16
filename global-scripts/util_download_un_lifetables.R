@@ -14,8 +14,8 @@
 
 library(data.table)
 
-PROJECT_ROOT <- Sys.getenv("PROJECT_ROOT",
-                           unset = normalizePath(file.path(getwd(), "..")))
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+PROJECT_ROOT <- Sys.getenv("PROJECT_ROOT", unset = dirname(normalizePath(SCRIPTS_DIR)))
 LIFETABLE_DIR <- file.path(PROJECT_ROOT, "data", "lifetables")
 dir.create(LIFETABLE_DIR, showWarnings = FALSE, recursive = TRUE)
 

@@ -33,8 +33,9 @@
 #   Rscript global-scripts/util_convert_ihme_batch.R \
 #     --source_dir=... --force=TRUE   # ignore existing outputs
 
-source("config.R")
-source("util_convert_ihme_forecast.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
+source(file.path(SCRIPTS_DIR, "util_convert_ihme_forecast.R"))
 suppressPackageStartupMessages({
   library(data.table)
   library(readxl)

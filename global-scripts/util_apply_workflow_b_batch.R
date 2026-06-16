@@ -34,8 +34,9 @@
 #     'Rscript global-scripts/util_apply_workflow_b_batch.R --location_id={}' \
 #     ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
 
-source("config.R")
-source("util_workflow_b_ratio.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
+source(file.path(SCRIPTS_DIR, "util_workflow_b_ratio.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(

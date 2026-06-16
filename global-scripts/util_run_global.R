@@ -26,7 +26,8 @@
 # Defaults: scenarios = all four SSPs, years = 2022-2050, all models from
 # config.R::MODELS_ALL. Override per-flag.
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(
@@ -71,7 +72,7 @@ run_one_location <- function() {
 
   # === Step 1: pull + convert CCKP NetCDFs ===
   t0 <- Sys.time()
-  rc <- system2("Rscript", c("util_run_cckp_pipeline.R",
+  rc <- system2("Rscript", c(file.path(SCRIPTS_DIR, "util_run_cckp_pipeline.R"),
                              paste0("--location_id=", loc),
                              paste0("--models=",      MODELS),
                              paste0("--scenarios=",   SCENARIOS),
@@ -86,7 +87,7 @@ run_one_location <- function() {
 
   # === Step 2: run the burden pipeline for each combo ===
   t0 <- Sys.time()
-  rc <- system2("Rscript", c("util_run_cckp_burden.R",
+  rc <- system2("Rscript", c(file.path(SCRIPTS_DIR, "util_run_cckp_burden.R"),
                              paste0("--location_id=",     loc),
                              paste0("--models=",          MODELS),
                              paste0("--scenarios=",       SCENARIOS),

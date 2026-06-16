@@ -24,8 +24,13 @@ BASELINE_YEARS <- c(2010, 2011, 2012)
 
 # Root directory for the project
 # Project root: parent of global-scripts/. Set via environment variable or auto-detect.
-PROJECT_ROOT <- Sys.getenv("PROJECT_ROOT",
-                           unset = normalizePath(file.path(getwd(), "..")))
+# PROJECT_ROOT is the parent of global-scripts/. Entry scripts set SCRIPTS_DIR
+# from their own file location (--file=) before sourcing config, so this is
+# independent of the working directory. Falls back to getwd()/.. if unset.
+PROJECT_ROOT <- Sys.getenv(
+  "PROJECT_ROOT",
+  unset = if (exists("SCRIPTS_DIR")) dirname(normalizePath(SCRIPTS_DIR))
+          else normalizePath(file.path(getwd(), "..")))
 
 # Input data directories
 DATA_DIR       <- file.path(PROJECT_ROOT, "data")
@@ -266,14 +271,19 @@ parse_args <- function() {
   args <- commandArgs(trailingOnly = TRUE)
   for (arg in args) {
     if (grepl("^--", arg)) {
-      parts <- strsplit(sub("^--", "", arg), "=")[[1]]
+      parts <- strsplit(sub("^--", "", arg), "=", fixed = TRUE)[[1]]
       key <- parts[1]
-      val <- parts[2]
-      # Try numeric conversion, fall back to character
-      val_num <- suppressWarnings(as.numeric(val))
-      if (!is.na(val_num)) val <- val_num
-      if (val == "TRUE") val <- TRUE
-      if (val == "FALSE") val <- FALSE
+      # A bare flag (--foo, no =) means TRUE; otherwise take the value after =.
+      if (length(parts) < 2 || is.na(parts[2])) {
+        val <- TRUE
+      } else {
+        val <- parts[2]
+        # Try numeric conversion, fall back to character / logical
+        val_num <- suppressWarnings(as.numeric(val))
+        if (!is.na(val_num)) val <- val_num
+        else if (val == "TRUE") val <- TRUE
+        else if (val == "FALSE") val <- FALSE
+      }
       assign(toupper(key), val, envir = globalenv())
     }
   }

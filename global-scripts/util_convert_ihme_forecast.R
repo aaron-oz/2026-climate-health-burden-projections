@@ -24,7 +24,8 @@
 #     --acause=cvd_ihd \
 #     --pop_file=data/gbd-forecasts/population.csv
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 suppressPackageStartupMessages({
   library(data.table)
   library(readxl)

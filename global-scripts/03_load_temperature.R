@@ -11,7 +11,8 @@
 # Input:  TEMP_DIR/{LOCATION_ID}_daily_temp.csv (or .rds)
 # Output: INTERMEDIATE_DIR/temperature.rds
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
 library(data.table)
 

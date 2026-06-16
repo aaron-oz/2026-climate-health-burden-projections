@@ -19,7 +19,8 @@
 #   Rscript util_derive_tmrel.R                          # derive + validate for loc 125
 #   Rscript util_derive_tmrel.R --location_id=125
 
-source("config.R")
+if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
+source(file.path(SCRIPTS_DIR, "config.R"))
 
 library(data.table)
 
