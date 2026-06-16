@@ -39,9 +39,10 @@ if (file.exists(lt_file_rds)) {
 } else if (file.exists(lt_file_csv)) {
   lt <- fread(lt_file_csv)
 } else {
-  warning(paste("No life table found for location", LOCATION_ID,
-                "- skipping YLL calculation"))
-  quit(save = "no")
+  stop("No life table found for location ", LOCATION_ID,
+       " (looked for ", lt_file_rds, " / .csv). YLLs cannot be computed. ",
+       "This is a hard error rather than a silent skip so the runner records ",
+       "the combo as failed instead of 'ok' with missing YLLs.")
 }
 
 log_msg("Life table loaded:", nrow(lt), "rows")
@@ -95,8 +96,12 @@ if (COLOMBIA_VERIFICATION) {
 ylls <- merge(burden, lt_use, by = merge_keys, all.x = TRUE)
 
 if (sum(!is.na(ylls$ex)) == 0) {
-  warning("Life expectancy values could not be matched. Check column formats and subloc_ids.")
-  quit(save = "no")
+  stop("Life expectancy could not be matched for ANY burden row (loc ", LOCATION_ID,
+       "). Most likely the life table does not cover the burden years (have ",
+       paste(range(lt_use$year_id), collapse = "-"), "; need ",
+       paste(range(burden$year_id), collapse = "-"),
+       "). Supply a life table spanning the run years. Hard error so the ",
+       "runner records this combo as failed rather than 'ok' with no YLLs.")
 }
 
 n_unmatched <- sum(is.na(ylls$ex))
