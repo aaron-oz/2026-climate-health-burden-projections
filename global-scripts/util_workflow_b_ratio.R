@@ -75,19 +75,23 @@ load_rds_list <- function(paths_csv) {
 # aggregate is mortality-weighted across age/sex (matches what the pipeline
 # would produce if you computed PAF at the country level directly).
 compute_S <- function(b) {
-  b[, .(num = sum(deaths_nonopt, na.rm = TRUE),
-        den = sum(deaths,        na.rm = TRUE)),
-    by = .(year, subloc_id, acause)][
-    , .(year, subloc_id, acause, S = num / pmax(den, 1))]
+  keys <- c("year", "subloc_id", "acause")
+  if ("draw" %in% names(b)) keys <- c(keys, "draw")   # per-draw when available
+  agg <- b[, .(num = sum(deaths_nonopt, na.rm = TRUE),
+               den = sum(deaths,        na.rm = TRUE)), by = keys]
+  agg[, S := num / pmax(den, 1)]
+  agg[, .SD, .SDcols = c(keys, "S")]
 }
 
 # Per-cause PAFs (heat / cold) from the target burden, at (year, subloc,
 # cause). The pipeline broadcasts these across age/sex, so first() within a
 # group recovers the (year, subloc, cause) value.
 compute_pafs <- function(b) {
+  keys <- c("year", "subloc_id", "acause")
+  if ("draw" %in% names(b)) keys <- c(keys, "draw")   # per-draw PAF (broadcast across age/sex within a draw)
   b[, .(paf_heat = first(paf_heat),
         paf_cold = first(paf_cold)),
-    by = .(year, subloc_id, acause)]
+    by = keys]
 }
 
 apply_ratio <- function(ref_burden     = REF_BURDEN,
@@ -112,32 +116,36 @@ apply_ratio <- function(ref_burden     = REF_BURDEN,
   S_tgt <- compute_S(tgt); setnames(S_tgt, "S", "S_tgt")
   paf_tgt <- compute_pafs(tgt)
 
-  ratio_tbl <- merge(S_ref, S_tgt,
-                     by = c("year", "subloc_id", "acause"), all = TRUE)
+  # Join keys carry the draw dimension when the burdens are draws-mode, so the
+  # ratio and PAFs stay per-draw (paired by draw index, GBD convention) and the
+  # output preserves uncertainty. Falls back to (year, subloc, cause) for
+  # summary-mode burdens.
+  jk <- intersect(c("year", "subloc_id", "acause", "draw"), names(S_ref))
+  ratio_tbl <- merge(S_ref, S_tgt, by = jk, all = TRUE)
   # Identity ratio for non-temp-scaled causes -- IHME didn't bake in a temp
   # signal for these, so we don't divide out a denominator we don't have.
   ratio_tbl[, scale_factor := fifelse(
     acause %in% CAUSES_IHME_NOT_TEMP_SCALED, 1.0,
     fifelse(S_ref > 0, S_tgt / S_ref, NA_real_))]
 
-  # Pull PAFs onto the same (year, subloc, cause) frame.
-  ratio_tbl <- merge(ratio_tbl, paf_tgt,
-                     by = c("year", "subloc_id", "acause"), all.x = TRUE)
+  # Pull PAFs onto the same (year, subloc, cause[, draw]) frame.
+  ratio_tbl <- merge(ratio_tbl, paf_tgt, by = jk, all.x = TRUE)
   ratio_tbl[is.na(paf_heat), paf_heat := 0]
   ratio_tbl[is.na(paf_cold), paf_cold := 0]
 
-  # IHME mortality is at country grain (no subloc), so we broadcast the
-  # cause/subloc-keyed pipeline rows across the (age, sex) frame of IHME's
-  # counts. The cartesian by (year, acause) is bounded since IHME has one
-  # row per (year, age, sex, cause) and the pipeline has one row per
-  # (year, subloc, cause) (subloc typically = 1 country code).
-  ihme_keyed <- ihme[, .(year = year_id, age_group_id, sex_id, acause,
-                         ihme_deaths = deaths)]
+  # IHME mortality is at country grain (no subloc); broadcast the cause/subloc-
+  # keyed pipeline rows across IHME's (age, sex) frame. Keep IHME's draw column
+  # so it pairs with the pipeline draws by index (not a draw x draw cartesian).
+  ihme_has_draw <- "draw" %in% names(ihme)
+  ihme_cols <- c("year_id", "age_group_id", "sex_id", "acause",
+                 if (ihme_has_draw) "draw", "deaths")
+  ihme_keyed <- ihme[, ..ihme_cols]
+  setnames(ihme_keyed, c("year_id", "deaths"), c("year", "ihme_deaths"))
+  mk <- intersect(c("year", "acause", "draw"),
+                  intersect(names(ihme_keyed), names(ratio_tbl)))
   out <- merge(ihme_keyed,
-               ratio_tbl[, .(year, subloc_id, acause,
-                             scale_factor, paf_heat, paf_cold)],
-               by = c("year", "acause"),
-               allow.cartesian = TRUE)
+               ratio_tbl[, .SD, .SDcols = c(jk, "scale_factor", "paf_heat", "paf_cold")],
+               by = mk, allow.cartesian = TRUE)
 
   out[, m_scaled := ihme_deaths * scale_factor]
   out[, `:=`(deaths_heat_attrib = m_scaled * paf_heat,

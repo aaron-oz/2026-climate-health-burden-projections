@@ -12,9 +12,10 @@
 #   output/results/workflow_b/{LOC}/{model}-{target}/wb_{year}.rds
 #
 # Schema (from util_workflow_b_ratio.R):
-#   year, subloc_id, age_group_id, sex_id, acause, ihme_deaths,
+#   year, subloc_id, age_group_id, sex_id, acause, [draw], ihme_deaths,
 #   scale_factor, paf_heat, paf_cold, m_scaled,
 #   deaths_heat_attrib, deaths_cold_attrib, deaths_nonopt_attrib, location_id
+#   (draw is present in draws mode, giving per-draw uncertainty)
 #
 # Calls util_workflow_b_ratio.R::apply_ratio() in-process (no Rscript
 # spawning) so per-combo overhead is just the I/O + ratio math. Idempotent
