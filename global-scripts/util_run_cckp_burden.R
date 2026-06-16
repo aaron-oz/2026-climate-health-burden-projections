@@ -21,8 +21,8 @@
 #     --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1 \
 #     --scenarios=ssp245 \
 #     --years=2010-2015 \
-#     --use_draws=TRUE \
-#     --n_draws=500
+#     --use_draws_run=TRUE \
+#     --n_draws_run=500
 #
 # Idempotent: skips combos where burden_{year}.rds already exists.
 

@@ -210,8 +210,8 @@ Rscript global-scripts/util_run_cckp_burden.R \
   --models=access-cm2-r1i1p1f1 \
   --scenarios=ssp245 \
   --years=2022 \
-  --use_draws=TRUE \
-  --n_draws=500 \
+  --use_draws_run=TRUE \
+  --n_draws_run=500 \
   --mortality_file=data/mortality/125_mortality_ihme_cvd_ihd_draws.rds
 ```
 
@@ -231,7 +231,7 @@ Rscript global-scripts/util_run_cckp_burden.R \
   NetCDF for this is ~750 MB, so the bulk of the wall-clock for the
   benchmark will actually be the download — worth noting separately when
   reporting back.
-- `--n_draws=500` matches IHME's forecast draw count, what we'll run in
+- `--n_draws_run=500` matches IHME's forecast draw count, what we'll run in
   production.
 - `--mortality_file=...cvd_ihd_draws.rds` — you need to have run the
   converter for at least `cvd_ihd` before this command (step 4). One cause

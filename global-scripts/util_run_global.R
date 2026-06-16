@@ -92,9 +92,9 @@ run_one_location <- function() {
                              paste0("--models=",          MODELS),
                              paste0("--scenarios=",       SCENARIOS),
                              paste0("--years=",           YEARS),
-                             paste0("--use_draws=",
+                             paste0("--use_draws_run=",
                                     if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
-                             paste0("--n_draws=",         N_DRAWS_RUN),
+                             paste0("--n_draws_run=",     N_DRAWS_RUN),
                              paste0("--mortality_file=",  mort_file_arg)))
   log_msg(sprintf("util_run_cckp_burden.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
