@@ -90,6 +90,18 @@ COMPUTE_SEVS <- TRUE
 # --subnational=TRUE.
 SUBNATIONAL <- FALSE
 
+# Local CCKP mirror roots. If set and a NetCDF exists at the same bucket-
+# relative path under the root, the pipeline symlinks it from there instead of
+# downloading from public CCKP S3 (falls back to download on a miss, so a
+# partial mirror is fine). Empty = always download.
+#   CCKP_LOCAL_ROOT     -> temperature (cmip6-daily-x0.25/tas/...)
+#   CCKP_POP_LOCAL_ROOT -> gridded population (pop-x0.25/popcount/...); falls
+#     back to CCKP_LOCAL_ROOT when empty. Separate because a mirror may place
+#     temp and pop under different roots (e.g. temp /data, pop /data/CRMe/data).
+# Override: --cckp_local_root=/data --cckp_pop_local_root=/data/CRMe/data
+CCKP_LOCAL_ROOT     <- Sys.getenv("CCKP_LOCAL_ROOT", "")
+CCKP_POP_LOCAL_ROOT <- Sys.getenv("CCKP_POP_LOCAL_ROOT", "")
+
 # =============================================================================
 # Colombia verification mode
 # =============================================================================

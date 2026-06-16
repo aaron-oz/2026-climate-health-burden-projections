@@ -89,13 +89,29 @@ cckp_pop_url <- function(pop_dataset, year, scenario) {
 # =============================================================================
 # Cached download
 # =============================================================================
-ensure_download <- function(url, cache_dir) {
+ensure_download <- function(url, cache_dir, local_root = "") {
   dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
   dest <- file.path(cache_dir, basename(url))
   if (file.exists(dest) && file.info(dest)$size > 0) {
     log_msg("Cached (skip download): ", basename(url),
             " [", format(file.info(dest)$size / 1e6, digits = 4), " MB]")
     return(dest)
+  }
+  # Local CCKP mirror: if CCKP_LOCAL_ROOT is set and the file exists there at
+  # the same bucket-relative path, symlink it into the cache (no GB-scale copy,
+  # no download). We symlink rather than return the source path directly so the
+  # KEEP_NETCDFS=FALSE cleanup removes only the link, never the mirror. Falls
+  # through to the public download on a miss, so a partial mirror is fine.
+  if (nzchar(local_root)) {
+    rel <- sub("^/", "", sub(CCKP_BASE, "", url, fixed = TRUE))
+    local_path <- file.path(local_root, rel)
+    if (file.exists(local_path) && file.info(local_path)$size > 0) {
+      log_msg("Local mirror hit: ", local_path,
+              " [", format(file.info(local_path)$size / 1e6, digits = 4), " MB]")
+      file.symlink(normalizePath(local_path), dest)
+      return(dest)
+    }
+    log_msg("Local mirror miss (falling back to public download): ", local_path)
   }
   log_msg("Downloading ", basename(url))
   t0 <- Sys.time()
@@ -186,8 +202,11 @@ run_cckp_grid <- function() {
     res <- tryCatch({
       temp_url <- cckp_temp_url(g$model, model_scen_key, g$year)
       pop_url  <- cckp_pop_url(POP_DATASET, g$year, g$scenario)
-      temp_nc <- ensure_download(temp_url, CCKP_CACHE)
-      pop_nc  <- ensure_download(pop_url,  CCKP_CACHE)
+      # Pop may sit under a different mirror root than temp; fall back to the
+      # temp root when no pop-specific root is set.
+      pop_root <- if (nzchar(CCKP_POP_LOCAL_ROOT)) CCKP_POP_LOCAL_ROOT else CCKP_LOCAL_ROOT
+      temp_nc <- ensure_download(temp_url, CCKP_CACHE, CCKP_LOCAL_ROOT)
+      pop_nc  <- ensure_download(pop_url,  CCKP_CACHE, pop_root)
       if (is.na(temp_nc) || is.na(pop_nc)) {
         # ensure_download returned NA on 404 / size-0 -- the combo isn't on
         # S3 (known gaps for some model x scenario pairs; see MODELS_ALL in
