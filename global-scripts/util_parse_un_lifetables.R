@@ -163,16 +163,26 @@ age_group_labels <- c("0-4", "5-9", "10-14", "15-19", "20-24", "25-29",
                        "30-34", "35-39", "40-44", "45-49", "50-54", "55-59",
                        "60-64", "65-69", "70-74", "75-79", ">80")
 
+# Pipeline format: age_group_id is the integer age-start (0,5,...,80) and
+# sex_id is the integer GBD code (1=male, 2=female). This is what the burden
+# carries (from the IHME mortality converter) and what 07_compute_ylls.R
+# merges on. Text labels ("0-4") or "M"/"F" do NOT merge and silently yield
+# all-NA YLLs. age_group_labels below is kept only for the summary printout.
 raw_filtered <- raw[age %in% age_group_starts]
-raw_filtered[, age_group_id := age_group_labels[match(age, age_group_starts)]]
+raw_filtered[, age_group_id := as.integer(age)]
+raw_filtered[, sex_id := fifelse(sex_std == "M", 1L, 2L)]
 
 # --- Map UN location IDs to GBD location IDs ---
 # Common mappings (ISO numeric → GBD location_id)
 # For a full run we'd use the GBD hierarchy file, but for now handle Colombia
 # and provide a lookup mechanism
+# NOTE: this is a limited fallback for manually-downloaded files. For full
+# coverage use util_download_un_lifetables.R, which builds the UN<->GBD
+# crosswalk from the GBD2023 shapefile (loc_id<->ISO3) + UN /locations. Chile is
+# GBD loc_id 98 (M49 152); loc_id 148 is Morocco -- the old table had this wrong.
 un_to_gbd <- data.table(
   location_id_un = c(170, 76, 152, 156, 320, 484, 554, 710, 840),
-  location_id_gbd = c(125, 135, 148, 6,   128, 130, 72,  196, 102),
+  location_id_gbd = c(125, 135, 98,  6,   128, 130, 72,  196, 102),
   location_name_check = c("Colombia", "Brazil", "Chile", "China",
                            "Guatemala", "Mexico", "New Zealand",
                            "South Africa", "United States")
@@ -193,11 +203,11 @@ if ("location_id_un" %in% names(raw_filtered)) {
 }
 
 # --- Output: one CSV per location ---
-output_cols <- c("year", "age_group_id", "sex_std", "ex", "location_id_gbd")
+output_cols <- c("year", "age_group_id", "sex_id", "ex", "location_id_gbd")
 available_cols <- intersect(output_cols, names(raw_filtered))
 out <- raw_filtered[, ..available_cols]
-setnames(out, c("year", "sex_std", "location_id_gbd"),
-         c("year_id", "sex_id", "location_id"),
+setnames(out, c("year", "location_id_gbd"),
+         c("year_id", "location_id"),
          skip_absent = TRUE)
 
 locations <- unique(out$location_id)
