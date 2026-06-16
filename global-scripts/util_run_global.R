@@ -76,7 +76,8 @@ run_one_location <- function() {
                              paste0("--models=",      MODELS),
                              paste0("--scenarios=",   SCENARIOS),
                              paste0("--years=",       YEARS),
-                             paste0("--shapefile=",   SHAPEFILE)))
+                             paste0("--shapefile=",   SHAPEFILE),
+                             paste0("--subnational=", SUBNATIONAL)))
   log_msg(sprintf("util_run_cckp_pipeline.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
   if (rc != 0) stop("util_run_cckp_pipeline.R failed for loc=", loc)

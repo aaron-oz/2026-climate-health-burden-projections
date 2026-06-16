@@ -120,7 +120,8 @@ convert_cckp <- function(temp_nc_path,
                          location_id,
                          shapefile_path,
                          shapefile_subloc_field = NULL,
-                         output_path = NULL) {
+                         output_path = NULL,
+                         subnational = TRUE) {
 
   log_msg("Opening temp NetCDF: ", basename(temp_nc_path))
   nc_t <- nc_open(temp_nc_path)
@@ -237,7 +238,11 @@ convert_cckp <- function(temp_nc_path,
   unique_pixels <- unique(dt[, .(pixel_id, lon, lat)])
   log_msg("Unique pixels in location bbox: ", nrow(unique_pixels))
 
-  has_admin1 <- "loc_id" %in% names(shp) &&
+  # Subnational tagging is gated on `subnational`. When FALSE (national mode),
+  # both subnational branches are skipped and every pixel inside the national
+  # polygon is tagged with LOCATION_ID -- the resolution that matches national
+  # mortality (e.g. IHME forecasts). See config.R::SUBNATIONAL.
+  has_admin1 <- subnational && "loc_id" %in% names(shp) &&
     any(!is.na(shp$parent_id) & shp$parent_id == location_id)
   if (has_admin1) {
     admin1 <- shp[!is.na(shp$parent_id) & shp$parent_id == location_id, ]
@@ -248,7 +253,8 @@ convert_cckp <- function(temp_nc_path,
     unique_pixels[, subloc_id := as.character(admin1$loc_id[first_hit])]
     log_msg("Tagged ", sum(!is.na(unique_pixels$subloc_id)), " of ",
             nrow(unique_pixels), " pixels with admin-1 subloc_id")
-  } else if (!is.null(shapefile_subloc_field) && shapefile_subloc_field %in% names(shp)) {
+  } else if (subnational && !is.null(shapefile_subloc_field) &&
+             shapefile_subloc_field %in% names(shp)) {
     # Country-specific admin-1 shapefile (e.g., DIVIPOLA for Colombia) — use
     # all features in the shapefile, tag by `shapefile_subloc_field`.
     pts <- st_as_sf(unique_pixels, coords = c("lon", "lat"), crs = st_crs(shp))
@@ -260,8 +266,18 @@ convert_cckp <- function(temp_nc_path,
             sum(!is.na(unique_pixels$subloc_id)), " of ",
             nrow(unique_pixels), " pixels matched")
   } else {
-    unique_pixels[, subloc_id := as.character(location_id)]
-    log_msg("No admin-1 features available; subloc_id := LOCATION_ID")
+    # National resolution: tag every pixel that falls inside the national
+    # polygon with LOCATION_ID. Still point-in-polygon (against loc_geom) so the
+    # rectangular bbox's ocean / neighbour-country cells are dropped, the same
+    # filtering the subnational branches apply.
+    pts <- st_as_sf(unique_pixels, coords = c("lon", "lat"), crs = st_crs(loc_geom))
+    hits <- st_intersects(pts, st_union(loc_geom))
+    inside <- lengths(hits) > 0
+    unique_pixels[, subloc_id := NA_character_]
+    unique_pixels[inside, subloc_id := as.character(location_id)]
+    log_msg(if (!subnational) "subnational=FALSE: " else "No admin-1 features; ",
+            "national resolution; tagged ", sum(inside), " of ",
+            nrow(unique_pixels), " pixels inside the national polygon")
   }
 
   # Drop pixels with no subloc match (outside the country polygon — bbox catches
@@ -308,5 +324,6 @@ if (sys.nframe() == 0L) {
                location_id  = LOCATION_ID,
                shapefile_path = SHAPEFILE,
                shapefile_subloc_field = SHAPEFILE_SUBLOC_FIELD,
-               output_path = OUTPUT_PATH)
+               output_path = OUTPUT_PATH,
+               subnational = if (exists("SUBNATIONAL")) SUBNATIONAL else TRUE)
 }

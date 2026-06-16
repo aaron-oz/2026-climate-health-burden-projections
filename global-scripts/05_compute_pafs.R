@@ -406,6 +406,19 @@ if (do_daily_verif) {
                   by.x = c("year_id", "subloc_id", "acause"),
                   by.y = c("year", "subloc_id", "acause"),
                   all.x = TRUE)
+  # Guard against a silent resolution mismatch. If NO mortality row matched any
+  # PAF row, every paf is NA, gets floored to 0 below, and the burden would be a
+  # silent zero. This happens when subnational temperature/PAFs meet national
+  # mortality (or vice versa). Fail loudly with the fix.
+  if (nrow(burden) > 0 && all(is.na(burden$paf_nonopt))) {
+    stop("Resolution mismatch: no PAF matched any mortality row. ",
+         "Temperature/PAF subloc_ids {",
+         paste(head(unique(as.character(paf_combined$subloc_id))), collapse = ","),
+         "...} do not overlap mortality subloc_ids {",
+         paste(head(unique(as.character(mort_for_summary$subloc_id))), collapse = ","),
+         "...}. For national mortality run step 6a with --subnational=FALSE; ",
+         "for subnational mortality run it with --subnational=TRUE.")
+  }
   burden[is.na(paf_heat),   paf_heat   := 0]
   burden[is.na(paf_cold),   paf_cold   := 0]
   burden[is.na(paf_nonopt), paf_nonopt := 0]

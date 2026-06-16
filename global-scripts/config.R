@@ -77,6 +77,19 @@ RUN_DIAGNOSTICS <- TRUE
 # Compute SEVs as a separate diagnostic output
 COMPUTE_SEVS <- TRUE
 
+# Spatial resolution of the temperature/PAF aggregation. This MUST match the
+# resolution of the mortality input, or the deaths x PAF merge in
+# 05_compute_pafs.R finds no overlap and silently yields zero burden.
+#   FALSE (default) -> national: every pixel inside the country is tagged with
+#     subloc_id = LOCATION_ID. Use with national mortality (e.g. IHME forecast
+#     files), which is the production case.
+#   TRUE -> subnational: pixels are tagged to admin-1 (department/state) units
+#     from the shapefile. Use only when the mortality is also subnational
+#     (e.g. Samuel's Colombia department-level deaths).
+# Only consumed by util_convert_cckp_temperature.R (step 6a). Override with
+# --subnational=TRUE.
+SUBNATIONAL <- FALSE
+
 # =============================================================================
 # Colombia verification mode
 # =============================================================================

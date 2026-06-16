@@ -203,7 +203,8 @@ run_cckp_grid <- function() {
                          location_id  = LOCATION_ID,
                          shapefile_path = SHAPEFILE,
                          shapefile_subloc_field = SHAPEFILE_SUBLOC_FIELD,
-                         output_path  = out_path)
+                         output_path  = out_path,
+                         subnational  = SUBNATIONAL)
       if (!KEEP_NETCDFS) {
         try(file.remove(temp_nc), silent = TRUE)
         # Pop NetCDFs are shared across years; only delete if not used elsewhere
