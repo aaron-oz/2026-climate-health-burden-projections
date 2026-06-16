@@ -39,6 +39,8 @@ setDT(erf); setDT(temp); setDT(tmrel)
 
 # SEVs use summary RR values even in draw mode (diagnostic metric).
 if (USE_DRAWS) {
+  # Draws-mode ERF is long (zone, daily_temp, acause, draw, rr); collapse draws
+  # to the summary rr_mean SEVs use even in draw mode.
   erf <- erf[, .(rr_mean = mean(rr)), by = .(zone, daily_temp, acause)]
   tmrel_s <- tmrel[, .(tmrel_mean_10 = as.integer(round(mean(tmrel)))),
                    by = .(zone, year_id)]

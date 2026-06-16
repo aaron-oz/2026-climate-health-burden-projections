@@ -28,14 +28,14 @@ cache_hit <- file.exists(cache_file) && file.exists(temp_limits_cache)
 
 if (cache_hit) {
   log_msg("Cached ERF found at ", cache_file, "; skipping rebuild")
-  if (!file.exists(target_erf) ||
-      file.info(cache_file)$mtime > file.info(target_erf)$mtime) {
-    file.copy(cache_file,        target_erf,    overwrite = TRUE)
-    file.copy(temp_limits_cache, target_limits, overwrite = TRUE)
-    log_msg("Copied cached ERF to ", target_erf)
-  } else {
-    log_msg("Intermediate ERF already current; nothing to copy")
-  }
+  # Always refresh the per-run intermediate from this mode's cache. An mtime
+  # guard is unsafe: a previous run in a DIFFERENT mode (summary vs draws) can
+  # leave an intermediate that is newer than this mode's cache but has the wrong
+  # schema (e.g. wide draw_* vs long draw/rr), which then crashes 05/06. A local
+  # copy of the cache is a few seconds, so copy unconditionally.
+  file.copy(cache_file,        target_erf,    overwrite = TRUE)
+  file.copy(temp_limits_cache, target_limits, overwrite = TRUE)
+  log_msg("Refreshed intermediate ERF from cache: ", target_erf)
   # Cache hit: skip rebuild and diagnostics. Cannot `quit()` here because this
   # script is sourced into run_location.R via `source(..., local = new.env())`
   # and quit() would kill the whole pipeline process.
