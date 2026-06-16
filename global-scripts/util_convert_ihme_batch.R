@@ -87,12 +87,12 @@ convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_pa
                   acause, length(unique(rate_full$location))))
 
   n_done <- 0L; n_skip <- 0L; n_miss <- 0L
-  for (loc_id in location_ids) {
+  for (this_loc in location_ids) {
     out_path <- file.path(MORTALITY_DIR,
-                          sprintf("%d_mortality_ihme_%s_draws.rds", loc_id, acause))
+                          sprintf("%d_mortality_ihme_%s_draws.rds", this_loc, acause))
     if (!force && file.exists(out_path)) { n_skip <- n_skip + 1L; next }
 
-    loc_row <- loc_map[loc_id == ..loc_id]
+    loc_row <- loc_map[loc_id == this_loc]
     if (nrow(loc_row) != 1) { n_miss <- n_miss + 1L; next }
     target_location <- loc_row$location
 
@@ -104,7 +104,7 @@ convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_pa
     setkey(pop,  year_id, age_text, sex_text)
     if (!identical(rate[, .(year_id, age_text, sex_text)],
                    pop [, .(year_id, age_text, sex_text)])) {
-      warning(sprintf("[%s loc=%d] rate/pop key mismatch -- skipping", acause, loc_id))
+      warning(sprintf("[%s loc=%d] rate/pop key mismatch -- skipping", acause, this_loc))
       n_miss <- n_miss + 1L; next
     }
 
@@ -126,17 +126,17 @@ convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_pa
     draws_long <- out_long[, .(deaths = sum(deaths, na.rm = TRUE)),
                            by = .(year_id, age_group_id, sex_id, draw)]
     draws_long[, acause := acause]
-    draws_long[, location_id := loc_id]
+    draws_long[, location_id := this_loc]
     saveRDS(draws_long, out_path)
 
     # Mean form (back-compat for code paths that don't carry mortality draws)
     mort_mean <- draws_long[, .(deaths = mean(deaths, na.rm = TRUE)),
                             by = .(year_id, age_group_id, sex_id)]
     mort_mean[, acause := acause]
-    mort_mean[, location_id := loc_id]
+    mort_mean[, location_id := this_loc]
     saveRDS(mort_mean,
             file.path(MORTALITY_DIR,
-                      sprintf("%d_mortality_ihme_%s.rds", loc_id, acause)))
+                      sprintf("%d_mortality_ihme_%s.rds", this_loc, acause)))
     n_done <- n_done + 1L
   }
 
