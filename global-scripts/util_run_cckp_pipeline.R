@@ -42,7 +42,8 @@ defaults <- list(
   CCKP_CACHE = file.path(DATA_DIR, "cmip6-scratch", "cckp"),
   OUTPUT_ROOT = file.path(TEMP_DIR, "cckp"),
   MANIFEST    = file.path(OUTPUT_DIR, "cckp_run_manifest.csv"),
-  KEEP_NETCDFS = TRUE
+  KEEP_NETCDFS = TRUE,
+  FORCE = FALSE   # --force=TRUE recomputes even if the output RDS exists
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) {
@@ -192,7 +193,7 @@ run_cckp_grid <- function() {
     log_msg(sprintf("[%d/%d] loc=%d %s/%s/%d",
                     i, nrow(grid), LOCATION_ID, g$model, g$scenario, g$year))
 
-    if (file.exists(out_path)) {
+    if (!isTRUE(FORCE) && file.exists(out_path)) {
       log_msg("  -> SKIP (output exists)")
       results[[i]] <- data.table(grid[i], status = "skip", out_path = out_path,
                                  rows = NA_integer_, elapsed_s = 0, message = "")

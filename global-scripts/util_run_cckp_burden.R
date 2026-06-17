@@ -39,6 +39,7 @@ defaults <- list(
   BURDEN_MANIFEST = file.path(OUTPUT_DIR, "cckp_burden_manifest.csv"),
   USE_DRAWS_RUN   = TRUE,   # forwarded as --use_draws to run_location.R
   N_DRAWS_RUN     = N_DRAWS,# forwarded as --n_draws
+  FORCE           = FALSE,  # --force=TRUE recomputes even if burden_{year}.rds exists
   MORTALITY_FILE  = NULL    # forwarded as --mortality_file; comma-separated
                             # list of per-cause IHME-derived RDS files
                             # supported (04 rbinds them). When NULL, the
@@ -73,7 +74,7 @@ parse_years <- function(s) {
 run_one_combo <- function(loc, model, scen, year) {
   out_dir   <- file.path(OUTPUT_ROOT_CCKP, loc, paste0(model, "-", scen))
   out_burden <- file.path(out_dir, sprintf("burden_%d.rds", year))
-  if (file.exists(out_burden)) {
+  if (!isTRUE(FORCE) && file.exists(out_burden)) {
     return(list(status = "skip", elapsed = 0, msg = ""))
   }
 

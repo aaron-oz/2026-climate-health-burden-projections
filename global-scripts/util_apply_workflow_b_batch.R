@@ -48,7 +48,8 @@ defaults <- list(
   CAUSES             = paste(GBD_CAUSES, collapse = ","),
   BURDEN_ROOT        = file.path(RESULTS_DIR, "cckp"),
   WORKFLOW_B_ROOT    = file.path(RESULTS_DIR, "workflow_b"),
-  WORKFLOW_B_MANIFEST = file.path(OUTPUT_DIR, "workflow_b_batch_manifest.csv")
+  WORKFLOW_B_MANIFEST = file.path(OUTPUT_DIR, "workflow_b_batch_manifest.csv"),
+  FORCE = FALSE   # --force=TRUE recomputes even if wb_{year}.rds exists
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
@@ -98,7 +99,7 @@ apply_workflow_b_grid <- function() {
     out_dir  <- file.path(WORKFLOW_B_ROOT, loc, paste0(g$model, "-", g$target))
     out_path <- file.path(out_dir, sprintf("wb_%d.rds", g$year))
 
-    if (file.exists(out_path)) {
+    if (!isTRUE(FORCE) && file.exists(out_path)) {
       results[[i]] <- data.table(grid[i], location_id = loc,
                                  status = "skip", elapsed_s = 0, message = "")
       next

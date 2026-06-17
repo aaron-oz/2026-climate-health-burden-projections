@@ -346,6 +346,12 @@ and across scenarios — the SSP2-RCP4.5 combos that double as both reference
 and target only get computed once, and it should be easy to pick up if
 something errors without needing to redo everything.
 
+To **force a recompute** (override the skip), pass `--force=TRUE`. It's accepted
+by all the runners — `util_run_cckp_pipeline.R`, `util_run_cckp_burden.R`,
+`util_run_global.R` (which forwards it to both inner runners), and
+`util_apply_workflow_b_batch.R` — as well as the step-4 converter. With
+`--force=TRUE` a combo is recomputed even if its output RDS already exists.
+
 ## 8. Spot check
 
 We'll spot-check a sample of outputs against expected ranges, then give the

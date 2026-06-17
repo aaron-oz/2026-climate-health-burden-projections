@@ -37,7 +37,8 @@ defaults <- list(
   USE_DRAWS_RUN= TRUE,
   N_DRAWS_RUN  = 500,
   CAUSES       = paste(GBD_CAUSES, collapse = ","),
-  SHAPEFILE    = file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp")
+  SHAPEFILE    = file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp"),
+  FORCE        = FALSE   # --force=TRUE forwarded to both inner runners (recompute)
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
@@ -80,7 +81,8 @@ run_one_location <- function() {
                              paste0("--shapefile=",   SHAPEFILE),
                              paste0("--subnational=", SUBNATIONAL),
                              paste0("--cckp_local_root=", CCKP_LOCAL_ROOT),
-                             paste0("--cckp_pop_local_root=", CCKP_POP_LOCAL_ROOT)))
+                             paste0("--cckp_pop_local_root=", CCKP_POP_LOCAL_ROOT),
+                             paste0("--force=", FORCE)))
   log_msg(sprintf("util_run_cckp_pipeline.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
   if (rc != 0) stop("util_run_cckp_pipeline.R failed for loc=", loc)
@@ -95,6 +97,7 @@ run_one_location <- function() {
                              paste0("--use_draws_run=",
                                     if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
                              paste0("--n_draws_run=",     N_DRAWS_RUN),
+                             paste0("--force=",           FORCE),
                              paste0("--mortality_file=",  mort_file_arg)))
   log_msg(sprintf("util_run_cckp_burden.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
