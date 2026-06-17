@@ -223,14 +223,15 @@ Rscript global-scripts/util_run_cckp_burden.R \
   larger-country number; small-island countries like Tuvalu would give a
   low-end number.
 - `--models=access-cm2-r1i1p1f1` is a single model — one combo only. We've
-  verified ACCESS-CM2 works end-to-end on our side (it was our first
-  probe), so any timing peculiarity here is genuinely about the pipeline,
-  not the data format. Should produce ~30–40 s of pipeline wall-clock on
-  top of the NetCDF download.
-- `--years=2022` is the first IHME forecast year, single year. The CCKP
-  NetCDF for this is ~750 MB, so the bulk of the wall-clock for the
-  benchmark will actually be the download — worth noting separately when
-  reporting back.
+  verified ACCESS-CM2 works end-to-end on our side, so any timing
+  peculiarity here is about the pipeline, not the data format.
+- `--years=2022` is the first IHME forecast year, single year. Rough timing
+  from our runs (draws mode, 500 draws): step 6a is ~5 s of NetCDF→RDS
+  conversion when the CCKP file is already local (e.g. a mirror), or
+  download-dominated (~750 MB) from public CCKP. Step 6b is ~55 s once the
+  ERF cache is warm, but the FIRST 6b run also builds the 1000-draw ERF cache
+  (~90 s, one-time), so a first run lands around ~120–160 s. (Matches
+  Caspar's first run of 160 s.)
 - `--n_draws_run=500` matches IHME's forecast draw count, what we'll run in
   production.
 - `--mortality_file=...cvd_ihd_draws.rds` — you need to have run the
@@ -242,10 +243,15 @@ Rscript global-scripts/util_run_cckp_burden.R \
 **Send us the wall-clock times from that run.** That lets us confirm our
 total time estimates:
 
-- The total wall-clock printed by `util_run_cckp_burden.R` (line like
-  `[1/1] access-cm2-r1i1p1f1/ssp245/2022 -> ok (XX.Xs)`)
-- The download timing logged by `util_run_cckp_pipeline.R` (the
-  `Downloaded ... in <X>s` lines)
+- Step 6b: the line from `util_run_cckp_burden.R`,
+  `[1/1] access-cm2-r1i1p1f1/ssp245/2022 -> ok (XX.Xs)`.
+- Step 6a: the per-combo line from `util_run_cckp_pipeline.R`,
+  `[1/1] ... -> ok (XX.Xs, N rows)`. With a local CCKP mirror this is just
+  the NetCDF→RDS conversion (no download); when downloading from public CCKP
+  it also includes the download, separately logged as `Downloaded ... in <X>s`.
+- The first 6b run is slower because it builds the ERF cache once. If you can,
+  send a SECOND run's number too — that's the steady-state per-combo time we
+  multiply out for the production estimate.
 
 ## 6.5. Trace-verify the math on the benchmark output
 

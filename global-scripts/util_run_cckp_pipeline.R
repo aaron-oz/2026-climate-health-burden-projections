@@ -195,11 +195,12 @@ run_cckp_grid <- function() {
     if (file.exists(out_path)) {
       log_msg("  -> SKIP (output exists)")
       results[[i]] <- data.table(grid[i], status = "skip", out_path = out_path,
-                                 rows = NA_integer_, message = "")
+                                 rows = NA_integer_, elapsed_s = 0, message = "")
       next
     }
 
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+    t0 <- Sys.time()
     res <- tryCatch({
       temp_url <- cckp_temp_url(g$model, model_scen_key, g$year)
       pop_url  <- cckp_pop_url(POP_DATASET, g$year, g$scenario)
@@ -237,6 +238,14 @@ run_cckp_grid <- function() {
       data.table(grid[i], status = "fail", out_path = out_path,
                  rows = NA_integer_, message = conditionMessage(e))
     })
+    # Per-combo wall-clock (download-or-local-mirror + NetCDF->RDS conversion),
+    # logged like the burden runner so 6a timing is reportable whether the
+    # NetCDFs were downloaded from public CCKP or symlinked from a local mirror.
+    res[, elapsed_s := round(as.numeric(Sys.time() - t0, units = "secs"), 1)]
+    if (identical(res$status[1], "ok")) {
+      log_msg(sprintf("  -> ok (%.1fs, %s rows)", res$elapsed_s[1],
+                      format(res$rows[1], big.mark = ",")))
+    }
     results[[i]] <- res
   }
 
