@@ -24,18 +24,31 @@ temp_limits_cache <- file.path(cache_dir, paste0("temp_limits_", mode_tag, ".rds
 target_erf    <- file.path(INTERMEDIATE_DIR, "erf_curves.rds")
 target_limits <- file.path(INTERMEDIATE_DIR, "temp_limits.rds")
 
+# Point the per-location intermediate at the shared, read-only cache via symlink
+# rather than copying. The ERF is location-independent, so the step-7 fan-out
+# (one process per location) would otherwise duplicate the ~0.5 GB file once per
+# location. A symlink is always current (no stale-schema bug -- the reason the
+# old mtime-guarded copy was unsafe) and adds no disk or copy time. Falls back
+# to a copy if the filesystem rejects symlinks.
+link_to_cache <- function(src, dst) {
+  unlink(dst)  # drop any prior file or symlink (no-op if absent)
+  if (!isTRUE(suppressWarnings(file.symlink(normalizePath(src), dst))))
+    file.copy(src, dst, overwrite = TRUE)
+}
+# Atomic cache write (tmp + rename) so a cold parallel start -- many fresh
+# processes building the cache at once -- can never expose a half-written file.
+atomic_save <- function(obj, path) {
+  tmp <- paste0(path, ".tmp.", Sys.getpid())
+  saveRDS(obj, tmp)
+  file.rename(tmp, path)
+}
+
 cache_hit <- file.exists(cache_file) && file.exists(temp_limits_cache)
 
 if (cache_hit) {
-  log_msg("Cached ERF found at ", cache_file, "; skipping rebuild")
-  # Always refresh the per-run intermediate from this mode's cache. An mtime
-  # guard is unsafe: a previous run in a DIFFERENT mode (summary vs draws) can
-  # leave an intermediate that is newer than this mode's cache but has the wrong
-  # schema (e.g. wide draw_* vs long draw/rr), which then crashes 05/06. A local
-  # copy of the cache is a few seconds, so copy unconditionally.
-  file.copy(cache_file,        target_erf,    overwrite = TRUE)
-  file.copy(temp_limits_cache, target_limits, overwrite = TRUE)
-  log_msg("Refreshed intermediate ERF from cache: ", target_erf)
+  log_msg("Cached ERF found at ", cache_file, "; linking into intermediate")
+  link_to_cache(cache_file,        target_erf)
+  link_to_cache(temp_limits_cache, target_limits)
   # Cache hit: skip rebuild and diagnostics. Cannot `quit()` here because this
   # script is sourced into run_location.R via `source(..., local = new.env())`
   # and quit() would kill the whole pipeline process.
@@ -102,13 +115,14 @@ temp_limits <- erf[, .(min_temp = min(daily_temp), max_temp = max(daily_temp)), 
 # Save to both the per-run intermediate path (consumed by 05 / 06) and the
 # shared cache (reused by subsequent pipeline runs with the same N_DRAWS /
 # USE_DRAWS configuration).
-saveRDS(erf, target_erf)
-saveRDS(temp_limits, target_limits)
-saveRDS(erf, cache_file)
-saveRDS(temp_limits, temp_limits_cache)
+# Write the shared cache atomically, then link the per-location intermediate to it.
+atomic_save(erf,         cache_file)
+atomic_save(temp_limits, temp_limits_cache)
+link_to_cache(cache_file,        target_erf)
+link_to_cache(temp_limits_cache, target_limits)
 
-log_msg("ERF curves saved to ", target_erf,
-        " and cached to ", cache_file)
+log_msg("ERF curves cached to ", cache_file,
+        " and linked into ", target_erf)
 
 # =============================================================================
 # Diagnostic plots (if enabled)

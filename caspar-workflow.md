@@ -334,6 +334,12 @@ for each combo with the IHME mortality files as input. Per-location
 wall-clock ~17 hours for 29 models × 29 years × 500 draws; with 125
 parallel locations the global run completes in ~1 day per scenario.
 
+Running locations in parallel is safe: each process writes its scratch to a
+per-location `output/intermediate/<loc>/`, and the location-independent ERF is
+symlinked from the shared read-only `data/erf/cache/` (built once). Run the
+single-location step-6 benchmark before the fan-out so that ERF cache is already
+warm.
+
 For all four SSPs, change `--scenarios=ssp245` to
 `--scenarios=ssp126,ssp245,ssp370,ssp585`. The runner is idempotent within
 and across scenarios — the SSP2-RCP4.5 combos that double as both reference

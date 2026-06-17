@@ -291,6 +291,14 @@ parse_args <- function() {
 
 parse_args()
 
+# Per-location scratch directory. The step-7 production fan-out runs one process
+# per location concurrently; a shared output/intermediate/ would race on the
+# location-specific files (temperature.rds, mortality.rds, tmrel.rds, ...). Give
+# each location its own intermediate dir. Recomputed here so it picks up
+# --location_id from parse_args. (Location-INDEPENDENT ERF curves live in the
+# shared, read-only data/erf/cache, not here -- see 01_load_erf.R.)
+INTERMEDIATE_DIR <- file.path(OUTPUT_DIR, "intermediate", as.character(LOCATION_ID))
+
 # =============================================================================
 # Safety guards
 # =============================================================================
