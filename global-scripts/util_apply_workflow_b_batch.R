@@ -42,7 +42,7 @@ suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(
   REF_SCENARIO       = "ssp245",
-  TARGET_SCENARIOS   = "ssp126,ssp245,ssp370,ssp585",
+  TARGET_SCENARIOS   = "ssp245,ssp370,ssp585,ssp126",  # priority order; low target is SSP1-RCP2.6 (ssp126) -- CCKP daily has no ssp119
   YEARS              = "2022-2050",
   MODELS             = paste(MODELS_ALL, collapse = ","),
   CAUSES             = paste(GBD_CAUSES, collapse = ","),

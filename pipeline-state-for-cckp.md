@@ -184,7 +184,12 @@ GBD-location granularity globally.
 - **Production source (CCKP gridded, verified 2026-05-13):**
   - S3: `https://wbg-cckp.s3.amazonaws.com/data/pop-x0.25/popcount/{dataset}-{scenario}/`
   - Dataset: `gpw-v4-rev11` (Gridded Population of the World v4 rev 11).
-  - **SSP scenarios** in CCKP: ssp119 / ssp126 / ssp245 / ssp370 / ssp585 + historical.
+  - **SSP scenarios** in CCKP daily `tas` (per-model, what the pipeline uses):
+    ssp126 / ssp245 / ssp370 / ssp585 + historical. NOTE: **ssp119 (SSP1-RCP1.9)
+    is NOT in the daily per-model product** — it exists only as an annual
+    multi-model-ensemble climatology under `cmip6-x0.25`, which this
+    daily/per-model pipeline can't use. So the low scenario we run is SSP1-RCP2.6
+    (ssp126), not SSP1-RCP1.9.
   - **Same grid as CCKP CMIP6 temp** (1{,}440 × 721 at 0.25°) — no regridding needed.
   - File-per-(dataset, scenario, year-range):
     `climatology-popcount-annual-mean_pop-x0.25_{dataset}-{scenario}_climatology_mean_{ystart}-{yend}.nc`

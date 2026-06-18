@@ -306,17 +306,26 @@ You don't need to redo this hand verification on every combo — once on a
 representative sample (say 3–5 pixels in your benchmark run) is enough to
 confirm the math hasn't drifted on your hardware.
 
-## 7. Launch the full SSP2-RCP4.5 reference run
+## 7. Launch the full production run (all 4 scenarios)
 
-All 200 locations, 29 models, 29 years (2022–2050).
+All ~200 locations, 29 models, 29 years (2022–2050), 4 scenarios.
+
+The 4 scenarios are the default (so you can omit `--scenarios`), in run-priority
+order: **SSP2-RCP4.5 (`ssp245`, reference) → SSP3-RCP7.0 (`ssp370`) → SSP5-RCP8.5
+(`ssp585`) → SSP1-RCP2.6 (`ssp126`)**. The reference runs first because it's the
+Workflow-B denominator for every target; the three targets follow in priority
+order. Note the low target is SSP1-RCP**2.6**, not SSP1-RCP1.9: CCKP's daily
+product carries no `ssp119` for any model (only an annual ensemble climatology),
+so 1.9 can't be run through this daily/per-model pipeline.
 
 Single-location version:
 
 ```bash
 Rscript global-scripts/util_run_global.R \
   --location_id=125 \
-  --scenarios=ssp245 \
   --years=2022-2050
+  # --scenarios defaults to all 4; pass e.g. --scenarios=ssp245 to do just the
+  # reference first (see step 8).
 ```
 
 Parallel across all ~205 locations using GNU parallel (one process per
@@ -324,15 +333,15 @@ location, 125 concurrent):
 
 ```bash
 parallel -j 125 \
-  'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022-2050' \
+  'Rscript global-scripts/util_run_global.R --location_id={} --years=2022-2050' \
   ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
 ```
 
 Each invocation does (a) download + convert CCKP CMIP6 NetCDFs for all 29
-models × the specified scenario × years, then (b) run the burden pipeline
-for each combo with the IHME mortality files as input. Per-location
-wall-clock ~17 hours for 29 models × 29 years × 500 draws; with 125
-parallel locations the global run completes in ~1 day per scenario.
+models × 4 scenarios × years, then (b) run the burden pipeline for each combo
+with the IHME mortality files as input. Per-location wall-clock ~17 hours per
+scenario for 29 models × 29 years × 500 draws, so the 4-scenario run is roughly
+4× that; with 125 parallel locations, on the order of a few days for all four.
 
 Running locations in parallel is safe: each process writes its scratch to a
 per-location `output/intermediate/<loc>/`, and the location-independent ERF is
@@ -340,11 +349,10 @@ symlinked from the shared read-only `data/erf/cache/` (built once). Run the
 single-location step-6 benchmark before the fan-out so that ERF cache is already
 warm.
 
-For all four SSPs, change `--scenarios=ssp245` to
-`--scenarios=ssp126,ssp245,ssp370,ssp585`. The runner is idempotent within
-and across scenarios — the SSP2-RCP4.5 combos that double as both reference
-and target only get computed once, and it should be easy to pick up if
-something errors without needing to redo everything.
+All four scenarios run by default (see above). The runner is idempotent within
+and across scenarios, so a partial/interrupted run picks up where it left off
+without redoing finished combos. To run a subset (e.g. the reference first),
+pass `--scenarios=ssp245`.
 
 To **force a recompute** (override the skip), pass `--force=TRUE`. It's accepted
 by all the runners — `util_run_cckp_pipeline.R`, `util_run_cckp_burden.R`,
@@ -354,10 +362,10 @@ by all the runners — `util_run_cckp_pipeline.R`, `util_run_cckp_burden.R`,
 
 ## 8. Spot check
 
-We'll spot-check a sample of outputs against expected ranges, then give the
-green light for the three target-scenario runs (SSP1-RCP1.9, SSP3-RCP7.0,
-SSP5-RCP8.5). Each of those runs shares the reference run's denominator, so
-no rerunning SSP2.
+We'll spot-check a sample of outputs against expected ranges. The three target
+scenarios, in priority order, are SSP3-RCP7.0, SSP5-RCP8.5, SSP1-RCP2.6; each
+shares the reference run's denominator, so no rerunning SSP2-RCP4.5. (If you
+prefer to gate, run `--scenarios=ssp245` first, let us check it, then the rest.)
 
 ## 9. Apply the Workflow B ratio
 
@@ -370,7 +378,7 @@ Single-location version:
 Rscript global-scripts/util_apply_workflow_b_batch.R \
   --location_id=125 \
   --ref_scenario=ssp245 \
-  --target_scenarios=ssp126,ssp245,ssp370,ssp585 \
+  --target_scenarios=ssp245,ssp370,ssp585,ssp126 \
   --years=2022-2050
 ```
 
@@ -378,7 +386,7 @@ Parallel across all locations:
 
 ```bash
 parallel -j 125 \
-  'Rscript global-scripts/util_apply_workflow_b_batch.R --location_id={} --target_scenarios=ssp126,ssp245,ssp370,ssp585' \
+  'Rscript global-scripts/util_apply_workflow_b_batch.R --location_id={} --target_scenarios=ssp245,ssp370,ssp585,ssp126' \
   ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
 ```
 

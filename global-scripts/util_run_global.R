@@ -31,7 +31,13 @@ source(file.path(SCRIPTS_DIR, "config.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(
-  SCENARIOS    = "ssp126,ssp245,ssp370,ssp585",
+  # The 4 production scenarios, in run-priority order: reference SSP2-RCP4.5
+  # first (needed as the Workflow-B denominator for every target), then targets
+  # SSP3-RCP7.0, SSP5-RCP8.5, SSP1-RCP2.6. The low target is SSP1-RCP2.6
+  # (ssp126), not SSP1-RCP1.9 -- CCKP's daily product has no ssp119 for any
+  # model (only an annual ensemble), so 1.9 isn't runnable here. (A few models
+  # lack ssp126/ssp370; see MODELS_ALL in config.R -- those combos skip.)
+  SCENARIOS    = "ssp245,ssp370,ssp585,ssp126",
   YEARS        = "2022-2050",
   MODELS       = paste(MODELS_ALL, collapse = ","),
   USE_DRAWS_RUN= TRUE,
