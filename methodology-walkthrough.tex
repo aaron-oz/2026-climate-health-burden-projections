@@ -22,7 +22,15 @@
 \newcommand{\TMREL}{\text{TMREL}}
 \newcommand{\SSPtwo}{\text{SSP2{-}RCP4.5}}
 \newcommand{\mIHME}{m^{\text{IHME}}}
-\newcommand{\mAttr}{D^{\text{attr}}}
+% D^{attr}, optionally qualified by component:
+%   \mAttr        -> D^{attr}
+%   \mAttr[heat]  -> D^{attr,heat}
+% Written with an optional argument rather than a trailing ^{...} at each use
+% site, because \mAttr already carries a superscript and a second one is a
+% "Double superscript" error.
+\NewDocumentCommand{\mAttr}{o}{%
+  \IfNoValueTF{#1}{D^{\text{attr}}}{D^{\text{attr},\,\text{#1}}}%
+}
 
 \title{Methodology walkthrough \\
 \large World Bank climate-health burden projections, 2022--2050}
@@ -104,7 +112,7 @@ $t$ & Year (1990--2050) \\
 $a$ & Age group (GBD 5-year bins: 0--4, 5--9, \ldots, 80+) \\
 $s$ & Sex (male, female) \\
 $d$ & Draw index ($0, \ldots, N_{\text{draws}}-1$; we use $N=500$) \\
-$X$ & Scenario (SSP1-RCP1.9, SSP2-RCP4.5, SSP3-RCP7.0, SSP5-RCP8.5) \\
+$X$ & Scenario (SSP1-RCP2.6, SSP2-RCP4.5, SSP3-RCP7.0, SSP5-RCP8.5) \\
 $\SSPtwo$ & Reference scenario for IHME's published forecasts \\
 \midrule
 $T_{l,t,p}$ & Daily-mean temperature ($^{\circ}$C) at pixel $p$ on day $t$ \\
@@ -138,6 +146,17 @@ The pipeline's intermediate files store these in the same shape:
 pixel-day rows for $T$ and $\pi$, zone-keyed rows for $\tau$,
 $(z, T, c, d)$-keyed rows for $\rho$, and $(l, a, s, t, c, d)$-keyed
 rows for $\mIHME$ and $\mAttr$.
+
+\textbf{On the draw index.} When the pipeline runs in draws mode
+(\texttt{USE\_DRAWS = TRUE}, $N = 500$), every risk quantity below
+($\rho$, $\tilde\rho$, $\PAF$, $\tilde S$, $\mIHME$, $\mAttr$) carries a
+draw index $d$. Part~I suppresses $d$ in the pipeline equations because
+every operation there is elementwise within a single draw: draw $d$ never
+interacts with draw $d' \neq d$. Workflow~B (Section~\ref{sec:workflowb})
+carries $d$ explicitly, because there the pairing between IHME's draws and
+the pipeline's draws is a methodological choice rather than a
+bookkeeping detail. In summary mode (\texttt{USE\_DRAWS = FALSE}) the draw
+dimension is absent and every formula reads as written with $d$ dropped.
 
 % =====================================================================
 \part{The math}
@@ -205,14 +224,21 @@ cold differently than people in hot zones).
 
 The TMREL is the temperature that minimizes \emph{death-weighted}
 relative risk for a given zone and location. It is provided by IHME at
-1,034 GBD locations and three time points (1990, 2010, 2020); our
-pipeline averages these to one zone-specific TMREL used across the
-study period.\footnote{For Workflow~B's projections, we use the 2020
-TMREL throughout the 2022--2050 horizon. Decadal TMREL projections
-beyond 2020 are an open methodology choice; the IHME GBD 2021 forecast
-appendix Section~2.1.6.7 discusses a 10-year rolling mean approach.
-Within our pipeline the cross-scenario ratio cancels first-order TMREL
-drift (since both numerator and denominator use the same TMREL).}
+1,034 GBD locations and three time points (1990, 2010, 2020). Study years
+without an exact match take the nearest available year's TMREL
+(\texttt{02\_load\_tmrel.R}), so the 2022--2050 projection horizon uses
+the 2020 TMREL throughout.\footnote{Decadal TMREL projections beyond 2020
+are an open methodology choice; the IHME GBD 2021 forecast appendix
+Section~2.1.6.7 discusses a 10-year rolling mean approach. Within our
+pipeline the cross-scenario ratio cancels first-order TMREL drift, since
+both numerator and denominator use the same TMREL.}
+
+Under the \texttt{COLOMBIA\_VERIFICATION} flag the pipeline instead takes
+an equal-weight mean of all three source years and applies that single
+zone-specific TMREL across the study period, reproducing Samuel Cuervo's
+choice. That branch exists only for the Colombia validation of
+Section~\ref{sec:validation}; production runs use the nearest-year path
+described above.
 
 \subsection{The unscale/rescale problem}
 
@@ -223,8 +249,15 @@ forecast (so the published count already reflects $\SSPtwo$ temperature
 effects). For the other 5, no temperature adjustment was applied.
 
 We want to project mortality \emph{under other climate scenarios}
-(SSP1-RCP1.9, SSP3-RCP7.0, SSP5-RCP8.5). IHME does not publish per-SSP
-forecasts. Our task: take the published $\SSPtwo$-anchored mortality and
+(SSP3-RCP7.0, SSP5-RCP8.5, SSP1-RCP2.6).\footnote{The low-emissions
+target is SSP1-RCP\textbf{2.6} (\texttt{ssp126}), not SSP1-RCP1.9: the
+CCKP daily per-model product carries no \texttt{ssp119} for any of its 29
+models. There, \texttt{ssp119} exists only as an annual multi-model-ensemble
+climatology, which this daily per-model pipeline cannot consume. The four
+production scenarios, in run-priority order, are \texttt{ssp245}
+(reference), \texttt{ssp370}, \texttt{ssp585}, \texttt{ssp126}; the
+reference runs first because it is the Workflow~B denominator for every
+target.} IHME does not publish per-SSP forecasts. Our task: take the published $\SSPtwo$-anchored mortality and
 adjust it to reflect a different climate, using \emph{our} pipeline
 applied to bias-corrected CMIP6 temperature for the target scenario.
 
@@ -232,6 +265,7 @@ This is Workflow~B (next section).
 
 % =====================================================================
 \section{The pipeline math, step by step}
+\label{sec:pipeline-math}
 % =====================================================================
 
 For one (location, year, cause) tuple, the pipeline produces a
@@ -302,8 +336,8 @@ is:
 
 For cause $c$, age $a$, sex $s$:
 \begin{align}
-\mAttr_{c,l,a,s,t}^{\text{cold}} &= m_{c,l,a,s,t} \cdot \PAF^{\text{cold}}_{c,l,t} \label{eq:attrib-cold} \\
-\mAttr_{c,l,a,s,t}^{\text{heat}} &= m_{c,l,a,s,t} \cdot \PAF^{\text{heat}}_{c,l,t} \label{eq:attrib-heat}
+\mAttr[cold]_{c,l,a,s,t} &= m_{c,l,a,s,t} \cdot \PAF^{\text{cold}}_{c,l,t} \label{eq:attrib-cold} \\
+\mAttr[heat]_{c,l,a,s,t} &= m_{c,l,a,s,t} \cdot \PAF^{\text{heat}}_{c,l,t} \label{eq:attrib-heat}
 \end{align}
 where $m_{c,l,a,s,t}$ is the cause-specific death count (which the
 pipeline reads from its mortality input). The PAF, being a location-year
@@ -312,6 +346,7 @@ then $\mAttr \times \text{ex}$.
 
 % =====================================================================
 \section{Workflow B: unscaling and rescaling}
+\label{sec:workflowb}
 % =====================================================================
 
 \subsection{The setup}
@@ -340,14 +375,14 @@ contribution, then \emph{rescale} to add scenario-$X$'s contribution.
 \subsection{The ratio formula}
 
 The ratio of pipeline-computed pop-weighted PAFs between scenarios is
-the scale factor:
+the scale factor, formed within a draw:
 \begin{equation}
-r_{c,X,l,t} = \frac{\tilde S_{c,X,l,t}}{\tilde S_{c,\SSPtwo,l,t}}
+r_{c,X,l,t,d} = \frac{\tilde S_{c,X,l,t,d}}{\tilde S_{c,\SSPtwo,l,t,d}}
 \label{eq:ratio}
 \end{equation}
 Then for the 12 temp-scaled causes:
 \begin{equation}
-\mAttr_{c,X,l,a,s,t}^{\text{heat}} = \mIHME_{c,l,a,s,t} \cdot r_{c,X,l,t} \cdot \PAF^{\text{heat}}_{c,X,l,t}
+\mAttr[heat]_{c,X,l,a,s,t,d} = \mIHME_{c,l,a,s,t,d} \cdot r_{c,X,l,t,d} \cdot \PAF^{\text{heat}}_{c,X,l,t,d}
 \label{eq:wb-12}
 \end{equation}
 and analogously for cold. The product $\mIHME \cdot r$ is the
@@ -360,7 +395,8 @@ heat-attributable share of that adjusted total.
 
 A skeptical reader might object: ``You're using your own pipeline's PAFs
 in both numerator and denominator. Don't they need to match IHME's
-absolute calibration?''
+absolute calibration?'' (This subsection suppresses the draw index $d$;
+the argument holds within each draw separately.)
 
 The answer is no, and it's the key advantage of the ratio formulation.
 Suppose our pipeline and IHME's compute PAFs that differ by some
@@ -403,8 +439,8 @@ treated as temp-scaled.}) are forecast \emph{without} a temperature
 adjustment. For these, IHME's $\mIHME$ has no temperature signal to
 ``unscale,'' so the ratio collapses to identity:
 \begin{equation}
-\mAttr_{c \in \text{non-temp}, X, l, a, s, t}^{\text{heat}}
-= \mIHME_{c,l,a,s,t} \cdot \PAF^{\text{heat}}_{c,X,l,t}
+\mAttr[heat]_{c \in \text{non-temp}, X, l, a, s, t, d}
+= \mIHME_{c,l,a,s,t,d} \cdot \PAF^{\text{heat}}_{c,X,l,t,d}
 \label{eq:wb-5}
 \end{equation}
 This is Approach~1 (the simpler textbook attributable-fraction formula)
@@ -412,6 +448,45 @@ applied to those 5 causes. From a code perspective it is the same
 pipeline; only the post-processing step in
 \texttt{util\_workflow\_b\_ratio.R} differs by branching on whether
 $c$ is in the temp-scaled set.
+
+\subsection{Draws and the pairing convention}
+\label{sec:draws}
+
+Both inputs to Eq.~\eqref{eq:wb-12} are uncertain, and both are published
+as draws: IHME's forecast mortality carries 500 draws per
+$(c, l, a, s, t)$ cell, and our pipeline propagates ERF and TMREL
+uncertainty into $\tilde S$ and the PAFs.
+
+We combine them by \textbf{pairing on the draw index}: IHME draw $d$ is
+multiplied by pipeline draw $d$, for $d = 0, \ldots, 499$. We do
+\emph{not} take the draw $\times$ draw cartesian product. This is the GBD
+convention, and it is why $d$ appears once (not twice) in
+Eqs.~\eqref{eq:ratio}--\eqref{eq:wb-5}. The output therefore has 500
+draws rather than $500^2 = 250{,}000$, and the reported interval reflects
+IHME's forecast uncertainty and our pipeline's exposure-response
+uncertainty combined draw-wise.
+
+Two consequences worth stating plainly:
+\begin{itemize}[itemsep=2pt]
+  \item The numerator and denominator of Eq.~\eqref{eq:ratio} use the
+    \emph{same} pipeline draw $d$. This is what lets the calibration
+    factor $k$ cancel within a draw, as argued above; ratio-ing draw $d$
+    against draw $d'$ would reintroduce the very drift the ratio is meant
+    to remove.
+  \item Pairing by index is a convention, not a claim that IHME's draw
+    $d$ and our draw $d$ correspond to the same underlying state of the
+    world. They are separate posterior samples from separate models. The
+    pairing keeps the arithmetic within-draw and the draw count
+    manageable; it does not assert a shared parameterization.
+\end{itemize}
+
+In summary mode (\texttt{USE\_DRAWS = FALSE}) the burdens have no draw
+column, $\tilde S$ and the PAFs collapse to point estimates, and
+Workflow~B returns a point estimate with no interval. The implementation
+branches on the presence of a \texttt{draw} column in
+\texttt{util\_workflow\_b\_ratio.R}: when present, it joins on
+$(\text{year}, \text{subloc}, \text{cause}, \text{draw})$; when absent, on
+$(\text{year}, \text{subloc}, \text{cause})$.
 
 \subsection{Workflow diagram}
 
@@ -442,7 +517,7 @@ $c$ is in the temp-scaled set.
 \draw[arrow] (pipex) -- (ratio);
 
 \node[bigbox, below=of ratio] (out) {
-$\mAttr_{c,X,l,a,s,t}^{\text{heat/cold}}$ \\
+$\mAttr[heat/cold]_{c,X,l,a,s,t}$ \\
 $= \mIHME \cdot r \cdot \PAF^{\text{heat/cold}}_{c,X}$ \quad (Eq.~\ref{eq:wb-12}) \\
 \textit{or, for non-temp-scaled $c$:} \\
 $= \mIHME \cdot \PAF^{\text{heat/cold}}_{c,X}$ \quad (Eq.~\ref{eq:wb-5})
@@ -468,10 +543,11 @@ runs complete.
 
 % =====================================================================
 \section{Within-pipeline trace: one pixel}
+\label{sec:trace-one-pixel}
 % =====================================================================
 
 We trace pixel 527 in Colombia, a Bogotá D.C. metro pixel (subloc 11),
-in 2010. Following the math of Section~3:
+in 2010. Following the math of Section~\ref{sec:pipeline-math}:
 
 \textbf{Raw input} (pixel 527, 2010-01-02, from temperature.rds):
 \begin{itemize}[itemsep=0pt]
@@ -536,6 +612,7 @@ to 8 decimal places (see
 
 % =====================================================================
 \section{Within-pipeline trace: contrasting pixels}
+\label{sec:trace-contrasting}
 % =====================================================================
 
 The same trace tool applied to three contrasting pixels in Colombia 2010
@@ -582,6 +659,7 @@ shoulder where rescaled RR is close to or below 1.
 
 % =====================================================================
 \section{Country aggregate: Colombia 2010 cvd\_ihd}
+\label{sec:country-agg}
 % =====================================================================
 
 Summing per-pixel-day contributions over all pixel-days in Colombia 2010
@@ -672,15 +750,15 @@ The total mortality envelope grows ~6.4\% under SSP5 vs $\SSPtwo$
 because the temperature signal is slightly stronger overall. cvd\_ihd
 is one of the 12 temp-scaled causes, so Eq.~\eqref{eq:wb-12} applies:
 \begin{align*}
-\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{heat}}
+\mAttr[heat]_{\text{cvd\_ihd, SSP5, 2030}}
 &= \mIHME \cdot r \cdot \PAF^{\text{heat}}_{\text{SSP5}} \\
 &= 38{,}000 \cdot 1.0638 \cdot 0.018 \\
 &= 727 \text{ heat-attributable deaths} \\[2pt]
-\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{cold}}
+\mAttr[cold]_{\text{cvd\_ihd, SSP5, 2030}}
 &= \mIHME \cdot r \cdot \PAF^{\text{cold}}_{\text{SSP5}} \\
 &= 38{,}000 \cdot 1.0638 \cdot 0.032 \\
 &= 1{,}294 \text{ cold-attributable deaths} \\[2pt]
-\mAttr_{\text{cvd\_ihd, SSP5, 2030}}^{\text{non-opt}}
+\mAttr[non-opt]_{\text{cvd\_ihd, SSP5, 2030}}
 &= 727 + 1{,}294 = 2{,}021 \text{ non-optimal-temperature deaths}
 \end{align*}
 
@@ -689,7 +767,7 @@ is one of the 12 temp-scaled causes, so Eq.~\eqref{eq:wb-12} applies:
 Under $\SSPtwo$ at the same location-year, applying the same formula
 (with $r = 1$ since reference equals reference):
 \begin{align*}
-\mAttr_{\text{cvd\_ihd}, \SSPtwo, 2030}^{\text{non-opt}}
+\mAttr[non-opt]_{\text{cvd\_ihd}, \SSPtwo, 2030}
 &= 38{,}000 \cdot 1.0 \cdot 0.047
 = 1{,}786 \text{ deaths}
 \end{align*}
@@ -709,9 +787,9 @@ gives $\PAF^{\text{heat}}_{\text{cvd\_cmp, SSP5}} = 0.4\%$,
 $\PAF^{\text{cold}}_{\text{cvd\_cmp, SSP5}} = 1.8\%$ (synthesized
 values). Then:
 \begin{align*}
-\mAttr_{\text{cvd\_cmp, SSP5, 2030}}^{\text{heat}}
+\mAttr[heat]_{\text{cvd\_cmp, SSP5, 2030}}
 &= 5{,}000 \cdot 0.004 = 20 \text{ deaths} \\
-\mAttr_{\text{cvd\_cmp, SSP5, 2030}}^{\text{cold}}
+\mAttr[cold]_{\text{cvd\_cmp, SSP5, 2030}}
 &= 5{,}000 \cdot 0.018 = 90 \text{ deaths}
 \end{align*}
 No ratio applied; the formula reduces to ``IHME's mortality $\times$
@@ -719,6 +797,7 @@ scenario-$X$ PAF.''
 
 % =====================================================================
 \section{Validation evidence}
+\label{sec:validation}
 % =====================================================================
 
 The math above is verified empirically by reproducing Samuel Cuervo's
@@ -729,12 +808,31 @@ Samuel's input data that we do not replicate; headline totals and top-3
 cause rankings all match.
 
 Row-by-row independent re-derivation of the per-pixel math against the
-pipeline's own saved values (Section~7 above; full details in
+pipeline's own saved values (Sections~\ref{sec:trace-one-pixel} and
+\ref{sec:country-agg} above; full details in
 \texttt{pipeline-math-verification.md}) confirms every formula in
-Section~3 is correctly implemented: 9 calculation stages match to 8+
-decimal places, and the within-subloc aggregation reproduces the
-pipeline's saved per-subloc PAF (0.06956161 vs 0.06956161 for Bogotá D.C.
-cvd\_ihd cold, 2010).
+Section~\ref{sec:pipeline-math} is correctly implemented: 9 calculation
+stages match to 8+ decimal places, and the within-subloc aggregation
+reproduces the pipeline's saved per-subloc PAF (0.06956161 vs 0.06956161
+for Bogotá D.C. cvd\_ihd cold, 2010).
+
+\subsection*{The Workflow~B draws path}
+
+The draw plumbing of Section~\ref{sec:draws} is checked by a self-ratio:
+setting the target scenario equal to the reference ($X = \SSPtwo$) makes
+$r_{c,X,l,t,d} = 1$ identically, so Eq.~\eqref{eq:wb-12} must collapse to
+$\mIHME \cdot \PAF$, which is the pipeline's own burden. It does. For
+Colombia (location 125) in 2022, using IHME national forecast mortality
+and \texttt{access-cm2-r1i1p1f1} \texttt{ssp245} temperature,
+$\mAttr[non-opt]$ has mean 1{,}721 deaths with a 95\% draw
+interval of $[978,\ 2{,}417]$ across 500 draws, matching the burden, and
+\texttt{scale\_factor} is exactly 1 on every row.
+
+This exercises the draw pairing and the join, but \emph{not} the ratio
+itself: a self-ratio holds $r = 1$ by construction. The case $r \neq 1$
+has not yet been run on real data, because no target-scenario production
+run exists at the time of writing. Section~\ref{sec:wb-example} remains
+synthesized for that reason.
 
 % =====================================================================
 \section{Reproducing}
@@ -744,7 +842,8 @@ The pipeline runs from \texttt{global-scripts/run\_location.R} for a
 single location, or \texttt{global-scripts/util\_run\_global.R} for a
 production grid across locations. The Workflow~B ratio applicator is
 \texttt{global-scripts/util\_workflow\_b\_ratio.R}. The trace tool that
-generated the values in Sections~7 and~8 is
+generated the values in
+Sections~\ref{sec:trace-one-pixel}--\ref{sec:country-agg} is
 \texttt{global-scripts/util\_trace\_pipeline.R}.
 
 Operational instructions for the full production run, including the
