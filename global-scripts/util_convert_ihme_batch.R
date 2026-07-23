@@ -52,6 +52,109 @@ for (k in names(defaults)) {
 }
 
 # =============================================================================
+# Location-key resolution
+#
+# The forecast CSVs are matched to GBD loc_ids on the most stable key the file
+# offers, in priority order:
+#   1. a numeric location_id column        -> used directly
+#   2. an ISO3 / ihme_lc_id column         -> crosswalked to loc_id via loc_map
+#   3. the country-name string (fallback)  -> normalized match + alias table
+# ISO3/id matching is preferred because country-name strings drift across GBD
+# vintages (e.g. Turkey -> Türkiye in GBD2023) and break on text-encoding
+# differences; a name-only match silently drops such locations.
+# =============================================================================
+
+# Normalize a country name for tolerant matching: transliterate accents to
+# ASCII, lowercase, collapse non-alphanumerics to single spaces, trim. Makes
+# "Türkiye", a mis-encoded "TÃ¼rkiye", and "turkiye" collapse to one key. Does
+# NOT bridge genuine renames (Turkey vs Türkiye); that's NAME_ALIASES + ISO3.
+norm_name <- function(x) {
+  x <- iconv(as.character(x), to = "ASCII//TRANSLIT")
+  x <- tolower(x)
+  x <- gsub("[^a-z0-9]+", " ", x)
+  trimws(gsub("\\s+", " ", x))
+}
+
+# Drop qualifier suffixes that GBD/UN-style long names carry but the GBD
+# hierarchy's short names do not, e.g.
+#   "Taiwan (Province of China)" -> "Taiwan"
+#   "Virgin Islands, U.S."       -> "Virgin Islands"
+# Applied as a second matching pass only; exact matches always win.
+strip_qualifiers <- function(x) {
+  x <- as.character(x)
+  x <- gsub("\\s*\\([^)]*\\)", "", x)   # parenthetical qualifier
+  x <- sub(",.*$", "", x)               # trailing comma-qualifier
+  trimws(x)
+}
+
+# Known GBD-hierarchy <-> forecast-file country-name divergences, keyed and
+# valued in normalized form. Only consulted on the name-fallback path, and only
+# for divergences that qualifier-stripping cannot resolve. Extend as new
+# mismatches surface; the durable fix is an ISO3/id column in the source.
+NAME_ALIASES <- c(
+  "turkey"         = "turkiye",   # GBD2023 hierarchy: "Türkiye"; older forecasts: "Turkey"
+  "chinese taipei" = "taiwan"     # occasional alternate rendering of loc_id 8
+)
+
+# Add a canonical `loc_id` column to a source frame `dt` (already column-renamed
+# so its country-name column is `location`). Returns the strategy used, for
+# logging. Sets loc_id = NA on rows that don't resolve.
+add_source_loc_id <- function(dt, loc_map) {
+  cn <- names(dt)
+  pick <- function(cands) {
+    hit <- cn[tolower(cn) %in% tolower(cands)]
+    if (length(hit)) hit[1] else NA_character_
+  }
+  id_col  <- pick(c("location_id", "location id"))
+  iso_col <- pick(c("iso3", "ihme_lc_id", "iso_code", "iso3_code"))
+
+  if (!is.na(id_col)) {
+    dt[, loc_id := suppressWarnings(as.integer(get(id_col)))]
+    return(sprintf("numeric '%s' column", id_col))
+  }
+  if (!is.na(iso_col) && any(!is.na(loc_map$iso3))) {
+    xw <- loc_map[!is.na(iso3)]
+    dt[, loc_id := xw$loc_id[match(toupper(as.character(get(iso_col))), xw$iso3)]]
+    return(sprintf("ISO3 '%s' column via dbf crosswalk", iso_col))
+  }
+  # Key on the clean dbf name where available (the hierarchy .xlsx is
+  # double-encoded for at least Türkiye); alias the source side for known
+  # cross-vintage renames. Matching runs in passes, exact first:
+  #   1. normalized source name (+ alias) vs normalized hierarchy name
+  #   2. qualifier-stripped source name vs normalized hierarchy name
+  #      ("Taiwan (Province of China)" -> "Taiwan")
+  #   3. normalized source name vs qualifier-stripped hierarchy name
+  #      ("Virgin Islands" -> "Virgin Islands, U.S.")
+  name_col <- if ("name_clean" %in% names(loc_map)) "name_clean" else "location"
+  nm <- loc_map[, .(loc_id, key = norm_name(get(name_col)))]
+
+  # Stripped hierarchy keys for pass 3. Keys that collide with an exact key, or
+  # that map to more than one loc_id once stripped, are dropped so stripping can
+  # never silently mis-assign a location.
+  nm_strip <- unique(loc_map[, .(loc_id, key = norm_name(strip_qualifiers(get(name_col))))])
+  nm_strip <- nm_strip[!key %in% nm$key]
+  key_n    <- nm_strip[, .(n = uniqueN(loc_id)), by = key]
+  nm_strip <- unique(nm_strip[key %in% key_n[n == 1L]$key], by = "key")
+
+  src_raw <- norm_name(dt$location)
+  aliased <- NAME_ALIASES[src_raw]
+  src_key <- ifelse(!is.na(aliased), aliased, src_raw)
+
+  out <- nm$loc_id[match(src_key, nm$key)]                       # pass 1
+  if (anyNA(out)) {                                              # pass 2
+    src_strip <- norm_name(strip_qualifiers(dt$location))
+    need <- is.na(out)
+    out[need] <- nm$loc_id[match(src_strip[need], nm$key)]
+  }
+  if (anyNA(out) && nrow(nm_strip) > 0) {                        # pass 3
+    need <- is.na(out)
+    out[need] <- nm_strip$loc_id[match(src_raw[need], nm_strip$key)]
+  }
+  dt[, loc_id := out]
+  "normalized country name (+ alias/qualifier passes)"
+}
+
+# =============================================================================
 # Convert all (location) pairings for ONE cause file
 # =============================================================================
 convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_path,
@@ -84,22 +187,36 @@ convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_pa
   rate_full <- rate_full[year_id %in% common_years]
   pop_full  <- pop_full [year_id %in% common_years]
 
-  log_msg(sprintf("[%s] loaded; %d locations available, iterating",
-                  acause, length(unique(rate_full$location))))
+  # Resolve GBD loc_id on both frames (ISO3/id preferred, name as fallback) so
+  # the per-location loop matches on loc_id rather than a fragile name string.
+  strategy <- add_source_loc_id(rate_full, loc_map)
+  add_source_loc_id(pop_full, loc_map)
+  setkey(rate_full, loc_id)
+  setkey(pop_full,  loc_id)
+  log_msg(sprintf("[%s] loaded; %d locations available, matched via %s",
+                  acause, uniqueN(rate_full$loc_id), strategy))
 
   n_done <- 0L; n_skip <- 0L; n_miss <- 0L
+  missing_ids <- integer(0)
   for (this_loc in location_ids) {
     out_path <- file.path(MORTALITY_DIR,
                           sprintf("%d_mortality_ihme_%s_draws.rds", this_loc, acause))
     if (!force && file.exists(out_path)) { n_skip <- n_skip + 1L; next }
 
     loc_row <- loc_map[loc_id == this_loc]
-    if (nrow(loc_row) != 1) { n_miss <- n_miss + 1L; next }
-    target_location <- loc_row$location
+    if (nrow(loc_row) != 1) { n_miss <- n_miss + 1L; missing_ids <- c(missing_ids, this_loc); next }
 
-    rate <- rate_full[location == target_location]
-    pop  <- pop_full[ location == target_location]
-    if (nrow(rate) == 0 || nrow(pop) == 0) { n_miss <- n_miss + 1L; next }
+    rate <- rate_full[.(this_loc), nomatch = 0L]
+    pop  <- pop_full[ .(this_loc), nomatch = 0L]
+    if (nrow(rate) == 0 || nrow(pop) == 0) {
+      loc_name <- if (!is.null(loc_row$name_clean) && !is.na(loc_row$name_clean))
+                    loc_row$name_clean else loc_row$location
+      warning(sprintf(
+        "[%s] loc_id=%d (%s / %s): no rows in source forecast after %s matching -- skipped",
+        acause, this_loc, loc_name,
+        if (is.na(loc_row$iso3)) "no-ISO3" else loc_row$iso3, strategy))
+      n_miss <- n_miss + 1L; missing_ids <- c(missing_ids, this_loc); next
+    }
 
     setkey(rate, year_id, age_text, sex_text)
     setkey(pop,  year_id, age_text, sex_text)
@@ -145,7 +262,12 @@ convert_one_cause_all_locations <- function(acause, cause_file_path, pop_file_pa
   log_msg(sprintf(
     "[%s] done: %d converted, %d skipped (cached), %d missing -- %.1fs",
     acause, n_done, n_skip, n_miss, elapsed))
-  invisible(list(done = n_done, skipped = n_skip, missing = n_miss))
+  if (length(missing_ids) > 0) {
+    log_msg(sprintf("[%s] MISSING loc_ids (no source match): %s",
+                    acause, paste(sort(missing_ids), collapse = ",")))
+  }
+  invisible(list(done = n_done, skipped = n_skip, missing = n_miss,
+                 missing_ids = sort(missing_ids)))
 }
 
 # =============================================================================
@@ -244,7 +366,8 @@ batch_convert <- function() {
                                          force = isTRUE(FORCE))
     summary_rows[[i]] <- data.table(acause = cause,
                                     done = r$done, skipped = r$skipped,
-                                    missing = r$missing, file_missing = FALSE)
+                                    missing = r$missing, file_missing = FALSE,
+                                    missing_ids = paste(r$missing_ids, collapse = " "))
   }
 
   summary <- rbindlist(summary_rows, fill = TRUE)

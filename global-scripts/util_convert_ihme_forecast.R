@@ -65,21 +65,75 @@ build_age_map <- function() {
   )
 }
 
+# GBD loc_id <-> ISO3 (+ a clean country name) from the GBD2023 shapefile
+# attribute table (national rows). Same source the life-table crosswalk uses
+# (util_download_un_lifetables.R) so the two stay consistent. The dbf's loc_name
+# is well-encoded UTF-8, unlike the hierarchy .xlsx, which is double-encoded for
+# at least Türkiye (loc_id 155); callers use name_clean for name-fallback
+# matching so that corruption can't drop a location. Returns a
+# (loc_id, iso3, name_clean) data.table, or NULL if the .dbf is absent.
+build_gbd_iso3 <- function(shp_path = file.path(PROJECT_ROOT, "data", "shapefiles",
+                                                "GBD2023_mapping_final.shp")) {
+  dbf <- sub("\\.shp$", ".dbf", shp_path)
+  if (!file.exists(dbf)) {
+    warning("GBD shapefile .dbf not found (", dbf, "); ISO3 matching disabled, ",
+            "falling back to country-name matching only.")
+    return(NULL)
+  }
+  if (!requireNamespace("foreign", quietly = TRUE)) {
+    warning("Package 'foreign' not available; ISO3 matching disabled, ",
+            "falling back to country-name matching only.")
+    return(NULL)
+  }
+  d <- as.data.table(foreign::read.dbf(dbf, as.is = TRUE))
+  unique(d[level == 3 & !is.na(ihme_lc_id) & ihme_lc_id != "",
+           .(loc_id = as.integer(loc_id), iso3 = toupper(ihme_lc_id),
+             name_clean = as.character(loc_name))])
+}
+
+# Country-level location map: loc_id, country name, and ISO3. The ISO3 column
+# lets downstream converters match forecast files on a stable code rather than a
+# country-name string (which drifts across GBD vintages, e.g. Turkey ->
+# Türkiye, and breaks on encoding differences). Cached; rebuilt when the
+# hierarchy .xlsx or the .dbf is newer than the cache, or when an older cache
+# without the iso3 column is found.
 build_loc_map <- function(hierarchy_xlsx) {
   cache <- file.path(INTERMEDIATE_DIR, "ihme_loc_map.rds")
-  if (file.exists(cache) &&
-      file.info(cache)$mtime > file.info(hierarchy_xlsx)$mtime) {
-    return(readRDS(cache))
+  iso3  <- build_gbd_iso3()
+  dbf_mtime <- {
+    dbf <- file.path(PROJECT_ROOT, "data", "shapefiles", "GBD2023_mapping_final.dbf")
+    if (file.exists(dbf)) file.info(dbf)$mtime else as.POSIXct(0, origin = "1970-01-01")
   }
-  log_msg("Building location-name -> loc_id map from ", hierarchy_xlsx)
+  if (file.exists(cache)) {
+    cached <- readRDS(cache)
+    fresh <- file.info(cache)$mtime > file.info(hierarchy_xlsx)$mtime &&
+             file.info(cache)$mtime > dbf_mtime
+    if (fresh && all(c("iso3", "name_clean") %in% names(cached))) return(cached)
+  }
+  log_msg("Building location-name/ISO3 -> loc_id map from ", hierarchy_xlsx)
   h <- as.data.table(read_excel(hierarchy_xlsx, sheet = "All Location Hierarchies"))
   setnames(h, c("Location ID", "Location Name", "Level"),
               c("loc_id",      "location",      "level"))
   # Sovereign-nation level is 3 in IHME's standard hierarchy; we keep level 3
   # only since the forecast files are at the country level.
   h <- unique(h[level == 3, .(location, loc_id)])
+  if (!is.null(iso3)) {
+    h <- merge(h, iso3, by = "loc_id", all.x = TRUE)
+    n_no_iso3 <- h[is.na(iso3), .N]
+    if (n_no_iso3 > 0) {
+      log_msg("  note: ", n_no_iso3, " of ", nrow(h),
+              " countries have no ISO3 in the .dbf (name-match only for those)")
+    }
+  } else {
+    h[, `:=`(iso3 = NA_character_, name_clean = NA_character_)]
+  }
+  # Prefer the dbf's clean name for name-fallback matching; fall back to the
+  # hierarchy name where the dbf has no row.
+  h[is.na(name_clean), name_clean := location]
+  setcolorder(h, c("loc_id", "location", "name_clean", "iso3"))
   saveRDS(h, cache)
-  log_msg("Cached IHME loc map (", nrow(h), " countries) -> ", cache)
+  log_msg("Cached IHME loc map (", nrow(h), " countries, ",
+          h[!is.na(iso3), .N], " with ISO3) -> ", cache)
   h
 }
 
