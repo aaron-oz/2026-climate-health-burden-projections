@@ -116,19 +116,27 @@ on CCKP) to exercise the `missing-on-s3` path, alongside two normal models, and
 **all 4 scenarios** so the Workflow B ratio runs on real cross-scenario data for
 the first time.
 
+**Years span the horizon on purpose.** Near-term scenarios (2030) barely differ,
+so early years can't tell us whether warming actually raises heat-attributable
+burden -- that check is only meaningful once the scenarios diverge. So we run a
+few near years (stable per-combo timing) **and** the far end (2049-2050), where
+the warming signal is testable.
+
 ```bash
 parallel -j <CORES> \
   'Rscript global-scripts/util_run_global.R \
       --location_id={} \
       --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1,gfdl-cm4-r1i1p1f1 \
       --scenarios=ssp245,ssp370,ssp585,ssp126 \
-      --years=2030-2035' \
+      --years=2030,2031,2040,2049,2050' \
   ::: 305 131 163
 ```
 
-That is 3 locations x 3 models x 4 scenarios x 6 years = 216 combos (a few will
+That is 3 locations x 3 models x 4 scenarios x 5 years = 180 combos (a few will
 be `missing-on-s3` for gfdl-cm4, as expected). 500 draws throughout (no
-skimping).
+skimping). Note the large location (163, India) runs its combos serially, so it
+is the pacing item -- its per-combo time is the number that governs the full-run
+ETA (see the timing note at the end).
 
 ### Monitor while it runs
 
@@ -149,30 +157,62 @@ find output/results/cckp -name _DONE             # a location's sentinel = fully
 parallel -j <CORES> \
   'Rscript global-scripts/util_apply_workflow_b_batch.R \
       --location_id={} --ref_scenario=ssp245 \
-      --target_scenarios=ssp370,ssp585,ssp126 --years=2030-2035' \
+      --target_scenarios=ssp370,ssp585,ssp126 --years=2030,2031,2040,2049,2050' \
   ::: 305 131 163
 ```
 
 ---
 
-## Step 5 — Send us the results to vet (do not start the full run yet)
+## Step 5 — Vet the NUMBERS, not just the files (do not start the full run yet)
+
+This is the real gate. "It ran" is not "it's right."
+
+### 5a. Automated checks
 
 ```bash
-{ echo "### cores"; nproc
-  echo; echo "### load"; uptime
-  echo; echo "### burden per-combo times"; tail -40 output/cckp_burden_manifest.csv
+Rscript global-scripts/util_vet_benchmark.R --locations=305,131,163
+```
+
+- **Tier 1 (hard, must all PASS -- a FAIL is a bug):** `paf_nonopt == paf_heat +
+  paf_cold`; `deaths_nonopt == heat + cold`; `|paf_nonopt| <= 1` (attributable
+  never exceeds total); no NA/Inf; total deaths >= 0; draws present and each mean
+  inside its own 95% interval.
+- **Tier 2 (directional, for our + Samuel's judgment):** does heat-attributable
+  PAF **rise** and cold **fall** as the scenario warms (ssp126<245<370<585)? --
+  reported by year, so you see it emerge in 2049-2050 (2030 will look like a
+  coin-flip, and that's expected). Plus ssp585-ssp245 divergence by year (should
+  grow), heat/cold composition by location (tropical -> heat-leaning), top-3
+  causes, and a PAF magnitude summary (believable is single-to-low-double-digit
+  %; Colombia validation anchor ~4% for cvd_ihd).
+
+### 5b. One per-pixel trace on a new location (the Colombia hand-check, redone)
+
+```bash
+Rscript global-scripts/util_trace_pipeline.R \
+  --location_id=163 --model=access-cm2-r1i1p1f1 --scenario=ssp585 \
+  --year=2050 --causes=cvd_ihd
+```
+Confirms zone -> TMREL -> RR-rescale -> PAF arithmetic is correct on a location we
+haven't hand-verified (India), the same way we validated Colombia. (Needs 163's
+per-combo intermediate present; run it on the machine that produced the
+benchmark. `--model`/`--scenario` point it at the CCKP combo output.)
+
+### 5c. Send us the bundle
+
+```bash
+{ echo "### cores/load"; nproc; uptime
+  echo; echo "### burden per-combo times (India = pacing item)"; tail -60 output/cckp_burden_manifest.csv
+  echo; echo "### convert per-combo times"; tail -30 output/cckp_run_manifest.csv
   echo; echo "### sentinels"; find output/results/cckp output/results/workflow_b -name _DONE -o -name _INCOMPLETE
-  echo; echo "### one burden schema"; Rscript -e 'x<-readRDS(Sys.glob("output/results/cckp/163/*-ssp245/burden_2030.rds")[1]); cat(paste(names(x),collapse=", "),"\n"); cat("draws:", length(unique(x$draw)), " model/scen:", x$model[1], x$scenario[1], "\n")'
-  echo; echo "### one workflow_b schema + ratio"; Rscript -e 'x<-readRDS(Sys.glob("output/results/workflow_b/163/*-ssp585/wb_2030.rds")[1]); cat(paste(names(x),collapse=", "),"\n"); cat("scale_factor range:", paste(round(range(x$scale_factor,na.rm=TRUE),4),collapse=".."),"\n")'
+  echo; echo "### VETTING"; Rscript global-scripts/util_vet_benchmark.R --locations=305,131,163
 } > ~/benchmark_report_$(date +%Y%m%d_%H%M).txt
 cat ~/benchmark_report_*.txt
 ```
 
-We will check: load settled near `<CORES>`; per-combo time dropped materially vs
-the ~8 min you were seeing; 500 draws present; `model`/`scenario` columns
-stamped; Workflow B `scale_factor` is a sensible spread around 1 (not all 1, not
-absurd); burden magnitudes plausible. From the size-varied per-combo times we
-size-weight an honest full-run ETA and pick the final `-j`.
+We (and ideally Samuel for the epi read) will confirm: Tier 1 all PASS; Tier 2
+directions right at the far horizon; magnitudes plausible; load settled near
+`<CORES>`; per-combo time dropped materially vs the ~8 min under thrash. From the
+size-varied per-combo times we size-weight an honest full-run ETA and pick `-j`.
 
 ---
 
@@ -212,3 +252,33 @@ fully done) and `find output/results/cckp -name _INCOMPLETE` (needing attention)
   guardrail working: it means a NetCDF isn't where the mirror layout expects it
   (`/data/cmip6-daily-x0.25/tas/<model>-<scenario>/...`). Fix the path rather
   than unsetting the guard.
+
+---
+
+## Timing: what governs the full-run ETA
+
+One number decides whether the full run is days or weeks: **the largest
+country's per-combo time.** The pipeline runs one process per location and, within
+a location, combos run **serially**. So the full run's wall-clock has a hard floor:
+
+```
+floor  >=  (combos per location, ~3,300)  x  (per-combo time of the biggest country)
+```
+
+`-j` parallelizes *across* locations but cannot speed up that one serial chain.
+That is why the benchmark includes India (163) and why its per-combo time is the
+pacing item we wait for.
+
+- If the large per-combo time is small (seconds), the full run is days -> launch
+  as-is.
+- If it is minutes, the big countries (China, India, US, Canada, Brazil, Russia,
+  DRC) dominate, and the fix is **intra-location parallelism**: launch each big
+  country as several processes split by scenario (and/or year range), e.g.
+  `--scenarios=ssp245` in one process and `--scenarios=ssp370` in another. The
+  runner already supports this; we decide once we see the number.
+
+Expected arrival of signals (paced by India): fix-works (load ~`<CORES>`) within
+minutes; small/medium timing + a Workflow B check within the hour; India's
+convert-then-burden per-combo times over ~1-3 hours. Full-confidence launch comes
+after India's number lands **and** Step 5 vetting passes -- realistically later
+the same day, not during the first call.
