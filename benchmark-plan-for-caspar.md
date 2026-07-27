@@ -92,7 +92,7 @@ a second terminal. This isolates the thread fix from everything else.
 #    effect is visible.
 DT_THREADS=0 \
 parallel -j <CORES> \
-  'Rscript global-scripts/util_run_global.R --location_id={} --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1 --scenarios=ssp245 --years=2030-2034' \
+  'Rscript global-scripts/util_run_global.R --location_id={} --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1 --scenarios=ssp245 --years=2030-2034 --n_draws_run=100' \
   ::: 106 116 117 107
 # watch `uptime` in another terminal -- expect load to spike well above <CORES>
 
@@ -101,7 +101,7 @@ parallel -j <CORES> \
 # B) WITH the cap (DT_THREADS=1 already exported): same-size slice, different
 #    small locations so nothing is skipped.
 parallel -j <CORES> \
-  'Rscript global-scripts/util_run_global.R --location_id={} --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1 --scenarios=ssp245 --years=2030-2034' \
+  'Rscript global-scripts/util_run_global.R --location_id={} --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1 --scenarios=ssp245 --years=2030-2034 --n_draws_run=100' \
   ::: 105 112 115 119
 # expect load to settle near <CORES>, and B to finish faster in wall-clock
 ```
