@@ -132,7 +132,7 @@ timing is clean. They span the size range (burden time scales with pixel count):
 
 | role | loc_id | country | approx size |
 |------|--------|---------|-------------|
-| small  | 305 | Bermuda   | tiny |
+| small  | 115 | Jamaica   | small (~16 px) |
 | medium | 131 | Nicaragua | medium |
 | large  | 163 | India     | very large |
 
@@ -162,7 +162,7 @@ parallel -j <CORES> \
       --scenarios=ssp245,ssp370,ssp585,ssp126 \
       --years=2030,2031,2040,2049,2050 \
       --n_draws_run=100' \
-  ::: 305 131 163
+  ::: 115 131 163
 ```
 
 That is 3 locations x 3 models x 4 scenarios x 5 years = 180 combos (a few will
@@ -223,7 +223,7 @@ parallel -j <CORES> \
   'Rscript global-scripts/util_apply_workflow_b_batch.R \
       --location_id={} --ref_scenario=ssp245 \
       --target_scenarios=ssp370,ssp585,ssp126 --years=2030,2031,2040,2049,2050' \
-  ::: 305 131 163
+  ::: 115 131 163
 ```
 
 ---
@@ -235,7 +235,7 @@ This is the real gate. "It ran" is not "it's right."
 ### 5a. Automated checks
 
 ```bash
-Rscript global-scripts/util_vet_benchmark.R --locations=305,131,163
+Rscript global-scripts/util_vet_benchmark.R --locations=115,131,163
 ```
 
 - **Tier 1 (hard, must all PASS -- a FAIL is a bug):** `paf_nonopt == paf_heat +
@@ -274,7 +274,7 @@ benchmark. `--model`/`--scenario` point it at the CCKP combo output.)
   echo; echo "### burden per-combo times (India = pacing item)"; tail -60 output/cckp_burden_manifest.csv
   echo; echo "### convert per-combo times"; tail -30 output/cckp_run_manifest.csv
   echo; echo "### sentinels"; find output/results/cckp output/results/workflow_b -name _DONE -o -name _INCOMPLETE
-  echo; echo "### VETTING"; Rscript global-scripts/util_vet_benchmark.R --locations=305,131,163
+  echo; echo "### VETTING"; Rscript global-scripts/util_vet_benchmark.R --locations=115,131,163
 } > ~/benchmark_report_$(date +%Y%m%d_%H%M).txt
 cat ~/benchmark_report_*.txt
 ```
@@ -303,8 +303,8 @@ stay at 100 draws in the production dataset. Removing them makes production
 recompute them at the full 500:
 
 ```bash
-rm -rf output/results/cckp/305 output/results/cckp/131 output/results/cckp/163 \
-       output/results/workflow_b/305 output/results/workflow_b/131 output/results/workflow_b/163
+rm -rf output/results/cckp/115 output/results/cckp/131 output/results/cckp/163 \
+       output/results/workflow_b/115 output/results/workflow_b/131 output/results/workflow_b/163
 ```
 
 Then the full run, idempotent (it resumes, skipping finished combos), at the full
@@ -328,7 +328,7 @@ hard stop.
 
 1. **Let all three benchmark locations finish burden.** Check every so often:
    ```bash
-   find output/results/cckp -name _DONE            # expect 305, then 131, then 163
+   find output/results/cckp -name _DONE            # expect 115, then 131, then 163
    find output/results/cckp -name _INCOMPLETE      # any of these = failures, see below
    cat output/results/cckp/163/_progress.tsv       # India: watch it go convert -> burden
    ```
@@ -346,8 +346,8 @@ hard stop.
      ```
      and send it to us; don't try to fix it blind.
 
-2. **When 305, 131, 163 all show burden `_DONE`, run Workflow B for all three**
-   (the Step 4 Workflow B command, `::: 305 131 163`).
+2. **When 115, 131, 163 all show burden `_DONE`, run Workflow B for all three**
+   (the Step 4 Workflow B command, `::: 115 131 163`).
 
 3. **Run the full vetting** (Step 5a on all three) **and the India per-pixel
    trace** (Step 5b).
