@@ -426,3 +426,12 @@ write_done_sentinel <- function(loc, complete, summary = "", root = cckp_marker_
 log_msg("Config loaded for location_id =", LOCATION_ID,
         "| years =", YEAR_START, "-", YEAR_END,
         "| use_draws =", USE_DRAWS)
+
+# Record the effective thread config so "is the cap in effect?" is answerable
+# from the run log alone (no live vmstat needed). data.table cap is deterministic
+# (default 1); OMP/OPENBLAS govern BLAS and must be exported outside R.
+log_msg(sprintf("Threads: data.table=%s | OMP_NUM_THREADS=%s | OPENBLAS_NUM_THREADS=%s",
+                if (requireNamespace("data.table", quietly = TRUE))
+                  as.character(data.table::getDTthreads()) else "NA",
+                Sys.getenv("OMP_NUM_THREADS", "unset"),
+                Sys.getenv("OPENBLAS_NUM_THREADS", "unset")))

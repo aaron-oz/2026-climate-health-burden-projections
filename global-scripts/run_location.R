@@ -50,3 +50,12 @@ t_end <- Sys.time()
 cat(paste0("\n=== Pipeline complete for location ",
            Sys.getenv("LOCATION_ID", unset = "unknown"),
            " in ", round(difftime(t_end, t_start, units = "mins"), 1), " min ===\n"))
+
+# Peak resident memory for this combo (Linux VmHWM). Logged so the per-worker RAM
+# needed to size the production -j is recoverable from the run log -- no live
+# `ps` snapshot required.
+vmhwm_mb <- tryCatch({
+  x <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
+  if (length(x)) as.numeric(gsub("[^0-9]", "", x)) / 1024 else NA_real_
+}, error = function(e) NA_real_)
+if (!is.na(vmhwm_mb)) cat(sprintf("=== Peak RSS (VmHWM): %.0f MB ===\n", vmhwm_mb))
