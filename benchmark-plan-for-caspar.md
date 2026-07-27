@@ -241,6 +241,65 @@ fully done) and `find output/results/cckp -name _INCOMPLETE` (needing attention)
 
 ---
 
+## After the call — Caspar, solo, over the next few hours
+
+The benchmark keeps running after we hang up. Steps 1-4 are yours; step 5 is a
+hard stop.
+
+1. **Let all three benchmark locations finish burden.** Check every so often:
+   ```bash
+   find output/results/cckp -name _DONE            # expect 305, then 131, then 163
+   find output/results/cckp -name _INCOMPLETE      # any of these = failures, see below
+   uptime                                          # load should stay ~<CORES>
+   cat output/results/cckp/163/_progress.tsv       # India: watch it go convert -> burden
+   ```
+   - India (163) sits in `phase convert` a while before `phase burden` -- that's
+     expected (it converts all its combos first).
+   - If load creeps back toward 660, the thread cap isn't in effect: confirm
+     `echo $DT_THREADS $OMP_NUM_THREADS` are set in the shell you launched from.
+   - If an `_INCOMPLETE` appears, grab the tail of that location's newest log:
+     ```bash
+     tail -40 "$(find output/results/cckp/<loc> -name 'run_*.log' -printf '%T+ %p\n' | sort | tail -1 | cut -d' ' -f2)"
+     ```
+     and send it to us; don't try to fix it blind.
+
+2. **When 305, 131, 163 all show burden `_DONE`, run Workflow B for all three**
+   (the Step 4 Workflow B command, `::: 305 131 163`).
+
+3. **Run the full vetting** (Step 5a on all three) **and the India per-pixel
+   trace** (Step 5b).
+
+4. **Send us the report bundle** (Step 5c) -- to Aaron, and cc Samuel for the
+   epidemiological read on Tier 2 magnitudes and heat/cold composition.
+
+5. **STOP. Do not start the full run.** Wait for our sign-off. We need to confirm
+   Tier 1 all PASS, Tier 2 directions sane at 2049-2050, magnitudes plausible,
+   and that India's per-combo time gives an acceptable full-run ETA. This is the
+   whole point of the benchmark; launching the 200-location run before it clears
+   risks days of compute producing wrong or unusable numbers.
+
+## After we sign off (together)
+
+6. **Backfill** the model/scenario columns onto your existing partial outputs
+   (Step 6 backfill commands), so the full dataset ends up uniform.
+
+7. **Launch the full run.** The exact form depends on India's measured per-combo
+   time:
+   - **India was fast:** the simple per-location fan-out (Step 6 launch command).
+   - **India was slow (minutes/combo):** we'll hand you a big-country-split
+     launch (each large country as several processes split by scenario) so no
+     single serial chain dominates. We decide this from the benchmark number, not
+     now.
+
+8. **Monitor the full run:**
+   ```bash
+   find output/results/cckp -name _DONE | wc -l    # locations fully done
+   find output/results/cckp -name _INCOMPLETE      # needing attention
+   uptime                                          # load ~<CORES>
+   ```
+
+---
+
 ## Notes
 
 - Nothing here reduces draws; all runs are the full 500.
