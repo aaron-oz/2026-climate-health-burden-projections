@@ -278,6 +278,29 @@ convert_cckp <- function(temp_nc_path,
     pts <- st_as_sf(unique_pixels, coords = c("lon", "lat"), crs = st_crs(loc_geom))
     hits <- st_intersects(pts, st_union(loc_geom))
     inside <- lengths(hits) > 0
+    # Sub-grid geography fallback: a micro-state (Bermuda, San Marino, several
+    # small islands) can contain no 0.25-deg pixel centre, so nothing falls inside
+    # the polygon and the location would otherwise produce empty output. Snap to
+    # the single nearest bbox pixel (by centre distance -- pure arithmetic, no
+    # s2/PROJ dependency) so it still gets a nearest-cell climate series. Only
+    # triggers when nothing is inside, so normal countries are unaffected.
+    if (sum(inside) == 0 && nrow(unique_pixels) > 0) {
+      ctr_lon <- mean(c(bbox["xmin"], bbox["xmax"]))
+      ctr_lat <- mean(c(bbox["ymin"], bbox["ymax"]))
+      nearest_idx <- which.min((unique_pixels$lon - ctr_lon)^2 +
+                               (unique_pixels$lat - ctr_lat)^2)
+      inside[nearest_idx] <- TRUE
+      fb_pixel <- unique_pixels$pixel_id[nearest_idx]
+      # Guarantee a positive pop weight for the lone pixel (its grid pop may be 0
+      # over ocean); the magnitude is irrelevant since mortality supplies the
+      # counts and this is the only pixel, so its within-location weight is 1.
+      if (all(dt[pixel_id == fb_pixel, pop] == 0, na.rm = TRUE)) {
+        dt[pixel_id == fb_pixel, pop := 1]
+      }
+      log_msg("  0 pixels inside national polygon (sub-grid geography, e.g. ",
+              "micro-state); snapped to nearest bbox pixel ", fb_pixel,
+              " as fallback")
+    }
     unique_pixels[, subloc_id := NA_character_]
     unique_pixels[inside, subloc_id := as.character(location_id)]
     log_msg(if (!subnational) "subnational=FALSE: " else "No admin-1 features; ",
