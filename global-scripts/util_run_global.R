@@ -43,7 +43,7 @@ defaults <- list(
   USE_DRAWS_RUN= TRUE,
   N_DRAWS_RUN  = 500,
   CAUSES       = paste(GBD_CAUSES, collapse = ","),
-  SHAPEFILE    = file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp"),
+  SHAPEFILE    = DEFAULT_SHAPEFILE,
   FORCE        = FALSE   # --force=TRUE forwarded to both inner runners (recompute)
 )
 for (k in names(defaults)) {
