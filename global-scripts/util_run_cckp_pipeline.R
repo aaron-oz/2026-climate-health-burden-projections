@@ -43,7 +43,10 @@ defaults <- list(
   OUTPUT_ROOT = file.path(TEMP_DIR, "cckp"),
   MANIFEST    = file.path(OUTPUT_DIR, "cckp_run_manifest.csv"),
   KEEP_NETCDFS = TRUE,
-  FORCE = FALSE   # --force=TRUE recomputes even if the output RDS exists
+  FORCE = FALSE,  # --force=TRUE recomputes even if the output RDS exists
+  # Inherit the config default (env CCKP_REQUIRE_LOCAL); --require_local=TRUE
+  # overrides. When TRUE, a local-mirror miss stops instead of downloading.
+  REQUIRE_LOCAL = CCKP_REQUIRE_LOCAL
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) {
@@ -91,7 +94,16 @@ cckp_pop_url <- function(pop_dataset, year, scenario) {
 # =============================================================================
 # Cached download
 # =============================================================================
-ensure_download <- function(url, cache_dir, local_root = "") {
+
+# Bucket-relative local path for a CCKP URL under a mirror root (NA if no root).
+# Shared by ensure_download and the preflight so both compute the same path.
+local_mirror_path <- function(url, local_root) {
+  if (!nzchar(local_root)) return(NA_character_)
+  rel <- sub("^/", "", sub(CCKP_BASE, "", url, fixed = TRUE))
+  file.path(local_root, rel)
+}
+
+ensure_download <- function(url, cache_dir, local_root = "", require_local = FALSE) {
   dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
   dest <- file.path(cache_dir, basename(url))
   if (file.exists(dest) && file.info(dest)$size > 0) {
@@ -103,17 +115,25 @@ ensure_download <- function(url, cache_dir, local_root = "") {
   # the same bucket-relative path, symlink it into the cache (no GB-scale copy,
   # no download). We symlink rather than return the source path directly so the
   # KEEP_NETCDFS=FALSE cleanup removes only the link, never the mirror. Falls
-  # through to the public download on a miss, so a partial mirror is fine.
-  if (nzchar(local_root)) {
-    rel <- sub("^/", "", sub(CCKP_BASE, "", url, fixed = TRUE))
-    local_path <- file.path(local_root, rel)
+  # through to the public download on a miss (unless require_local), so a
+  # partial mirror is fine.
+  local_path <- local_mirror_path(url, local_root)
+  if (!is.na(local_path)) {
     if (file.exists(local_path) && file.info(local_path)$size > 0) {
       log_msg("Local mirror hit: ", local_path,
               " [", format(file.info(local_path)$size / 1e6, digits = 4), " MB]")
       file.symlink(normalizePath(local_path), dest)
       return(dest)
     }
+    if (isTRUE(require_local)) {
+      stop("CCKP_REQUIRE_LOCAL is set but this file is not in the local mirror:\n  ",
+           local_path,
+           "\n  Fix the mirror path/layout, or unset CCKP_REQUIRE_LOCAL to allow S3 download.")
+    }
     log_msg("Local mirror miss (falling back to public download): ", local_path)
+  } else if (isTRUE(require_local)) {
+    stop("CCKP_REQUIRE_LOCAL is set but no local mirror root is configured ",
+         "(CCKP_LOCAL_ROOT is empty).")
   }
   log_msg("Downloading ", basename(url))
   t0 <- Sys.time()
@@ -180,6 +200,33 @@ run_cckp_grid <- function() {
           length(models), " models x ", length(scenarios),
           " scenarios x ", length(years), " years)")
 
+  # Preflight: report how many temperature combos resolve to the local mirror
+  # vs would download, so an unset/misconfigured CCKP_LOCAL_ROOT is caught at
+  # t=0 rather than after hours of unintended downloads. With REQUIRE_LOCAL,
+  # any miss is fatal here (before a single combo runs).
+  if (!nzchar(CCKP_LOCAL_ROOT)) {
+    log_msg("Preflight: no local mirror set (CCKP_LOCAL_ROOT empty) -- all ",
+            nrow(grid), " combos would download from S3.")
+    if (isTRUE(REQUIRE_LOCAL)) {
+      stop("CCKP_REQUIRE_LOCAL is set but CCKP_LOCAL_ROOT is empty.")
+    }
+  } else {
+    temp_paths <- vapply(seq_len(nrow(grid)), function(i) {
+      msk <- if (grid$year[i] <= 2014) "historical" else grid$scenario[i]
+      local_mirror_path(cckp_temp_url(grid$model[i], msk, grid$year[i]), CCKP_LOCAL_ROOT)
+    }, character(1))
+    hit <- file.exists(temp_paths)
+    log_msg(sprintf(
+      "Preflight: %d/%d temperature combos resolvable from local mirror %s (%d would download).",
+      sum(hit), length(hit), CCKP_LOCAL_ROOT, sum(!hit)))
+    if (isTRUE(REQUIRE_LOCAL) && any(!hit)) {
+      miss <- unique(basename(temp_paths[!hit]))
+      stop(sprintf(paste0("CCKP_REQUIRE_LOCAL is set but %d temperature file(s) ",
+                          "are missing from the mirror. First few:\n  %s"),
+                   sum(!hit), paste(utils::head(miss, 5), collapse = "\n  ")))
+    }
+  }
+
   dir.create(OUTPUT_ROOT, showWarnings = FALSE, recursive = TRUE)
   results <- vector("list", nrow(grid))
 
@@ -206,8 +253,8 @@ run_cckp_grid <- function() {
       # Pop may sit under a different mirror root than temp; fall back to the
       # temp root when no pop-specific root is set.
       pop_root <- if (nzchar(CCKP_POP_LOCAL_ROOT)) CCKP_POP_LOCAL_ROOT else CCKP_LOCAL_ROOT
-      temp_nc <- ensure_download(temp_url, CCKP_CACHE, CCKP_LOCAL_ROOT)
-      pop_nc  <- ensure_download(pop_url,  CCKP_CACHE, pop_root)
+      temp_nc <- ensure_download(temp_url, CCKP_CACHE, CCKP_LOCAL_ROOT, require_local = REQUIRE_LOCAL)
+      pop_nc  <- ensure_download(pop_url,  CCKP_CACHE, pop_root,        require_local = REQUIRE_LOCAL)
       if (is.na(temp_nc) || is.na(pop_nc)) {
         # ensure_download returned NA on 404 / size-0 -- the combo isn't on
         # S3 (known gaps for some model x scenario pairs; see MODELS_ALL in

@@ -104,8 +104,21 @@ SUBNATIONAL <- FALSE
 #     back to CCKP_LOCAL_ROOT when empty. Separate because a mirror may place
 #     temp and pop under different roots (e.g. temp /data, pop /data/CRMe/data).
 # Override: --cckp_local_root=/data --cckp_pop_local_root=/data/CRMe/data
-CCKP_LOCAL_ROOT     <- Sys.getenv("CCKP_LOCAL_ROOT", "")
+#
+# Default the temperature root to a repo-relative data/cckp-mirror so operators
+# can just symlink their local NetCDF tree there (data/cckp-mirror -> /wherever)
+# with no env var. Non-breaking: if the path doesn't exist, ensure_download falls
+# through to the S3 download exactly as before (unless CCKP_REQUIRE_LOCAL).
+CCKP_LOCAL_ROOT     <- Sys.getenv("CCKP_LOCAL_ROOT", file.path(DATA_DIR, "cckp-mirror"))
 CCKP_POP_LOCAL_ROOT <- Sys.getenv("CCKP_POP_LOCAL_ROOT", "")
+
+# When TRUE, a local-mirror MISS is a hard error (naming the missing path)
+# instead of silently downloading from S3. Set this for production runs where
+# the data is local, so a misconfigured CCKP_LOCAL_ROOT / wrong layout fails in
+# seconds rather than after hours of unintended downloads. Default FALSE keeps
+# the download-fallback behaviour for machines without a mirror.
+CCKP_REQUIRE_LOCAL  <- toupper(Sys.getenv("CCKP_REQUIRE_LOCAL", "FALSE")) %in%
+                       c("TRUE", "1", "YES")
 
 # =============================================================================
 # Colombia verification mode
@@ -342,13 +355,19 @@ log_msg <- function(...) {
 # The progress file appears as soon as Phase 1 starts, so a location's dir is no
 # longer invisible until burden begins.
 # =============================================================================
-run_marker_dir <- function(loc) file.path(RESULTS_DIR, "cckp", loc)
+# `root` selects the output tree the markers live in, so the burden phase
+# (results/cckp) and the Workflow B batch (results/workflow_b) keep separate
+# progress + sentinel files rather than clobbering each other.
+cckp_marker_root <- function() file.path(RESULTS_DIR, "cckp")
+wfb_marker_root  <- function() file.path(RESULTS_DIR, "workflow_b")
+run_marker_dir   <- function(loc, root = cckp_marker_root()) file.path(root, loc)
 
 # Overwrite the per-location progress file. `tally` is an optional named list of
 # extra counters (ok/skip/fail/...); `last` is a human label for the most recent
 # combo. Cheap enough to call every combo (one small file rewrite).
-write_run_progress <- function(loc, phase, done, total, tally = list(), last = "") {
-  d <- run_marker_dir(loc)
+write_run_progress <- function(loc, phase, done, total, tally = list(), last = "",
+                               root = cckp_marker_root()) {
+  d <- run_marker_dir(loc, root)
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
   lines <- c(paste0("phase\t",        phase),
              paste0("location_id\t",  loc),
@@ -364,16 +383,16 @@ write_run_progress <- function(loc, phase, done, total, tally = list(), last = "
 
 # Clear any stale terminal sentinels (call at the start of a (re)run so a prior
 # _DONE/_INCOMPLETE can't be mistaken for the current run's state).
-clear_done_sentinel <- function(loc) {
-  unlink(file.path(run_marker_dir(loc), c("_DONE", "_INCOMPLETE")))
+clear_done_sentinel <- function(loc, root = cckp_marker_root()) {
+  unlink(file.path(run_marker_dir(loc, root), c("_DONE", "_INCOMPLETE")))
 }
 
 # Write the terminal sentinel: _DONE when complete (no failures/missing), else
 # _INCOMPLETE. `summary` is a one-line human description of the final tally.
-write_done_sentinel <- function(loc, complete, summary = "") {
-  d <- run_marker_dir(loc)
+write_done_sentinel <- function(loc, complete, summary = "", root = cckp_marker_root()) {
+  d <- run_marker_dir(loc, root)
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
-  clear_done_sentinel(loc)
+  clear_done_sentinel(loc, root)
   f <- file.path(d, if (isTRUE(complete)) "_DONE" else "_INCOMPLETE")
   writeLines(c(paste0("location_id\t", loc),
                paste0("status\t",   if (isTRUE(complete)) "DONE" else "INCOMPLETE"),

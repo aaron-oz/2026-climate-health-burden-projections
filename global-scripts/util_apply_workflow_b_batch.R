@@ -89,6 +89,9 @@ apply_workflow_b_grid <- function() {
   log_msg(sprintf("Workflow B grid: loc=%d, %d combos (%d models x %d targets x %d years)",
                   loc, nrow(grid), length(models), length(targets), length(years)))
 
+  # A (re)run is starting: drop any stale Workflow B sentinel for this location.
+  clear_done_sentinel(loc, root = wfb_marker_root())
+
   results <- vector("list", nrow(grid))
   for (i in seq_len(nrow(grid))) {
     g <- grid[i]
@@ -102,53 +105,67 @@ apply_workflow_b_grid <- function() {
     if (!isTRUE(FORCE) && file.exists(out_path)) {
       results[[i]] <- data.table(grid[i], location_id = loc,
                                  status = "skip", elapsed_s = 0, message = "")
-      next
-    }
-    if (!file.exists(ref_path)) {
+    } else if (!file.exists(ref_path)) {
       log_msg(sprintf("[%d/%d] missing-ref: %s", i, nrow(grid), ref_path))
       results[[i]] <- data.table(grid[i], location_id = loc, status = "missing-ref",
                                  elapsed_s = 0, message = ref_path)
-      next
-    }
-    if (!file.exists(tgt_path)) {
+    } else if (!file.exists(tgt_path)) {
       log_msg(sprintf("[%d/%d] missing-target: %s", i, nrow(grid), tgt_path))
       results[[i]] <- data.table(grid[i], location_id = loc, status = "missing-target",
                                  elapsed_s = 0, message = tgt_path)
-      next
+    } else {
+      t0 <- Sys.time()
+      ok <- tryCatch({
+        apply_ratio(ref_burden     = ref_path,
+                    target_burden  = tgt_path,
+                    ihme_mortality = ihme_arg,
+                    output         = out_path,
+                    location_id    = loc,
+                    model          = g$model,
+                    scenario       = g$target,
+                    verbose        = FALSE)
+        TRUE
+      }, error = function(e) { log_msg("ERROR: ", conditionMessage(e)); FALSE })
+      elapsed <- as.numeric(Sys.time() - t0, units = "secs")
+
+      log_msg(sprintf("[%d/%d] %s/%s/%d -> %s (%.2fs)",
+                      i, nrow(grid), g$model, g$target, g$year,
+                      if (ok) "ok" else "fail", elapsed))
+      results[[i]] <- data.table(grid[i], location_id = loc,
+                                 status = if (ok) "ok" else "fail",
+                                 elapsed_s = round(elapsed, 2), message = "")
     }
 
-    t0 <- Sys.time()
-    ok <- tryCatch({
-      apply_ratio(ref_burden     = ref_path,
-                  target_burden  = tgt_path,
-                  ihme_mortality = ihme_arg,
-                  output         = out_path,
-                  location_id    = loc,
-                  model          = g$model,
-                  scenario       = g$target,
-                  verbose        = FALSE)
-      TRUE
-    }, error = function(e) { log_msg("ERROR: ", conditionMessage(e)); FALSE })
-    elapsed <- as.numeric(Sys.time() - t0, units = "secs")
-
-    log_msg(sprintf("[%d/%d] %s/%s/%d -> %s (%.2fs)",
-                    i, nrow(grid), g$model, g$target, g$year,
-                    if (ok) "ok" else "fail", elapsed))
-    results[[i]] <- data.table(grid[i], location_id = loc,
-                               status = if (ok) "ok" else "fail",
-                               elapsed_s = round(elapsed, 2), message = "")
+    # Live per-location progress (Workflow B tree, separate from the burden one).
+    done <- rbindlist(results[seq_len(i)], fill = TRUE)
+    write_run_progress(
+      loc, phase = "workflow_b", done = i, total = nrow(grid),
+      tally = list(ok               = sum(done$status == "ok"),
+                   skip             = sum(done$status == "skip"),
+                   fail             = sum(done$status == "fail"),
+                   `missing-ref`    = sum(done$status == "missing-ref"),
+                   `missing-target` = sum(done$status == "missing-target")),
+      last = sprintf("%s/%s/%d", g$model, g$target, g$year),
+      root = wfb_marker_root())
   }
 
   manifest <- rbindlist(results, fill = TRUE)
   manifest[, run_ts := format(Sys.time(), "%Y-%m-%dT%H:%M:%S")]
   fwrite(manifest, WORKFLOW_B_MANIFEST, append = file.exists(WORKFLOW_B_MANIFEST))
+  n_ok   <- sum(manifest$status == "ok")
+  n_skip <- sum(manifest$status == "skip")
+  n_fail <- sum(manifest$status == "fail")
+  n_mref <- sum(manifest$status == "missing-ref")
+  n_mtgt <- sum(manifest$status == "missing-target")
   log_msg(sprintf("Done: %d ok, %d skip, %d fail, %d missing-ref, %d missing-target -> %s",
-                  sum(manifest$status == "ok"),
-                  sum(manifest$status == "skip"),
-                  sum(manifest$status == "fail"),
-                  sum(manifest$status == "missing-ref"),
-                  sum(manifest$status == "missing-target"),
-                  WORKFLOW_B_MANIFEST))
+                  n_ok, n_skip, n_fail, n_mref, n_mtgt, WORKFLOW_B_MANIFEST))
+
+  # Terminal sentinel for the Workflow B phase (complete = no fail / missing).
+  write_done_sentinel(
+    loc, complete = (n_fail == 0 && n_mref == 0 && n_mtgt == 0),
+    summary = sprintf("%d ok, %d skip, %d fail, %d missing-ref, %d missing-target of %d combos",
+                      n_ok, n_skip, n_fail, n_mref, n_mtgt, nrow(manifest)),
+    root = wfb_marker_root())
   invisible(manifest)
 }
 
