@@ -24,9 +24,14 @@ git pull origin main            # should include commit c0df922 or later
 nproc                           # physical/logical cores -- send us this number
 ```
 
-Everything downstream sets `-j` from `nproc`. Below, substitute your core count
-for `<CORES>` (start with physical cores; if `nproc` reports logical/hyperthreaded
-cores, use about half).
+**This machine has `nproc` = 256.** With `DT_THREADS=1`, CPU can take a high `-j`,
+but the **binding constraint for the full run is memory, not cores**: each worker
+loads the ~1.8 GB ERF plus a 500-draw burden (~2 GB peak), and 256 x ~2 GB would
+exceed the 503 GB of RAM and swap -- reintroducing thrash, just on memory. So:
+- The **benchmark** launches only a few locations, so its `-j` is irrelevant --
+  use `<CORES>` = 16.
+- The **full-run** `-j` we set from measured per-worker RAM (see "Choosing -j for
+  the full run" near the end). Start around 96-128 and tune from the measurement.
 
 ---
 
@@ -239,6 +244,9 @@ benchmark. `--model`/`--scenario` point it at the CCKP combo output.)
 
 ```bash
 { echo "### cores/load"; nproc; uptime
+  echo; echo "### memory (for setting full-run -j)"; free -h
+  echo "peak per-worker RSS (run while burden is active):"
+  ps aux | grep -E 'run_location' | grep -v grep | awk '{print $6/1024/1024" GB"}' | sort -rn | head -3
   echo; echo "### burden per-combo times (India = pacing item)"; tail -60 output/cckp_burden_manifest.csv
   echo; echo "### convert per-combo times"; tail -30 output/cckp_run_manifest.csv
   echo; echo "### sentinels"; find output/results/cckp output/results/workflow_b -name _DONE -o -name _INCOMPLETE
@@ -389,3 +397,28 @@ minutes; small/medium timing + a Workflow B check within the hour; India's
 convert-then-burden per-combo times over ~1-3 hours. Full-confidence launch comes
 after India's number lands **and** Step 5 vetting passes -- realistically later
 the same day, not during the first call.
+
+## Choosing -j for the full run (memory, not cores)
+
+With 256 cores and `DT_THREADS=1`, the CPU isn't the limit -- **RAM is**. Each
+worker holds the ~1.8 GB ERF plus its 500-draw burden. Measure the real
+per-worker peak during the benchmark (take it while the burden phase is running,
+that's the peak):
+
+```bash
+# peak resident memory of the heaviest pipeline worker, in GB:
+ps -o rss= -C R | sort -rn | head -1 | awk '{print $1/1024/1024 " GB"}'
+# or, more explicitly:
+ps aux | grep -E 'run_location' | grep -v grep | awk '{print $6/1024/1024" GB"}' | sort -rn | head -3
+```
+
+Then set the full-run `-j` to leave headroom (target ~80% of RAM):
+
+```
+-j  =  floor( 0.8 * 503 GB / peak_worker_GB ),  capped at 256
+```
+
+e.g. if a worker peaks at ~2 GB, `-j ≈ 0.8*503/2 ≈ 200`; at ~3 GB, `-j ≈ 134`.
+Launch there, then watch `free -h` for the first few minutes: if `Swap` stays
+near zero and `available` stays comfortable, it's right; if swap grows, drop `-j`.
+Swap growth is the same thrash we just fixed, just on memory instead of threads.
