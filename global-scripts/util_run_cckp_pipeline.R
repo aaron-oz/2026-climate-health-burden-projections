@@ -126,14 +126,18 @@ ensure_download <- function(url, cache_dir, local_root = "", require_local = FAL
       return(dest)
     }
     if (isTRUE(require_local)) {
-      stop("CCKP_REQUIRE_LOCAL is set but this file is not in the local mirror:\n  ",
-           local_path,
-           "\n  Fix the mirror path/layout, or unset CCKP_REQUIRE_LOCAL to allow S3 download.")
+      # Require-local: do NOT download a miss. Treat it as absent -- the caller
+      # records the combo as missing and skips it, so a genuine (model x
+      # scenario) gap (e.g. gfdl-cm4 lacks ssp126/ssp370) never stops or hangs
+      # the run. Gross misconfiguration is caught up front by the preflight
+      # (zero hits), not here.
+      log_msg("Require-local miss (skipping, not downloading): ", local_path)
+      return(NA_character_)
     }
     log_msg("Local mirror miss (falling back to public download): ", local_path)
   } else if (isTRUE(require_local)) {
-    stop("CCKP_REQUIRE_LOCAL is set but no local mirror root is configured ",
-         "(CCKP_LOCAL_ROOT is empty).")
+    log_msg("Require-local but no local root configured; skipping: ", basename(url))
+    return(NA_character_)
   }
   log_msg("Downloading ", basename(url))
   t0 <- Sys.time()
@@ -201,9 +205,13 @@ run_cckp_grid <- function() {
           " scenarios x ", length(years), " years)")
 
   # Preflight: report how many temperature combos resolve to the local mirror
-  # vs would download, so an unset/misconfigured CCKP_LOCAL_ROOT is caught at
-  # t=0 rather than after hours of unintended downloads. With REQUIRE_LOCAL,
-  # any miss is fatal here (before a single combo runs).
+  # vs are missing, so a misconfigured CCKP_LOCAL_ROOT is caught at t=0. Under
+  # REQUIRE_LOCAL a *misconfigured* mirror (empty root, or zero hits) is fatal
+  # here; but a handful of genuinely-absent (model x scenario) combos -- e.g.
+  # gfdl-cm4 lacks ssp126/ssp370, several models lack an SSP -- must NOT be
+  # fatal: those combos are simply skipped (recorded missing) and the run
+  # continues. The distinguisher is the hit rate: 0 = wrong path/layout; some
+  # present + some absent = real gaps.
   if (!nzchar(CCKP_LOCAL_ROOT)) {
     log_msg("Preflight: no local mirror set (CCKP_LOCAL_ROOT empty) -- all ",
             nrow(grid), " combos would download from S3.")
@@ -217,13 +225,19 @@ run_cckp_grid <- function() {
     }, character(1))
     hit <- file.exists(temp_paths)
     log_msg(sprintf(
-      "Preflight: %d/%d temperature combos resolvable from local mirror %s (%d would download).",
+      "Preflight: %d/%d temperature combos resolvable from local mirror %s (%d missing).",
       sum(hit), length(hit), CCKP_LOCAL_ROOT, sum(!hit)))
+    if (isTRUE(REQUIRE_LOCAL) && sum(hit) == 0) {
+      stop("CCKP_REQUIRE_LOCAL is set but NONE of the ", length(hit),
+           " temperature files are in the local mirror at ", CCKP_LOCAL_ROOT,
+           " -- the mirror path/layout is wrong.")
+    }
     if (isTRUE(REQUIRE_LOCAL) && any(!hit)) {
       miss <- unique(basename(temp_paths[!hit]))
-      stop(sprintf(paste0("CCKP_REQUIRE_LOCAL is set but %d temperature file(s) ",
-                          "are missing from the mirror. First few:\n  %s"),
-                   sum(!hit), paste(utils::head(miss, 5), collapse = "\n  ")))
+      log_msg(sprintf(paste0("  note: %d combo(s) not in the local mirror will ",
+                             "be skipped as model x scenario gaps (not downloaded). ",
+                             "First few:\n  %s"),
+                      sum(!hit), paste(utils::head(miss, 5), collapse = "\n  ")))
     }
   }
 
