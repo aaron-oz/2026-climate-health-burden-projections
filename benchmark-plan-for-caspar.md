@@ -200,10 +200,21 @@ cat output/results/cckp/163/_progress.tsv        # phase, combos_done/total, pct
 # real per-combo seconds (this is the number that sets the full-run ETA):
 tail output/cckp_burden_manifest.csv             # elapsed_s column
 # machine health:
-uptime                                           # load should be ~<CORES>, not 660
+uptime                                           # see note below on what to expect
 # completion:
 find output/results/cckp -name _DONE             # a location's sentinel = fully done
 ```
+
+**What load to expect here:** with only 3 locations, this benchmark uses ~3 cores
+(one per location, `DT_THREADS=1`), so **load will be ~3, not ~<CORES> and not
+660** -- the machine is nearly idle. That's fine: the benchmark measures per-combo
+*time* and vets *numbers*; it does not stress the machine. The load-vs-660
+comparison is a property of the **full run** (many concurrent locations), not this.
+The benchmark's live confirmations are instead: (1) the `Preflight: N/N ...
+resolvable from local mirror` line (no downloads), and (2) the first per-combo
+`elapsed_s` in the burden manifest being far below the ~8 min seen under the old
+thrash. Load only becomes the headline signal at the full run, where it should
+sit near `-j` with swap at 0.
 
 ### When burden finishes, run Workflow B for the same locations
 
@@ -317,13 +328,16 @@ hard stop.
    ```bash
    find output/results/cckp -name _DONE            # expect 305, then 131, then 163
    find output/results/cckp -name _INCOMPLETE      # any of these = failures, see below
-   uptime                                          # load should stay ~<CORES>
    cat output/results/cckp/163/_progress.tsv       # India: watch it go convert -> burden
    ```
    - India (163) sits in `phase convert` a while before `phase burden` -- that's
      expected (it converts all its combos first).
-   - If load creeps back toward 660, the thread cap isn't in effect: confirm
-     `echo $DT_THREADS $OMP_NUM_THREADS` are set in the shell you launched from.
+   - Load stays low here (~3 workers), so don't expect a load signal at this
+     scale. But `vmstat 2` during India's **burden** phase is still a useful cap
+     check: `r` should stay a small single-digit number. If `r` climbs into the
+     dozens with only 3 workers running, the cap isn't reaching them -- confirm
+     `echo $DT_THREADS $OMP_NUM_THREADS` are set in the shell you launched from,
+     and that you pulled the current code.
    - If an `_INCOMPLETE` appears, grab the tail of that location's newest log:
      ```bash
      tail -40 "$(find output/results/cckp/<loc> -name 'run_*.log' -printf '%T+ %p\n' | sort | tail -1 | cut -d' ' -f2)"
