@@ -90,10 +90,19 @@ tier2 <- function(b) {
             by = .(location_id, model, scenario, year, acause)]
   pafm[, warmth := SCEN_WARMTH[scenario]]
 
+  # Average over model for the scenario-directional views (2a, 2b): one PAF per
+  # (location, year, cause, scenario), so the warming signal isn't muddied by
+  # inter-model spread and the dcast in 2b has unique rows (multiple models per
+  # scenario would otherwise collapse to a length() count).
+  pafs <- pafm[, .(paf_heat = mean(paf_heat), paf_cold = mean(paf_cold),
+                   paf_nonopt = mean(paf_nonopt)),
+               by = .(location_id, year, acause, scenario)]
+  pafs[, warmth := SCEN_WARMTH[scenario]]
+
   cat("\n[2a] Scenario ordering: does heat-attributable PAF rise, and cold fall,",
       "\n     as the scenario warms (ssp126<245<370<585)? Near-term years are noisy",
       "\n     because scenarios barely differ; the late-horizon years are the test.\n")
-  ord <- pafm[!is.na(warmth), {
+  ord <- pafs[!is.na(warmth), {
     o <- order(warmth)
     list(heat_rises = if (.N >= 2) cor(warmth, paf_heat, method = "spearman") else NA_real_,
          cold_falls = if (.N >= 2) cor(warmth, paf_cold, method = "spearman") else NA_real_,
@@ -108,7 +117,7 @@ tier2 <- function(b) {
 
   cat("\n[2b] Scenario divergence in total non-optimal PAF (ssp585 - ssp245),",
       "\n     mean over causes, by location & year. Should be ~0 near 2030 and grow with year.\n")
-  wide <- dcast(pafm, location_id + year + acause ~ scenario, value.var = "paf_nonopt")
+  wide <- dcast(pafs, location_id + year + acause ~ scenario, value.var = "paf_nonopt")
   if (all(c("ssp245","ssp585") %in% names(wide))) {
     div <- wide[, .(mean_diff_585_245 = mean(ssp585 - ssp245, na.rm = TRUE)),
                 by = .(location_id, year)][order(location_id, year)]
