@@ -88,6 +88,7 @@ run_one_location <- function() {
                              paste0("--subnational=", SUBNATIONAL),
                              paste0("--cckp_local_root=", CCKP_LOCAL_ROOT),
                              paste0("--cckp_pop_local_root=", CCKP_POP_LOCAL_ROOT),
+                             paste0("--require_local=", CCKP_REQUIRE_LOCAL),
                              paste0("--force=", FORCE)))
   log_msg(sprintf("util_run_cckp_pipeline.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))

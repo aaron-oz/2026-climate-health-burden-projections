@@ -118,14 +118,22 @@ run_one_combo <- function(loc, model, scen, year) {
   }
 
   # Move pipeline outputs (named *_{loc}.rds at RESULTS_DIR root) into the
-  # per-combo tree, renamed to *_{year}.rds. Existing in-place outputs are
-  # overwritten silently — they represent the previous combo's run.
+  # per-combo tree, renamed to *_{year}.rds, stamping model + scenario columns
+  # so each RDS is self-describing (the scenario/model were previously encoded
+  # only in the directory path). Existing in-place outputs are overwritten
+  # silently — they represent the previous combo's run.
   ok <- TRUE
   for (prefix in c("burden", "pafs", "ylls", "sevs")) {
     src <- file.path(RESULTS_DIR, sprintf("%s_%d.rds", prefix, loc))
     dst <- file.path(out_dir, sprintf("%s_%d.rds", prefix, year))
     if (file.exists(src)) {
-      success <- file.copy(src, dst, overwrite = TRUE)
+      success <- tryCatch({
+        d <- readRDS(src)
+        d$model <- model
+        d$scenario <- scen
+        saveRDS(d, dst)
+        TRUE
+      }, error = function(e) FALSE)
       if (!success) { ok <- FALSE; break }
     } else if (prefix == "burden") {
       # burden is the one required output; missing == pipeline failure
@@ -152,6 +160,10 @@ run_cckp_burden_grid <- function() {
           length(models), " models x ", length(scenarios),
           " scenarios x ", length(years), " years) for location ", LOCATION_ID)
 
+  # A (re)run is starting: drop any stale terminal sentinel from a prior run so
+  # it can't be misread as this run's state.
+  clear_done_sentinel(LOCATION_ID)
+
   results <- vector("list", nrow(grid))
   for (i in seq_len(nrow(grid))) {
     g <- grid[i]
@@ -163,17 +175,33 @@ run_cckp_burden_grid <- function() {
                                status = r$status,
                                elapsed_s = round(r$elapsed, 2),
                                message = r$msg)
+
+    # Live per-location progress (Phase 2), overwritten each combo.
+    done <- rbindlist(results[seq_len(i)])
+    write_run_progress(
+      LOCATION_ID, phase = "burden", done = i, total = nrow(grid),
+      tally = list(ok             = sum(done$status == "ok"),
+                   skip           = sum(done$status == "skip"),
+                   fail           = sum(done$status == "fail"),
+                   `missing-temp` = sum(done$status == "missing-temp")),
+      last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
   }
 
   manifest <- rbindlist(results)
   manifest[, run_ts := format(Sys.time(), "%Y-%m-%dT%H:%M:%S")]
   fwrite(manifest, BURDEN_MANIFEST, append = file.exists(BURDEN_MANIFEST))
-  log_msg("Done: ",
-          sum(manifest$status == "ok"),           " ok | ",
-          sum(manifest$status == "skip"),         " skip | ",
-          sum(manifest$status == "fail"),         " fail | ",
-          sum(manifest$status == "missing-temp"), " missing-temp -> ",
-          BURDEN_MANIFEST)
+  n_ok   <- sum(manifest$status == "ok")
+  n_skip <- sum(manifest$status == "skip")
+  n_fail <- sum(manifest$status == "fail")
+  n_miss <- sum(manifest$status == "missing-temp")
+  log_msg("Done: ", n_ok, " ok | ", n_skip, " skip | ", n_fail, " fail | ",
+          n_miss, " missing-temp -> ", BURDEN_MANIFEST)
+
+  # Terminal sentinel: complete only if no combo failed or lacked temperature.
+  write_done_sentinel(
+    LOCATION_ID, complete = (n_fail == 0 && n_miss == 0),
+    summary = sprintf("%d ok, %d skip, %d fail, %d missing-temp of %d combos",
+                      n_ok, n_skip, n_fail, n_miss, nrow(manifest)))
   invisible(manifest)
 }
 
