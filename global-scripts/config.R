@@ -304,6 +304,28 @@ parse_args <- function() {
 
 parse_args()
 
+# =============================================================================
+# Thread cap (critical for the parallel fan-out)
+#
+# The production run launches one OS process per location (GNU parallel). Each
+# process's data.table defaults to ~50% of the machine's logical cores, so N
+# concurrent locations request N x (cores/2) threads -- catastrophic
+# oversubscription (observed load average ~660 on a box where RAM was idle: the
+# run queue thrashed on context-switching instead of computing).
+#
+# Cap data.table to DT_THREADS threads per process (default 1) so N processes
+# use N threads; then set -j to the physical core count. Override with
+# DT_THREADS=<n> (env) or --dt_threads=<n>; DT_THREADS=0 means "all cores" (for
+# a lone interactive run). BLAS threads are separate and set OUTSIDE R -- export
+# OMP_NUM_THREADS=1 and OPENBLAS_NUM_THREADS=1 before launching.
+if (!exists("DT_THREADS", envir = globalenv())) {
+  DT_THREADS <- suppressWarnings(as.integer(Sys.getenv("DT_THREADS", "1")))
+}
+if (is.na(DT_THREADS)) DT_THREADS <- 1L
+if (requireNamespace("data.table", quietly = TRUE)) {
+  data.table::setDTthreads(as.integer(DT_THREADS))
+}
+
 # Per-location scratch directory. The step-7 production fan-out runs one process
 # per location concurrently; a shared output/intermediate/ would race on the
 # location-specific files (temperature.rds, mortality.rds, tmrel.rds, ...). Give
