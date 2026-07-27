@@ -197,9 +197,7 @@ run_cckp_grid <- function() {
       log_msg("  -> SKIP (output exists)")
       results[[i]] <- data.table(grid[i], status = "skip", out_path = out_path,
                                  rows = NA_integer_, elapsed_s = 0, message = "")
-      next
-    }
-
+    } else {
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
     t0 <- Sys.time()
     res <- tryCatch({
@@ -248,6 +246,19 @@ run_cckp_grid <- function() {
                       format(res$rows[1], big.mark = ",")))
     }
     results[[i]] <- res
+    }  # end else (combo actually processed)
+
+    # Live per-location progress (Phase 1), written for skips too so a resume
+    # (most combos already converted) still shows current position. Overwritten
+    # each combo so the location's dir + status are visible during Phase 1.
+    done <- rbindlist(results[seq_len(i)], fill = TRUE)
+    write_run_progress(
+      LOCATION_ID, phase = "convert", done = i, total = nrow(grid),
+      tally = list(ok            = sum(done$status == "ok"),
+                   skip          = sum(done$status == "skip"),
+                   fail          = sum(done$status == "fail"),
+                   `missing-s3`  = sum(done$status == "missing-on-s3")),
+      last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
   }
 
   manifest <- rbindlist(results, fill = TRUE)

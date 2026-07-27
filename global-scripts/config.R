@@ -328,6 +328,60 @@ log_msg <- function(...) {
   message(msg)
 }
 
+# =============================================================================
+# Per-location run-progress markers (for monitoring long parallel fan-outs)
+#
+# Both phases of a location run -- temperature convert (util_run_cckp_pipeline.R)
+# and burden (util_run_cckp_burden.R) -- overwrite a single per-location
+# _progress.tsv so `cat output/results/cckp/<loc>/_progress.tsv` gives an
+# instant status. The burden phase writes a terminal sentinel when its grid
+# finishes: _DONE if every combo succeeded, _INCOMPLETE if it ended with
+# failures/missing combos. So:
+#   find output/results/cckp -name _DONE       | wc -l   # locations fully done
+#   find output/results/cckp -name _INCOMPLETE          # locations needing attention
+# The progress file appears as soon as Phase 1 starts, so a location's dir is no
+# longer invisible until burden begins.
+# =============================================================================
+run_marker_dir <- function(loc) file.path(RESULTS_DIR, "cckp", loc)
+
+# Overwrite the per-location progress file. `tally` is an optional named list of
+# extra counters (ok/skip/fail/...); `last` is a human label for the most recent
+# combo. Cheap enough to call every combo (one small file rewrite).
+write_run_progress <- function(loc, phase, done, total, tally = list(), last = "") {
+  d <- run_marker_dir(loc)
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+  lines <- c(paste0("phase\t",        phase),
+             paste0("location_id\t",  loc),
+             paste0("combos_done\t",  done),
+             paste0("combos_total\t", total),
+             paste0("pct\t", if (total > 0) sprintf("%.1f", 100 * done / total) else "NA"))
+  for (nm in names(tally)) lines <- c(lines, paste0(nm, "\t", tally[[nm]]))
+  lines <- c(lines,
+             paste0("last_combo\t", last),
+             paste0("updated\t",    format(Sys.time(), "%Y-%m-%dT%H:%M:%S")))
+  writeLines(lines, file.path(d, "_progress.tsv"))
+}
+
+# Clear any stale terminal sentinels (call at the start of a (re)run so a prior
+# _DONE/_INCOMPLETE can't be mistaken for the current run's state).
+clear_done_sentinel <- function(loc) {
+  unlink(file.path(run_marker_dir(loc), c("_DONE", "_INCOMPLETE")))
+}
+
+# Write the terminal sentinel: _DONE when complete (no failures/missing), else
+# _INCOMPLETE. `summary` is a one-line human description of the final tally.
+write_done_sentinel <- function(loc, complete, summary = "") {
+  d <- run_marker_dir(loc)
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+  clear_done_sentinel(loc)
+  f <- file.path(d, if (isTRUE(complete)) "_DONE" else "_INCOMPLETE")
+  writeLines(c(paste0("location_id\t", loc),
+               paste0("status\t",   if (isTRUE(complete)) "DONE" else "INCOMPLETE"),
+               paste0("summary\t",  summary),
+               paste0("finished\t", format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))),
+             f)
+}
+
 log_msg("Config loaded for location_id =", LOCATION_ID,
         "| years =", YEAR_START, "-", YEAR_END,
         "| use_draws =", USE_DRAWS)

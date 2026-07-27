@@ -124,6 +124,8 @@ apply_workflow_b_grid <- function() {
                   ihme_mortality = ihme_arg,
                   output         = out_path,
                   location_id    = loc,
+                  model          = g$model,
+                  scenario       = g$target,
                   verbose        = FALSE)
       TRUE
     }, error = function(e) { log_msg("ERROR: ", conditionMessage(e)); FALSE })

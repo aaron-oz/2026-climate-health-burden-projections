@@ -99,6 +99,8 @@ apply_ratio <- function(ref_burden     = REF_BURDEN,
                         ihme_mortality = IHME_MORTALITY,
                         output         = OUTPUT,
                         location_id    = LOCATION_ID,
+                        model          = NULL,
+                        scenario       = NULL,
                         verbose        = TRUE) {
   if (is.null(ref_burden) || is.null(target_burden) ||
       is.null(ihme_mortality) || is.null(output)) {
@@ -152,6 +154,10 @@ apply_ratio <- function(ref_burden     = REF_BURDEN,
              deaths_cold_attrib = m_scaled * paf_cold)]
   out[, deaths_nonopt_attrib := deaths_heat_attrib + deaths_cold_attrib]
   out[, location_id := location_id]
+  # Self-describing output: stamp model + scenario when supplied (they are
+  # otherwise encoded only in the output directory path).
+  if (!is.null(model))    out[, model := model]
+  if (!is.null(scenario)) out[, scenario := scenario]
 
   dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)
   saveRDS(out, output)
