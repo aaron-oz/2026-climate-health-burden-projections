@@ -122,21 +122,50 @@ burden -- that check is only meaningful once the scenarios diverge. So we run a
 few near years (stable per-combo timing) **and** the far end (2049-2050), where
 the warming signal is testable.
 
+**Draws: run this benchmark at 100, not 500.** The benchmark's jobs are to prove
+the fix and vet the numbers, and those are draw-insensitive (the point estimates
+and directions are the same; only the uncertainty intervals narrow with more
+draws). 100 draws keeps the intervals meaningful while running much faster.
+**Production stays at the full 500** -- the reduced draws are only for the
+benchmark.
+
 ```bash
 parallel -j <CORES> \
   'Rscript global-scripts/util_run_global.R \
       --location_id={} \
       --models=access-cm2-r1i1p1f1,bcc-csm2-mr-r1i1p1f1,gfdl-cm4-r1i1p1f1 \
       --scenarios=ssp245,ssp370,ssp585,ssp126 \
-      --years=2030,2031,2040,2049,2050' \
+      --years=2030,2031,2040,2049,2050 \
+      --n_draws_run=100' \
   ::: 305 131 163
 ```
 
 That is 3 locations x 3 models x 4 scenarios x 5 years = 180 combos (a few will
-be `missing-on-s3` for gfdl-cm4, as expected). 500 draws throughout (no
-skimping). Note the large location (163, India) runs its combos serially, so it
-is the pacing item -- its per-combo time is the number that governs the full-run
-ETA (see the timing note at the end).
+be `missing-on-s3` for gfdl-cm4). The large location (163, India) runs its combos
+serially, so it is the pacing item.
+
+### 4b. A small 500-draw timing probe (the production-ETA number)
+
+Burden time is roughly `fixed overhead + (per-draw cost x draws)`, so the
+100-draw benchmark under-states the production per-combo time. To get the real
+500-draw number without waiting for a full 500-draw benchmark, run a handful of
+**fresh** combos (years not used above, so nothing is skipped) at 500 draws on
+the two locations that matter for the ETA:
+
+```bash
+parallel -j <CORES> \
+  'Rscript global-scripts/util_run_global.R \
+      --location_id={} \
+      --models=access-cm2-r1i1p1f1 \
+      --scenarios=ssp245 \
+      --years=2035,2045 \
+      --n_draws_run=500' \
+  ::: 131 163
+```
+
+The `elapsed_s` for these combos in `output/cckp_burden_manifest.csv` is the
+production per-combo time for medium (131) and large (163). That large number x
+~3,300 combos is the full-run floor for the biggest countries.
 
 ### Monitor while it runs
 
@@ -227,8 +256,18 @@ Rscript global-scripts/util_backfill_scenario_columns.R --dry_run=TRUE   # previ
 Rscript global-scripts/util_backfill_scenario_columns.R                  # apply
 ```
 
-Then the full run, idempotent (it resumes, skipping finished combos), with the
-chosen `-j` and all four scenarios by default:
+**Delete the three benchmark locations' outputs first.** They were computed at
+100 draws; if left in place, the idempotent full run would skip them and they'd
+stay at 100 draws in the production dataset. Removing them makes production
+recompute them at the full 500:
+
+```bash
+rm -rf output/results/cckp/305 output/results/cckp/131 output/results/cckp/163 \
+       output/results/workflow_b/305 output/results/workflow_b/131 output/results/workflow_b/163
+```
+
+Then the full run, idempotent (it resumes, skipping finished combos), at the full
+500 draws (the default) and all four scenarios (the default):
 
 ```bash
 parallel -j <CORES> \
