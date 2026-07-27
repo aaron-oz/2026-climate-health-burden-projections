@@ -42,6 +42,16 @@ MORTALITY_DIR  <- file.path(DATA_DIR, "mortality")        # GBD cause-specific d
 LIFETABLE_DIR  <- file.path(DATA_DIR, "lifetables")       # Life tables
 SHAPEFILE_DIR  <- file.path(DATA_DIR, "shapefiles")       # GBD shapefiles
 
+# Default GBD shapefile for geometry (pixel-to-country clipping). Prefer the
+# augmented copy when it exists -- it adds 6 micro-nations that the GBD mapping
+# file omits entirely (Maldives, Marshall Islands, Monaco, Nauru, Tokelau,
+# Tuvalu; built by util_augment_shapefile.R). Non-breaking: the augmented file is
+# a strict superset of the original, identical for the other ~198 locations.
+DEFAULT_SHAPEFILE <- local({
+  aug  <- file.path(SHAPEFILE_DIR, "GBD2023_mapping_final_augmented.shp")
+  if (file.exists(aug)) aug else file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp")
+})
+
 # Output directories
 OUTPUT_DIR     <- file.path(PROJECT_ROOT, "output")
 INTERMEDIATE_DIR <- file.path(OUTPUT_DIR, "intermediate")

@@ -37,7 +37,7 @@ defaults <- list(
   SCENARIOS = "ssp245",
   YEARS     = "2010-2010",
   POP_DATASET = "gpw-v4-rev11",
-  SHAPEFILE = file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp"),
+  SHAPEFILE = DEFAULT_SHAPEFILE,
   SHAPEFILE_SUBLOC_FIELD = NULL,
   CCKP_CACHE = file.path(DATA_DIR, "cmip6-scratch", "cckp"),
   OUTPUT_ROOT = file.path(TEMP_DIR, "cckp"),

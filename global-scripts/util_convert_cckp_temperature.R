@@ -334,7 +334,7 @@ if (sys.nframe() == 0L) {
   defaults <- list(
     TEMP_NC = NULL,
     POP_NC  = NULL,
-    SHAPEFILE = file.path(SHAPEFILE_DIR, "GBD2023_mapping_final.shp"),
+    SHAPEFILE = DEFAULT_SHAPEFILE,
     SHAPEFILE_SUBLOC_FIELD = NULL,
     OUTPUT_PATH = NULL
   )
