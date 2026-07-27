@@ -64,13 +64,17 @@ read_cckp_time <- function(nc) {
   time_cal   <- ncatt_get(nc, "time", "calendar")$value
   if (is.null(time_cal) || nchar(time_cal) == 0) time_cal <- "gregorian"
 
-  # Parse "days since YYYY-MM-DD ..." origin
+  # Parse "days since YYYY-M-D ..." origin. Month/day may be 1 OR 2 digits --
+  # CF time-units are not required to zero-pad (e.g. CMIP6 files carrying
+  # "days since 1850-1-1"), so accept \d{1,2} and normalise before as.Date,
+  # which is strict about padding on some platforms.
   m <- regmatches(time_units,
-                  regexpr("\\d{4}-\\d{2}-\\d{2}", time_units))
+                  regexpr("\\d{4}-\\d{1,2}-\\d{1,2}", time_units))
   if (length(m) == 0) {
     stop("Could not parse time:units = '", time_units, "'")
   }
-  origin <- as.Date(m)
+  ymd    <- as.integer(strsplit(m, "-", fixed = TRUE)[[1]])
+  origin <- as.Date(sprintf("%04d-%02d-%02d", ymd[1], ymd[2], ymd[3]))
 
   # Build dates. For gregorian/standard, plain date arithmetic works; for
   # noleap / 360_day, we need to skip Feb 29 / wrap at day-of-year 360.
