@@ -266,9 +266,11 @@ benchmark. `--model`/`--scenario` point it at the CCKP combo output.)
 
 ```bash
 { echo "### cores/load"; nproc; uptime
-  echo; echo "### memory (for setting full-run -j)"; free -h
-  echo "peak per-worker RSS (run while burden is active):"
-  ps aux | grep -E 'run_location' | grep -v grep | awk '{print $6/1024/1024" GB"}' | sort -rn | head -3
+  echo; echo "### thread cap in effect? (from run logs, no live watching)"
+  grep -h 'Threads:' output/results/cckp/*/*/run_*.log 2>/dev/null | sort -u | head
+  echo "### peak per-combo RSS (from run logs, MB) -- sizes the full-run -j"
+  grep -h 'Peak RSS' output/results/cckp/*/*/run_*.log 2>/dev/null | grep -oE '[0-9]+ MB' | sort -n | tail -5
+  echo "### free -h"; free -h
   echo; echo "### burden per-combo times (India = pacing item)"; tail -60 output/cckp_burden_manifest.csv
   echo; echo "### convert per-combo times"; tail -30 output/cckp_run_manifest.csv
   echo; echo "### sentinels"; find output/results/cckp output/results/workflow_b -name _DONE -o -name _INCOMPLETE
