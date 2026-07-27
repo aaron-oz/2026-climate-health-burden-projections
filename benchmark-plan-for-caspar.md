@@ -83,8 +83,19 @@ than download.
 
 ## Step 3 (optional but recommended) — Prove the fix causally
 
-Run one identical tiny slice twice on the now-idle machine and watch `uptime` in
-a second terminal. This isolates the thread fix from everything else.
+Run one identical tiny slice twice on the now-idle machine and watch the load in
+a **second terminal**. This isolates the thread fix from everything else.
+
+**How to watch the load** (use throughout this runbook):
+```bash
+vmstat 2            # BEST for live: the `r` column = threads waiting for CPU,
+                    #   reacts instantly. Uncapped -> r >> 256; capped -> r ~ -j.
+watch -n 5 uptime   # simpler, but the 1-min load average lags ~1-2 min.
+htop                # rich per-process view (load up top, %CPU per process).
+```
+Note: Linux load counts I/O-wait too, so during the convert phase (heavy NetCDF
+reads) some load is disk, not CPU -- the clean thread signal is during the burden
+phase (`cat .../_progress.tsv` tells you which phase you're in).
 
 ```bash
 # A) UNCAPPED (worst case): DT_THREADS=0 means "all cores per process" -- the
