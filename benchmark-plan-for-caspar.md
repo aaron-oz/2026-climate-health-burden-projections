@@ -32,19 +32,28 @@ cores, use about half).
 
 ## Step 1 — Stop the current jobs and quiesce the machine
 
+Kill the GNU `parallel` driver(s) FIRST -- otherwise `parallel` just relaunches a
+replacement for every worker you kill. This works whether the jobs are in visible
+terminals or detached, so you don't have to hunt for the terminals you launched
+them in:
+
 ```bash
-# If launched under GNU parallel / a shell, Ctrl-C that terminal first, then:
-pkill -f util_run_global.R
-pkill -f run_location.R
+pkill -f 'parallel.*util_run_global'    # the parallel driver(s) -- stop them relaunching
+pkill -f util_run_global.R              # per-location workers
+pkill -f run_location.R                 # inner pipeline processes
 pkill -f util_run_cckp
 sleep 5
-pgrep -af Rscript | head            # expect empty (or only your shell)
-uptime                              # load average should start falling toward ~0
+pgrep -af 'util_run_global|run_location' | head   # expect empty
+uptime                                            # load should start falling toward ~0
 ```
 
-Wait until `uptime` shows the load dropping and `pgrep Rscript` is essentially
-empty before continuing. Nothing already computed is lost: partial outputs on
-disk are valid and will be reused.
+(If you know the terminal(s) where you typed the `parallel ...` launch commands,
+Ctrl-C'ing each does the same thing -- it stops that driver and its children. The
+`pkill` above is just the version that doesn't require finding them.)
+
+Wait until `uptime` shows the load dropping and the `pgrep` is essentially empty
+before continuing. Nothing already computed is lost: partial outputs on disk are
+valid and will be reused.
 
 ---
 
