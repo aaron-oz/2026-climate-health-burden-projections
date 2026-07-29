@@ -40,6 +40,9 @@ defaults <- list(
   USE_DRAWS_RUN   = TRUE,   # forwarded as --use_draws to run_location.R
   N_DRAWS_RUN     = N_DRAWS,# forwarded as --n_draws
   FORCE           = FALSE,  # --force=TRUE recomputes even if burden_{year}.rds exists
+  N_CORES         = 1L,     # workers over this location's grid; see the note in
+                            # util_run_cckp_pipeline.R. Each worker spawns a
+                            # run_location.R subprocess, so budget ~2x processes.
   MORTALITY_FILE  = NULL    # forwarded as --mortality_file; comma-separated
                             # list of per-cause IHME-derived RDS files
                             # supported (04 rbinds them). When NULL, the
@@ -87,13 +90,26 @@ run_one_combo <- function(loc, model, scen, year) {
 
   dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-  # Clear stale per-location outputs at RESULTS_DIR root so a partial pipeline
-  # failure can't be confused with a successful run (we'd otherwise copy the
-  # previous combo's burden_{loc}.rds into the new combo's tree).
-  for (prefix in c("burden", "pafs", "ylls", "sevs")) {
-    stale <- file.path(RESULTS_DIR, sprintf("%s_%d.rds", prefix, loc))
-    if (file.exists(stale)) file.remove(stale)
-  }
+  # Private scratch for this combo.
+  #
+  # run_location.R's steps hand data to each other through files, not memory:
+  # 03 writes INTERMEDIATE_DIR/temperature.rds and 05 reads it back, and 05-08
+  # write their results as RESULTS_DIR/{burden,pafs,ylls,sevs}_{loc}.rds. Both
+  # of those paths were scoped per LOCATION, which is enough only while a
+  # location runs its combos one at a time. Two concurrent combos of the same
+  # location would otherwise interleave on them, and the damage would be silent
+  # rather than loud: the post-run move below would pick up whichever combo's
+  # burden_{loc}.rds happened to be on disk and stamp it with THIS combo's
+  # model and scenario, writing a result that is wrong and labelled as correct.
+  #
+  # PIPELINE_RUN_TAG (see config.R) moves both directories under a per-combo
+  # subdirectory in the child process, so each combo gets its own scratch.
+  run_tag <- combo_id(model, scen, year)
+  staging <- file.path(RESULTS_ROOT, "_staging", as.character(loc), run_tag)
+  scratch <- file.path(OUTPUT_DIR, "intermediate", as.character(loc), run_tag)
+  unlink(c(staging, scratch), recursive = TRUE)   # no leftovers from a crash
+  dir.create(staging, showWarnings = FALSE, recursive = TRUE)
+  on.exit(unlink(c(staging, scratch), recursive = TRUE), add = TRUE)
 
   t0 <- Sys.time()
   args <- c(file.path(SCRIPTS_DIR, "run_location.R"),
@@ -109,6 +125,7 @@ run_one_combo <- function(loc, model, scen, year) {
   }
 
   exit_code <- system2("Rscript", args,
+                       env = paste0("PIPELINE_RUN_TAG=", run_tag),
                        stdout = file.path(out_dir, sprintf("run_%d.log", year)),
                        stderr = file.path(out_dir, sprintf("run_%d.log", year)))
   elapsed <- as.numeric(Sys.time() - t0, units = "secs")
@@ -117,14 +134,13 @@ run_one_combo <- function(loc, model, scen, year) {
                 msg = paste("Rscript exit", exit_code)))
   }
 
-  # Move pipeline outputs (named *_{loc}.rds at RESULTS_DIR root) into the
-  # per-combo tree, renamed to *_{year}.rds, stamping model + scenario columns
-  # so each RDS is self-describing (the scenario/model were previously encoded
-  # only in the directory path). Existing in-place outputs are overwritten
-  # silently — they represent the previous combo's run.
+  # Move pipeline outputs (named *_{loc}.rds in this combo's staging dir) into
+  # the per-combo tree, renamed to *_{year}.rds, stamping model + scenario
+  # columns so each RDS is self-describing (the scenario/model were previously
+  # encoded only in the directory path).
   ok <- TRUE
   for (prefix in c("burden", "pafs", "ylls", "sevs")) {
-    src <- file.path(RESULTS_DIR, sprintf("%s_%d.rds", prefix, loc))
+    src <- file.path(staging, sprintf("%s_%d.rds", prefix, loc))
     dst <- file.path(out_dir, sprintf("%s_%d.rds", prefix, year))
     if (file.exists(src)) {
       success <- tryCatch({
@@ -163,28 +179,59 @@ run_cckp_burden_grid <- function() {
   # A (re)run is starting: drop any stale terminal sentinel from a prior run so
   # it can't be misread as this run's state.
   clear_done_sentinel(LOCATION_ID)
+  clear_combo_statuses(LOCATION_ID, "burden")
 
-  results <- vector("list", nrow(grid))
-  for (i in seq_len(nrow(grid))) {
+  # Each combo spawns its own run_location.R subprocess with a private scratch
+  # (see run_one_combo), so combos of one location can now run concurrently.
+  # See the N_CORES note in util_run_cckp_pipeline.R: memory is the constraint,
+  # and mc.preschedule = FALSE keeps one worker death from taking a chunk with
+  # it. Note each worker here spawns a subprocess, so the real process count is
+  # about twice n_cores.
+  n_cores <- max(1L, as.integer(N_CORES))
+  log_msg("Burden workers: ", n_cores)
+
+  run_idx <- function(i) {
     g <- grid[i]
     log_msg(sprintf("[%d/%d] %s/%s/%d", i, nrow(grid), g$model, g$scenario, g$year))
     r <- run_one_combo(LOCATION_ID, g$model, g$scenario, g$year)
     log_msg(sprintf("  -> %s (%.1fs) %s", r$status, r$elapsed, r$msg))
-    results[[i]] <- data.table(grid[i],
-                               location_id = LOCATION_ID,
-                               status = r$status,
-                               elapsed_s = round(r$elapsed, 2),
-                               message = r$msg)
+    write_combo_status(LOCATION_ID, "burden", g$model, g$scenario, g$year,
+                       status = r$status, elapsed_s = r$elapsed, message = r$msg)
+    refresh_run_progress(LOCATION_ID, "burden", total = nrow(grid),
+                         last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
+    data.table(grid[i],
+               location_id = LOCATION_ID,
+               status = r$status,
+               elapsed_s = round(r$elapsed, 2),
+               message = r$msg)
+  }
 
-    # Live per-location progress (Phase 2), overwritten each combo.
-    done <- rbindlist(results[seq_len(i)])
-    write_run_progress(
-      LOCATION_ID, phase = "burden", done = i, total = nrow(grid),
-      tally = list(ok             = sum(done$status == "ok"),
-                   skip           = sum(done$status == "skip"),
-                   fail           = sum(done$status == "fail"),
-                   `missing-temp` = sum(done$status == "missing-temp")),
-      last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
+  results <- if (n_cores > 1L) {
+    parallel::mclapply(seq_len(nrow(grid)), run_idx,
+                       mc.cores = n_cores, mc.preschedule = FALSE)
+  } else {
+    lapply(seq_len(nrow(grid)), run_idx)
+  }
+
+  bad <- vapply(results, function(r) inherits(r, "try-error") || !is.data.frame(r),
+                logical(1))
+  if (any(bad)) {
+    log_msg("WARN ", sum(bad), " combo(s) died in a worker (likely OOM); ",
+            "recording as fail. Reduce --n_cores if this repeats.")
+    for (i in which(bad)) {
+      g <- grid[i]
+      msg <- paste("worker died:", trimws(paste(as.character(results[[i]]),
+                                                collapse = " ")))
+      results[[i]] <- data.table(grid[i], location_id = LOCATION_ID,
+                                 status = "fail", elapsed_s = NA_real_,
+                                 message = msg)
+      write_combo_status(LOCATION_ID, "burden", g$model, g$scenario, g$year,
+                         status = "fail", message = msg)
+    }
+  }
+  if (length(results) != nrow(grid)) {
+    stop("Burden grid loop exited early: recorded ", length(results), " of ",
+         nrow(grid), " combos. This is a bug, not a data problem.")
   }
 
   manifest <- rbindlist(results)
@@ -197,11 +244,18 @@ run_cckp_burden_grid <- function() {
   log_msg("Done: ", n_ok, " ok | ", n_skip, " skip | ", n_fail, " fail | ",
           n_miss, " missing-temp -> ", BURDEN_MANIFEST)
 
-  # Terminal sentinel: complete only if no combo failed or lacked temperature.
-  write_done_sentinel(
-    LOCATION_ID, complete = (n_fail == 0 && n_miss == 0),
-    summary = sprintf("%d ok, %d skip, %d fail, %d missing-temp of %d combos",
-                      n_ok, n_skip, n_fail, n_miss, nrow(manifest)))
+  # Terminal sentinel, derived from the per-combo status files rather than from
+  # this process's in-memory tally, so it stays correct however the grid was
+  # divided among workers.
+  #
+  # missing-temp no longer blocks DONE on its own. A model x scenario that CCKP
+  # genuinely does not publish (gfdl-cm4 has no ssp370, and there are others)
+  # produces missing-temp on every rerun, so treating it as incomplete marked
+  # those locations _INCOMPLETE forever and gave no way to distinguish them from
+  # locations that really did need another pass. Failures still block DONE.
+  fin <- finalize_run_sentinel(LOCATION_ID, "burden", total = nrow(grid))
+  log_msg("Sentinel: ", if (fin$complete) "_DONE" else "_INCOMPLETE",
+          " | ", fin$summary)
   invisible(manifest)
 }
 

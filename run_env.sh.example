@@ -1,0 +1,12 @@
+# Copy to run_env.sh and edit. run_env.sh is machine-specific and gitignored,
+# so it survives a git pull and never causes a merge conflict.
+
+# Where the local CCKP mirror lives. Must contain cmip6-daily-x0.25/ and
+# pop-x0.25/ laid out exactly as the public bucket does.
+export CCKP_LOCAL_ROOT=/data
+
+# Only if the population files sit under a different root than temperature.
+# export CCKP_POP_LOCAL_ROOT=/data/pop
+
+# How many locations to run at once.
+export JOBS=100

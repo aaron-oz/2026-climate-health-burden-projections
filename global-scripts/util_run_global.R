@@ -44,15 +44,55 @@ defaults <- list(
   N_DRAWS_RUN  = 500,
   CAUSES       = paste(GBD_CAUSES, collapse = ","),
   SHAPEFILE    = DEFAULT_SHAPEFILE,
-  FORCE        = FALSE   # --force=TRUE forwarded to both inner runners (recompute)
+  FORCE        = FALSE,  # --force=TRUE forwarded to both inner runners (recompute)
+  # Workers within this location. 0 (the default) means "size it automatically
+  # from how big the location is"; any positive value is used as given.
+  N_CORES      = 0L
 )
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
 
+# Workers to give this location, from the size of its bounding box on the CCKP
+# 0.25-degree grid.
+#
+# Cost per combo scales with the number of grid cells the location's bbox spans,
+# and that is extremely skewed: the median level-3 location covers about 570
+# cells while the US covers 305,000 and Russia 238,000. A handful of locations
+# therefore take orders of magnitude longer than the rest, and they are the ones
+# worth splitting. The outer fan-out already runs many locations at once, so
+# this only adds workers where they change the finish time, and the extra
+# processes stay in the low tens overall.
+#
+# Returns 1 (unchanged behaviour) when the shapefile cannot be read, so a
+# geometry problem degrades to the old serial path rather than stopping the run.
+auto_n_cores <- function(loc, shapefile) {
+  tryCatch({
+    suppressPackageStartupMessages(library(sf))
+    sf::sf_use_s2(FALSE)
+    shp <- sf::st_read(shapefile, quiet = TRUE)
+    g <- shp[!is.na(shp$loc_id) & shp$loc_id == loc, ]
+    if (nrow(g) == 0) return(1L)
+    b <- sf::st_bbox(g)
+    cells <- (as.numeric(b["xmax"] - b["xmin"]) / 0.25 + 3) *
+             (as.numeric(b["ymax"] - b["ymin"]) / 0.25 + 3)
+    if      (cells >= 100000) 4L
+    else if (cells >=  20000) 3L
+    else if (cells >=   5000) 2L
+    else                      1L
+  }, error = function(e) {
+    log_msg("auto_n_cores: could not size loc=", loc, " (", conditionMessage(e),
+            "); using 1 worker")
+    1L
+  })
+}
+
 run_one_location <- function() {
   loc <- LOCATION_ID
   causes <- strsplit(as.character(CAUSES), ",", fixed = TRUE)[[1]]
+  n_cores <- as.integer(N_CORES)
+  if (is.na(n_cores) || n_cores < 1L) n_cores <- auto_n_cores(loc, SHAPEFILE)
+  log_msg(sprintf("loc=%d workers=%d", loc, n_cores))
 
   # Compose the per-location mortality-file list (one RDS per cause). Filter
   # to files that actually exist on disk -- missing causes get logged but
@@ -89,6 +129,7 @@ run_one_location <- function() {
                              paste0("--cckp_local_root=", CCKP_LOCAL_ROOT),
                              paste0("--cckp_pop_local_root=", CCKP_POP_LOCAL_ROOT),
                              paste0("--require_local=", CCKP_REQUIRE_LOCAL),
+                             paste0("--n_cores=", n_cores),
                              paste0("--force=", FORCE)))
   log_msg(sprintf("util_run_cckp_pipeline.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
@@ -105,6 +146,7 @@ run_one_location <- function() {
                                     if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
                              paste0("--n_draws_run=",     N_DRAWS_RUN),
                              paste0("--force=",           FORCE),
+                             paste0("--n_cores=",         n_cores),
                              paste0("--mortality_file=",  mort_file_arg)))
   log_msg(sprintf("util_run_cckp_burden.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))

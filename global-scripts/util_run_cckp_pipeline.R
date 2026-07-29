@@ -44,6 +44,11 @@ defaults <- list(
   MANIFEST    = file.path(OUTPUT_DIR, "cckp_run_manifest.csv"),
   KEEP_NETCDFS = TRUE,
   FORCE = FALSE,  # --force=TRUE recomputes even if the output RDS exists
+  # Workers over the (model x scenario x year) grid for THIS location. Default 1
+  # keeps the historical single-process behaviour. Raise it only for the few
+  # geographically huge locations, and size it against RAM (a US combo builds a
+  # table on the order of gigabytes), not against the core count.
+  N_CORES = 1L,
   # Inherit the config default (env CCKP_REQUIRE_LOCAL); --require_local=TRUE
   # overrides. When TRUE, a local-mirror miss stops instead of downloading.
   REQUIRE_LOCAL = CCKP_REQUIRE_LOCAL
@@ -242,9 +247,23 @@ run_cckp_grid <- function() {
   }
 
   dir.create(OUTPUT_ROOT, showWarnings = FALSE, recursive = TRUE)
-  results <- vector("list", nrow(grid))
+  clear_combo_statuses(LOCATION_ID, "convert")
 
-  for (i in seq_len(nrow(grid))) {
+  # Each combo reads its own NetCDFs and writes its own output RDS, so the grid
+  # is embarrassingly parallel. N_CORES > 1 forks workers over it.
+  #
+  # mc.preschedule = FALSE: combos are wildly uneven (a US year allocates a
+  # ~100M-row table, a small island a few thousand), and pre-scheduling would
+  # both bunch the expensive ones together and lose a whole pre-assigned chunk
+  # if one worker were killed. One fork per combo costs more but loses at most
+  # one combo to an OOM kill.
+  #
+  # Memory, not cores, is the binding constraint here: size N_CORES against RAM
+  # for the biggest location in the batch, not against the core count.
+  n_cores <- max(1L, as.integer(N_CORES))
+  log_msg("Convert workers: ", n_cores)
+
+  run_combo <- function(i) {
     g <- grid[i]
     model_scen_key <- if (g$year <= 2014) "historical" else g$scenario
     out_dir <- file.path(OUTPUT_ROOT, LOCATION_ID,
@@ -256,8 +275,8 @@ run_cckp_grid <- function() {
 
     if (!isTRUE(FORCE) && file.exists(out_path)) {
       log_msg("  -> SKIP (output exists)")
-      results[[i]] <- data.table(grid[i], status = "skip", out_path = out_path,
-                                 rows = NA_integer_, elapsed_s = 0, message = "")
+      res <- data.table(grid[i], status = "skip", out_path = out_path,
+                        rows = NA_integer_, elapsed_s = 0, message = "")
     } else {
     dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
     t0 <- Sys.time()
@@ -312,20 +331,45 @@ run_cckp_grid <- function() {
       log_msg(sprintf("  -> ok (%.1fs, %s rows)", res$elapsed_s[1],
                       format(res$rows[1], big.mark = ",")))
     }
-    results[[i]] <- res
     }  # end else (combo actually processed)
 
-    # Live per-location progress (Phase 1), written for skips too so a resume
-    # (most combos already converted) still shows current position. Overwritten
-    # each combo so the location's dir + status are visible during Phase 1.
-    done <- rbindlist(results[seq_len(i)], fill = TRUE)
-    write_run_progress(
-      LOCATION_ID, phase = "convert", done = i, total = nrow(grid),
-      tally = list(ok            = sum(done$status == "ok"),
-                   skip          = sum(done$status == "skip"),
-                   fail          = sum(done$status == "fail"),
-                   `missing-s3`  = sum(done$status == "missing-on-s3")),
-      last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
+    # Per-combo status file. Written by exactly this worker for exactly this
+    # combo, so parallel workers never contend. Progress below is derived from
+    # these rather than from an in-memory tally, which is what makes the numbers
+    # correct regardless of how the grid was divided among workers.
+    write_combo_status(LOCATION_ID, "convert", g$model, g$scenario, g$year,
+                       status = res$status[1], elapsed_s = res$elapsed_s[1],
+                       message = as.character(res$message[1]))
+    refresh_run_progress(LOCATION_ID, "convert", total = nrow(grid),
+                         last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
+    res
+  }
+
+  results <- if (n_cores > 1L) {
+    parallel::mclapply(seq_len(nrow(grid)), run_combo,
+                       mc.cores = n_cores, mc.preschedule = FALSE)
+  } else {
+    lapply(seq_len(nrow(grid)), run_combo)
+  }
+
+  # mclapply reports a worker that died (OOM kill, segfault) as a try-error
+  # rather than raising, so an unchecked result list would silently drop those
+  # combos. Convert them to explicit failures.
+  bad <- vapply(results, function(r) inherits(r, "try-error") || !is.data.frame(r),
+                logical(1))
+  if (any(bad)) {
+    log_msg("WARN ", sum(bad), " combo(s) died in a worker (likely OOM); ",
+            "recording as fail. Reduce --n_cores if this repeats.")
+    for (i in which(bad)) {
+      g <- grid[i]
+      msg <- paste("worker died:", trimws(paste(as.character(results[[i]]),
+                                                collapse = " ")))
+      results[[i]] <- data.table(grid[i], status = "fail",
+                                 out_path = NA_character_, rows = NA_integer_,
+                                 elapsed_s = NA_real_, message = msg)
+      write_combo_status(LOCATION_ID, "convert", g$model, g$scenario, g$year,
+                         status = "fail", message = msg)
+    }
   }
 
   # Completeness assertion. The grid loop must record an outcome for every
@@ -340,6 +384,7 @@ run_cckp_grid <- function() {
          " combos. This is a bug in run_cckp_grid(), not a data problem.")
   }
 
+  refresh_run_progress(LOCATION_ID, "convert", total = nrow(grid))
   manifest <- rbindlist(results, fill = TRUE)
   manifest[, run_ts := format(Sys.time(), "%Y-%m-%dT%H:%M:%S")]
   fwrite(manifest, MANIFEST, append = file.exists(MANIFEST))

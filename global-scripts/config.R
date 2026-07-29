@@ -366,7 +366,31 @@ if (requireNamespace("data.table", quietly = TRUE)) {
 # each location its own intermediate dir. Recomputed here so it picks up
 # --location_id from parse_args. (Location-INDEPENDENT ERF curves live in the
 # shared, read-only data/erf/cache, not here -- see 01_load_erf.R.)
+#
+# PIPELINE_RUN_TAG narrows that scope one level further, from per-location to
+# per-invocation. Per-location is only sufficient while a location runs its
+# combos one at a time. Running several (model, scenario, year) combos of the
+# SAME location concurrently would race on both this scratch dir and on the
+# RESULTS_DIR staging files below, because neither carries the combo in its
+# path. util_run_cckp_burden.R sets the tag to the combo id for exactly that
+# reason. Empty tag (the default) reproduces the previous single-combo layout
+# byte for byte, so single-location and validation runs are unaffected.
+PIPELINE_RUN_TAG <- Sys.getenv("PIPELINE_RUN_TAG", "")
 INTERMEDIATE_DIR <- file.path(OUTPUT_DIR, "intermediate", as.character(LOCATION_ID))
+if (nzchar(PIPELINE_RUN_TAG)) {
+  INTERMEDIATE_DIR <- file.path(INTERMEDIATE_DIR, PIPELINE_RUN_TAG)
+}
+
+# RESULTS_ROOT is the canonical, never-redirected results tree. The permanent
+# per-combo output trees (results/cckp/...) and the run markers live here, so
+# they stay in one place no matter where an individual invocation stages its
+# working files. RESULTS_DIR is the staging target that scripts 05-08 write
+# their *_{LOCATION_ID}.rds into, and it moves under the run tag.
+RESULTS_ROOT <- RESULTS_DIR
+if (nzchar(PIPELINE_RUN_TAG)) {
+  RESULTS_DIR <- file.path(RESULTS_ROOT, "_staging",
+                           as.character(LOCATION_ID), PIPELINE_RUN_TAG)
+}
 
 # =============================================================================
 # Safety guards
@@ -414,13 +438,20 @@ log_msg <- function(...) {
 # `root` selects the output tree the markers live in, so the burden phase
 # (results/cckp) and the Workflow B batch (results/workflow_b) keep separate
 # progress + sentinel files rather than clobbering each other.
-cckp_marker_root <- function() file.path(RESULTS_DIR, "cckp")
-wfb_marker_root  <- function() file.path(RESULTS_DIR, "workflow_b")
+# RESULTS_ROOT, not RESULTS_DIR: markers must stay in the canonical tree even
+# when an invocation stages its working files under a run tag.
+cckp_marker_root <- function() file.path(RESULTS_ROOT, "cckp")
+wfb_marker_root  <- function() file.path(RESULTS_ROOT, "workflow_b")
 run_marker_dir   <- function(loc, root = cckp_marker_root()) file.path(root, loc)
 
 # Overwrite the per-location progress file. `tally` is an optional named list of
 # extra counters (ok/skip/fail/...); `last` is a human label for the most recent
 # combo. Cheap enough to call every combo (one small file rewrite).
+#
+# Written via tmp + rename so a reader never catches a half-written file and so
+# two workers refreshing it concurrently cannot interleave lines. Both compute
+# the same tally from the same combo-status files, so whichever lands last is
+# still correct.
 write_run_progress <- function(loc, phase, done, total, tally = list(), last = "",
                                root = cckp_marker_root()) {
   d <- run_marker_dir(loc, root)
@@ -434,7 +465,101 @@ write_run_progress <- function(loc, phase, done, total, tally = list(), last = "
   lines <- c(lines,
              paste0("last_combo\t", last),
              paste0("updated\t",    format(Sys.time(), "%Y-%m-%dT%H:%M:%S")))
-  writeLines(lines, file.path(d, "_progress.tsv"))
+  atomic_write_lines(lines, file.path(d, "_progress.tsv"))
+}
+
+# =============================================================================
+# Per-combo status files
+#
+# One file per (phase, model, scenario, year). Exactly one worker ever writes a
+# given combo's file, because the grid is partitioned across workers, so there
+# is no lock and no contention: the previous design had every worker rewriting
+# one shared _progress.tsv from its own in-memory tally, which meant a parallel
+# run reported whichever worker wrote last rather than the true total.
+#
+# Progress and the terminal sentinel are DERIVED from these files rather than
+# tracked in memory, so they are correct no matter how the work was divided up,
+# and they survive a crash: a resumed run re-reads what actually completed.
+# =============================================================================
+
+# tmp + rename in the destination directory. rename(2) within a filesystem is
+# atomic, so a concurrent reader sees either the old file or the new one.
+atomic_write_lines <- function(lines, path) {
+  tmp <- paste0(path, ".tmp.", Sys.getpid())
+  writeLines(lines, tmp)
+  if (!file.rename(tmp, path)) {
+    unlink(tmp)
+    warning("Could not atomically write ", path)
+  }
+  invisible(path)
+}
+
+combo_status_dir <- function(loc, phase, root = cckp_marker_root()) {
+  file.path(run_marker_dir(loc, root), "status", phase)
+}
+
+# Combo id used as the status filename. Kept filesystem-safe and reversible:
+# model / scenario / year are separated by "__" because model names themselves
+# contain single dashes (e.g. access-cm2-r1i1p1f1).
+combo_id <- function(model, scenario, year) {
+  paste(model, scenario, year, sep = "__")
+}
+
+write_combo_status <- function(loc, phase, model, scenario, year, status,
+                               elapsed_s = NA_real_, message = "",
+                               root = cckp_marker_root()) {
+  d <- combo_status_dir(loc, phase, root)
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+  atomic_write_lines(
+    c(paste0("status\t",    status),
+      paste0("model\t",     model),
+      paste0("scenario\t",  scenario),
+      paste0("year\t",      year),
+      paste0("elapsed_s\t", if (is.na(elapsed_s)) "" else round(elapsed_s, 2)),
+      paste0("message\t",   gsub("[\r\n\t]+", " ", message)),
+      paste0("updated\t",   format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))),
+    file.path(d, paste0(combo_id(model, scenario, year), ".tsv")))
+}
+
+# Read every combo status for one phase into a data.table (0 rows if none yet).
+read_combo_statuses <- function(loc, phase, root = cckp_marker_root()) {
+  d <- combo_status_dir(loc, phase, root)
+  f <- list.files(d, pattern = "\\.tsv$", full.names = TRUE)
+  empty <- data.table::data.table(
+    model = character(), scenario = character(), year = integer(),
+    status = character(), elapsed_s = numeric(), message = character())
+  if (length(f) == 0) return(empty)
+  rows <- lapply(f, function(p) {
+    kv <- tryCatch(strsplit(readLines(p, warn = FALSE), "\t", fixed = TRUE),
+                   error = function(e) NULL)
+    if (is.null(kv)) return(NULL)
+    kv <- kv[lengths(kv) >= 1]
+    v <- setNames(vapply(kv, function(x) if (length(x) > 1) x[2] else "", ""),
+                  vapply(kv, `[`, "", 1))
+    data.table::data.table(
+      model     = unname(v["model"]),
+      scenario  = unname(v["scenario"]),
+      year      = suppressWarnings(as.integer(v["year"])),
+      status    = unname(v["status"]),
+      elapsed_s = suppressWarnings(as.numeric(v["elapsed_s"])),
+      message   = unname(v["message"]))
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (length(rows) == 0) return(empty)
+  data.table::rbindlist(rows, fill = TRUE)
+}
+
+# Refresh _progress.tsv from the combo-status files on disk. `total` is the size
+# of the intended grid, passed in because the status dir only knows what has
+# finished, not what was asked for.
+refresh_run_progress <- function(loc, phase, total, last = "",
+                                 root = cckp_marker_root()) {
+  st <- read_combo_statuses(loc, phase, root)
+  tally <- as.list(table(factor(
+    st$status, levels = c("ok", "skip", "fail", "missing-on-s3", "missing-temp"))))
+  write_run_progress(loc, phase = phase, done = nrow(st), total = total,
+                     tally = tally, last = last, root = root)
+  invisible(st)
 }
 
 # Clear any stale terminal sentinels (call at the start of a (re)run so a prior
@@ -450,11 +575,39 @@ write_done_sentinel <- function(loc, complete, summary = "", root = cckp_marker_
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
   clear_done_sentinel(loc, root)
   f <- file.path(d, if (isTRUE(complete)) "_DONE" else "_INCOMPLETE")
-  writeLines(c(paste0("location_id\t", loc),
-               paste0("status\t",   if (isTRUE(complete)) "DONE" else "INCOMPLETE"),
-               paste0("summary\t",  summary),
-               paste0("finished\t", format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))),
-             f)
+  atomic_write_lines(c(paste0("location_id\t", loc),
+                       paste0("status\t",   if (isTRUE(complete)) "DONE" else "INCOMPLETE"),
+                       paste0("summary\t",  summary),
+                       paste0("finished\t", format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))),
+                     f)
+}
+
+# Drop a phase's combo-status files at the start of a run. Without this, a run
+# over a smaller grid than last time (say 14 models instead of 29) would still
+# see the old grid's status files and report a done count above its own total.
+# Nothing is lost: the output RDS files, not these markers, are what the skip
+# logic consults, so a cleared status dir refills as the run proceeds.
+clear_combo_statuses <- function(loc, phase, root = cckp_marker_root()) {
+  unlink(combo_status_dir(loc, phase, root), recursive = TRUE)
+}
+
+# Terminal sentinel derived from the combo-status files rather than from an
+# in-memory tally. `total` is the intended grid size. Complete means every
+# intended combo has a status and none of them failed. A missing model x
+# scenario on the mirror (a real CCKP gap) is not a failure: it is recorded and
+# reported, but it does not hold a location back from DONE, because no rerun
+# would ever fill it.
+finalize_run_sentinel <- function(loc, phase, total, root = cckp_marker_root()) {
+  st <- read_combo_statuses(loc, phase, root)
+  n <- function(s) sum(st$status == s, na.rm = TRUE)
+  n_fail <- n("fail")
+  missing_lbl <- if (phase == "convert") "missing-on-s3" else "missing-temp"
+  n_missing <- n(missing_lbl)
+  complete <- nrow(st) >= total && n_fail == 0
+  summary <- sprintf("%d ok, %d skip, %d fail, %d %s of %d combos",
+                     n("ok"), n("skip"), n_fail, n_missing, missing_lbl, total)
+  write_done_sentinel(loc, complete = complete, summary = summary, root = root)
+  invisible(list(complete = complete, summary = summary, statuses = st))
 }
 
 log_msg("Config loaded for location_id =", LOCATION_ID,

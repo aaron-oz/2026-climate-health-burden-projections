@@ -92,3 +92,7 @@ data/shapefiles/test-gbd-*
 data/shapefiles/*.xml
 data/shapefiles/*.CPG
 data/mortality/citation.txt
+
+# machine-specific run settings (see run_env.sh.example)
+run_env.sh
+output/logs/
