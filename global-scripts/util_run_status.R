@@ -90,8 +90,32 @@ cat("\n=== Run status (", root, ") ===\n\n", sep = "")
 print(rows[, .(loc, phase, done, total, pct, ok, skip, fail, gap,
                median_s, state)], nrows = 500)
 
+# System memory. The run's steady-state footprint is roughly the number of
+# concurrent locations times the per-combo burden peak (3.7 to 4.7 GB measured),
+# which on a large fan-out is the binding constraint. Surfacing it here means
+# the one number worth watching is in the same place as progress.
+mem <- tryCatch({
+  mi <- readLines("/proc/meminfo", warn = FALSE)
+  gv <- function(k) {
+    v <- grep(paste0("^", k, ":"), mi, value = TRUE)
+    if (!length(v)) return(NA_real_)
+    as.numeric(gsub("[^0-9]", "", v)) / 1024 / 1024   # kB -> GiB
+  }
+  list(total = gv("MemTotal"), avail = gv("MemAvailable"),
+       swap_total = gv("SwapTotal"), swap_free = gv("SwapFree"))
+}, error = function(e) NULL)
+
 burden <- rows[phase == "burden"]
 cat("\n--- Summary ---\n")
+if (!is.null(mem) && !is.na(mem$total)) {
+  used <- mem$total - mem$avail
+  swap_used <- if (is.na(mem$swap_total)) 0 else mem$swap_total - mem$swap_free
+  cat(sprintf("memory                    : %.0f of %.0f GB used, %.0f GB available%s\n",
+              used, mem$total, mem$avail,
+              if (swap_used > 1) sprintf("  [SWAPPING: %.0f GB swap in use]", swap_used) else ""))
+  if (mem$avail < 0.08 * mem$total)
+    cat("  WARNING: under 8% of memory free. Lower JOBS in run_env.sh and relaunch.\n")
+}
 cat(sprintf("locations with any status : %d\n", uniqueN(rows$loc)))
 cat(sprintf("locations DONE            : %d\n", uniqueN(rows[state == "DONE"]$loc)))
 cat(sprintf("locations INCOMPLETE      : %d\n", uniqueN(rows[state == "INCOMPLETE"]$loc)))

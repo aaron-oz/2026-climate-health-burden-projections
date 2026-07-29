@@ -76,7 +76,8 @@ export CCKP_LOCAL_ROOT=/data
 
 # --- Scale -------------------------------------------------------------------
 
-# How many locations to run at once. This is the dominant memory multiplier.
+# How many locations to run at once. This is the dominant memory multiplier and
+# the setting most worth getting right.
 #
 # Steady state is roughly JOBS x the per-combo burden peak, because locations
 # spend most of their time in the burden step. Measured peaks, full production
@@ -85,10 +86,19 @@ export CCKP_LOCAL_ROOT=/data
 #     Colombia   3.7 GB per combo
 #     US         4.7 GB per combo
 #
-# So JOBS=100 implies on the order of 400 GB resident at steady state. Check
-# that against this machine's RAM before raising it, and lower it if the run
-# starts swapping.
-export JOBS=100
+# On this machine (512 GB):
+#
+#     JOBS=125   up to ~590 GB   over capacity, will swap
+#     JOBS=100   up to ~470 GB   92% of RAM, little left for page cache
+#     JOBS=80    up to ~375 GB   ~135 GB spare
+#
+# 80 is the default because the spare is not wasted: every combo reads a
+# ~770 MB NetCDF, and page cache is what keeps those reads off the disk. A run
+# that swaps is slower than one with fewer jobs.
+#
+# Watch the "memory" line in ./status.sh and adjust. Raise this before raising
+# BURDEN_WORKERS if you want more throughput.
+export JOBS=80
 
 # CEILING on workers a single location may use for the CONVERT step. It is not
 # a number applied to every location: the count is sized from how large the

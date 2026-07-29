@@ -233,12 +233,25 @@ Each extra burden worker therefore costs about as much memory as another whole
 job. `BURDEN_WORKERS=2` turns it on if you want one location to finish sooner,
 but for general throughput raise `JOBS` instead.
 
-**Worth checking early:** steady-state memory is roughly `JOBS` times that
-per-combo peak, because locations spend most of their time in the burden step.
-At `JOBS=100` that is on the order of 400 GB resident. If this machine has less
-headroom than that, lower `JOBS`. Each combo log reports its own figure as
-`Peak RSS (VmHWM)`, so the real number for this hardware is readable a few
-minutes into the run.
+**`JOBS` is the setting that matters most here.** Steady-state memory is
+roughly `JOBS` times the per-combo burden peak, because locations spend most of
+their time in the burden step. On this machine's 512 GB:
+
+| JOBS | worst-case resident | |
+|---|---|---|
+| 125 | ~590 GB | over capacity, will swap |
+| 100 | ~470 GB | 92% of RAM, little left for page cache |
+| 80 | ~375 GB | ~135 GB spare, the default |
+
+The spare memory is not wasted. Every combo reads a roughly 770 MB NetCDF, and
+page cache is what keeps those reads off the disk; a run that swaps is far
+slower than one with fewer jobs. This is worth knowing because the previous
+`-j 125` was at or over the edge, and time lost to swapping would have looked
+like slow locations rather than a memory problem.
+
+`./status.sh` now prints a memory line every time you run it, and warns if
+free memory drops under 8%. If it warns, lower `JOBS` in `run_env.sh` and
+relaunch; nothing is lost.
 
 Thread counts are pinned to one everywhere, and every worker inherits that, so
 workers add processes but never multiply threads. You do not set this and it is

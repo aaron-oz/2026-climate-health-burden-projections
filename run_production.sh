@@ -13,7 +13,7 @@
 # to a running job. Watch it with ./status.sh
 #
 # Settings, override by exporting before running or by editing run_env.sh:
-#   JOBS       concurrent locations                  (default 100)
+#   JOBS       concurrent locations                  (default 80)
 #   SCENARIOS  comma separated                       (default all four)
 #   YEARS      range                                 (default 2022-2050)
 #   LOCATIONS  space/comma separated loc ids to run, instead of all of them.
@@ -30,7 +30,7 @@ export PROJECT_ROOT
 # Machine-specific settings live here, outside git.
 [ -f ./run_env.sh ] && . ./run_env.sh
 
-JOBS="${JOBS:-100}"
+JOBS="${JOBS:-80}"
 export MAX_WORKERS_PER_LOCATION="${MAX_WORKERS_PER_LOCATION:-4}"
 export BURDEN_WORKERS="${BURDEN_WORKERS:-1}"
 SCENARIOS="${SCENARIOS:-ssp245,ssp370,ssp585,ssp126}"
