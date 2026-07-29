@@ -200,7 +200,7 @@ convert_cckp <- function(temp_nc_path,
     pop_grid <- pop_grid[, , 1]
   }
 
-  # --- Build long pixel-day data.table ---
+  # --- Pixel grid over the bbox ---
   # Pixel-id encoding: global lat_idx * CCKP_N_LON + lon_idx so it's stable
   # across model files / years without depending on the bbox subset.
   lon_sub <- lon_all[lon_keep]
@@ -208,40 +208,41 @@ convert_cckp <- function(temp_nc_path,
   global_lon_idx <- lon_keep - 1L  # 0-based for arithmetic
   global_lat_idx <- lat_keep - 1L
 
-  # Long form: one row per (lon_sub, lat_sub, date)
   n_lon <- length(lon_sub); n_lat <- length(lat_sub); n_t <- length(tinfo$dates)
-  log_msg("Building long-form table: ", n_lon, " x ", n_lat, " x ", n_t,
-          " = ", format(as.numeric(n_lon) * n_lat * n_t, big.mark = ","), " rows")
 
-  dt <- data.table(
-    lon_idx = rep(rep(global_lon_idx, times = n_lat), times = n_t),
-    lat_idx = rep(rep(global_lat_idx, each  = n_lon), times = n_t),
-    lon     = rep(rep(lon_sub,        times = n_lat), times = n_t),
-    lat     = rep(rep(lat_sub,        each  = n_lon), times = n_t),
-    date    = rep(tinfo$dates, each = n_lon * n_lat),
-    daily_temp = as.numeric(tas)
-  )
-  pop_dt <- data.table(
+  # One row per bbox CELL (not per cell-day). This is the small table: the
+  # expensive one is built later, over kept cells only.
+  pix <- data.table(
+    lon_i   = rep(seq_len(n_lon), times = n_lat),
+    lat_i   = rep(seq_len(n_lat), each  = n_lon),
     lon_idx = rep(global_lon_idx, times = n_lat),
     lat_idx = rep(global_lat_idx, each  = n_lon),
+    lon     = rep(lon_sub,        times = n_lat),
+    lat     = rep(lat_sub,        each  = n_lon),
     pop     = as.numeric(pop_grid)
   )
-  dt <- merge(dt, pop_dt, by = c("lon_idx", "lat_idx"), all.x = TRUE)
+  pix[, pixel_id := lat_idx * CCKP_N_LON + lon_idx]
+  pix[pop >= CCKP_MISSING / 2, pop := NA_real_]
 
-  # Drop fill values + ocean
-  dt[daily_temp >= CCKP_MISSING / 2, daily_temp := NA_real_]
-  dt[pop        >= CCKP_MISSING / 2, pop        := NA_real_]
-  dt <- dt[!is.na(daily_temp)]
-  dt[is.na(pop), pop := 0]
-
-  # Pixel-id
-  dt[, pixel_id := lat_idx * CCKP_N_LON + lon_idx]
+  pix[is.na(pop), pop := 0]
 
   # --- Point-in-polygon for subloc_id ---
-  # If admin-1 features exist under this location, tag each unique pixel by
-  # which feature contains its centroid. Else fall back to LOCATION_ID.
-  unique_pixels <- unique(dt[, .(pixel_id, lon, lat)])
-  log_msg("Unique pixels in location bbox: ", nrow(unique_pixels))
+  # Done BEFORE the pixel-day table is built, not after.
+  #
+  # A location's bbox is mostly not the location. The US bbox spans 304,644
+  # cells of which 17,547 (5.8%) are inside the country, because the Aleutians
+  # straddle the dateline and Hawaii and Point Barrow stretch the latitudes.
+  # Building the table over the bbox and filtering afterwards therefore
+  # materialised 111 million rows to keep 6.4 million, roughly 4.4 GB of
+  # transient allocation for a 256 MB result. Tagging first and expanding only
+  # the cells that survive gives the same output from a 17x smaller table.
+  #
+  # Narrowing the NetCDF read itself would not help: the CCKP files are chunked
+  # (1, 721, 1440), one whole global field per day, so any spatial window still
+  # decompresses the entire globe for every day touched. The saving here is
+  # memory, not I/O.
+  unique_pixels <- pix
+  log_msg("Pixels in location bbox: ", nrow(unique_pixels))
 
   # Subnational tagging is gated on `subnational`. When FALSE (national mode),
   # both subnational branches are skipped and every pixel inside the national
@@ -287,15 +288,27 @@ convert_cckp <- function(temp_nc_path,
     if (sum(inside) == 0 && nrow(unique_pixels) > 0) {
       ctr_lon <- mean(c(bbox["xmin"], bbox["xmax"]))
       ctr_lat <- mean(c(bbox["ymin"], bbox["ymax"]))
-      nearest_idx <- which.min((unique_pixels$lon - ctr_lon)^2 +
-                               (unique_pixels$lat - ctr_lat)^2)
+      # Restrict candidates to cells that actually carry data. The previous
+      # code derived its candidate set from the already-NA-filtered table, so
+      # matching that matters for picking the same pixel. Only micro-states
+      # reach this branch and their bboxes are a handful of cells, so the extra
+      # pass over the array is cheap.
+      has_data <- if (length(dim(tas)) >= 3L) {
+        apply(tas < CCKP_MISSING / 2, c(1L, 2L),
+              function(z) any(z, na.rm = TRUE))
+      } else {
+        tas < CCKP_MISSING / 2
+      }
+      d2 <- (unique_pixels$lon - ctr_lon)^2 + (unique_pixels$lat - ctr_lat)^2
+      d2[!as.logical(has_data)] <- Inf
+      nearest_idx <- which.min(d2)
       inside[nearest_idx] <- TRUE
       fb_pixel <- unique_pixels$pixel_id[nearest_idx]
       # Guarantee a positive pop weight for the lone pixel (its grid pop may be 0
       # over ocean); the magnitude is irrelevant since mortality supplies the
       # counts and this is the only pixel, so its within-location weight is 1.
-      if (all(dt[pixel_id == fb_pixel, pop] == 0, na.rm = TRUE)) {
-        dt[pixel_id == fb_pixel, pop := 1]
+      if (all(unique_pixels[pixel_id == fb_pixel, pop] == 0, na.rm = TRUE)) {
+        unique_pixels[pixel_id == fb_pixel, pop := 1]
       }
       log_msg("  0 pixels inside national polygon (sub-grid geography, e.g. ",
               "micro-state); snapped to nearest bbox pixel ", fb_pixel,
@@ -310,17 +323,48 @@ convert_cckp <- function(temp_nc_path,
 
   # Drop pixels with no subloc match (outside the country polygon — bbox catches
   # some ocean / neighbor-country cells).
-  unique_pixels <- unique_pixels[!is.na(subloc_id)]
-  dt <- merge(dt[, .(pixel_id, date, daily_temp, pop)],
-              unique_pixels[, .(pixel_id, subloc_id)],
-              by = "pixel_id")
+  keep <- unique_pixels[!is.na(subloc_id)]
+  setorder(keep, pixel_id)
+  n_keep <- nrow(keep)
+  log_msg("Expanding ", n_keep, " of ", nrow(unique_pixels), " bbox cells x ",
+          n_t, " days = ", format(as.numeric(n_keep) * n_t, big.mark = ","),
+          " rows (bbox-wide would have been ",
+          format(as.numeric(n_lon) * n_lat * n_t, big.mark = ","), ")")
+
+  if (n_keep == 0L) {
+    dt <- data.table(pixel_id = integer(), date = as.Date(character()),
+                     daily_temp = numeric(), pop = numeric(),
+                     subloc_id = character())
+  } else {
+    # Pull just the kept cells out of the 3-D array by linear index, ordered
+    # pixel-major then date. That reproduces the old merge()'s ordering (sorted
+    # by pixel_id, dates ascending within a pixel) without ever materialising
+    # the bbox-wide table. Indices are doubles so the arithmetic cannot overflow
+    # integer range on a large bbox.
+    slice   <- as.double(n_lon) * n_lat
+    base    <- as.double(keep$lon_i) + (as.double(keep$lat_i) - 1) * n_lon
+    offsets <- (seq_len(n_t) - 1) * slice
+    lin     <- rep(base, each = n_t) + rep(offsets, times = n_keep)
+
+    dt <- data.table(
+      pixel_id   = rep(keep$pixel_id,  each = n_t),
+      date       = rep(tinfo$dates,    times = n_keep),
+      daily_temp = as.numeric(tas[lin]),
+      pop        = rep(keep$pop,       each = n_t),
+      subloc_id  = rep(keep$subloc_id, each = n_t))
+
+    # Drop fill values + ocean. Population fill was already handled per cell.
+    dt[daily_temp >= CCKP_MISSING / 2, daily_temp := NA_real_]
+    dt <- dt[!is.na(daily_temp)]
+  }
+  setkeyv(dt, "pixel_id")   # merge() used to leave the result keyed this way
 
   log_msg("Final pixel-day rows: ", format(nrow(dt), big.mark = ","))
 
   if (is.null(output_path)) {
     output_path <- file.path(TEMP_DIR, paste0(location_id, "_daily_temp.rds"))
   }
-  saveRDS(dt, output_path)
+  save_rds_atomic(dt, output_path)
   log_msg("Saved -> ", output_path)
   invisible(dt)
 }
