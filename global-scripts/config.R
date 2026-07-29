@@ -32,23 +32,26 @@ PROJECT_ROOT <- Sys.getenv(
   unset = if (exists("SCRIPTS_DIR")) dirname(normalizePath(SCRIPTS_DIR))
           else normalizePath(file.path(getwd(), "..")))
 
-# --- renv activation, independent of the working directory -------------------
-# renv is normally activated by .Rprofile, but R only reads .Rprofile from the
-# working directory at startup. Launching from anywhere other than the project
-# root therefore skips activation silently and .libPaths() falls back to the
-# user/system library, where the pinned packages may be absent or a different
-# version. That is why runs only worked when launched from one particular
-# folder even though path resolution above is already cwd-independent.
+# --- renv activation (OPT-IN) ------------------------------------------------
+# By default the pipeline uses the machine's own R library: the production
+# machine manages R packages with Nix, and renv's project library would mask
+# those packages. renv.lock stays in the repo as the record of the versions
+# the pipeline was validated against.
 #
-# Activate explicitly, keyed on PROJECT_ROOT rather than getwd(). renv's
-# activate.R reads RENV_PROJECT and only falls back to getwd(), so setting it
-# first makes the activation target the right project from any launch dir.
-# Skipped when .Rprofile already activated this project's library. Must stay
-# ahead of every library() call in the pipeline.
+# Set RENV_ACTIVATE_PROJECT=TRUE (e.g. in run_env.sh) to use renv's pinned
+# project library instead; it needs a one-time renv::restore() from the repo
+# root. Activation is keyed on PROJECT_ROOT rather than getwd() because R only
+# reads .Rprofile from the startup directory, so cwd-based activation silently
+# skips when a script is launched from elsewhere. renv's activate.R reads
+# RENV_PROJECT and only falls back to getwd(), so setting it first targets the
+# right project from any launch dir. Skipped when .Rprofile already activated
+# this project's library. Must stay ahead of every library() call.
 local({
+  optin <- tolower(Sys.getenv("RENV_ACTIVATE_PROJECT", "FALSE")) %in%
+             c("true", "t", "1")
   activate <- file.path(PROJECT_ROOT, "renv", "activate.R")
   lib      <- file.path(PROJECT_ROOT, "renv", "library")
-  if (file.exists(activate) &&
+  if (optin && file.exists(activate) &&
       !any(startsWith(normalizePath(.libPaths(), mustWork = FALSE),
                       normalizePath(lib, mustWork = FALSE)))) {
     Sys.setenv(RENV_PROJECT = PROJECT_ROOT)

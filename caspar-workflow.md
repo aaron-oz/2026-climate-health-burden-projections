@@ -29,95 +29,55 @@ https://github.com/aaron-oz/2026-climate-health-burden-projections
 
 ## 3. Set up the R environment
 
-The repo ships an `renv` lockfile (`renv.lock`) pinning every R package
-version we validated against. R version: **4.5.2**. Main runtime
-dependencies: `data.table`, `ncdf4`, `sf`, `readxl`, `ggplot2`,
-`jsonlite`, `RColorBrewer`, plus all transitive deps (~40 packages
-total).
+R version: **4.5.2**. Main runtime dependencies: `data.table`, `ncdf4`,
+`sf`, `readxl`, `ggplot2`, `jsonlite`, `RColorBrewer`.
 
-When you start R in the project directory, `.Rprofile` automatically
-activates renv.
+**By default the pipeline uses your machine's own R library.** If you
+already manage R packages yourself (Nix included), make sure the
+packages above are installed and this step is done. The repo also ships
+an `renv` lockfile (`renv.lock`) recording the exact versions we
+validated against (~40 packages incl. transitive deps); by default it
+serves only as that reference list. The preflight checks that
+`run_production.sh` runs (or `Rscript global-scripts/util_verify_install.R`
+directly) tell you if your loaded `data.table` differs from the lockfile
+pin; a version mismatch is allowed, but worth knowing about.
 
-R-package-level reproducibility is handled by renv. **System-level
-libraries** (GDAL, GEOS, PROJ, libudunits2, libnetcdf) that `sf` and
-`ncdf4` depend on are NOT something renv can pin — those need to be
-present on the OS. Three options for handling that, in increasing order
-of effort:
+`sf` and `ncdf4` need system-level libraries (GDAL, GEOS, PROJ,
+libudunits2, libnetcdf) regardless of how the R packages are installed;
+any package manager's standard `sf`/`ncdf4` builds bring these along.
 
-### Option A — Try `renv::restore()` and see what happens
+### Opting in to renv (optional)
 
-If your workstation already has compatible versions of `libgdal`,
-`libgeos`, `libproj`, `libudunits2`, and `libnetcdf` (likely, given you
-run CMIP6 work), the restore just works. Most R-on-Linux setups that
-have ever touched climate or geospatial data already have these:
+If you want R to use exactly the pinned versions from `renv.lock`
+instead of your own library, opt in with an environment variable and a
+one-time restore from the repo root:
 
 ```bash
-# From inside the project directory, first time only:
+export RENV_ACTIVATE_PROJECT=TRUE   # in run_env.sh for production runs,
+                                    # and in your shell for ad-hoc runs
 Rscript -e 'install.packages("renv", repos="https://cloud.r-project.org")'
 Rscript -e 'renv::restore(prompt = FALSE)'
 ```
 
-The two packages that would fail loudly if system libs are missing are
-`sf` and `ncdf4`. If those install cleanly, everything else will too.
+Without the variable set, renv never activates (neither `.Rprofile` nor
+`config.R` will touch your library paths).
 
-**Effort: zero.** Just try it.
+The restore compiles packages from source, so the system libraries above
+must be visible to the compiler. On apt-based systems that's
+`sudo apt install libgdal-dev libgeos-dev libproj-dev libudunits2-dev
+libnetcdf-dev`; on dnf-based systems the `-devel` equivalents; on Nix
+you'd need a shell with the toolchain and those libs, at which point
+letting Nix manage the R packages directly (the default path above) is
+simpler.
 
-### Option B — Install the system libs via OS package manager, then restore
+### Container option
 
-If `sf` or `ncdf4` fail during option A, install the missing system
-libraries first. One command per OS:
-
-**Ubuntu / Debian:**
-```bash
-sudo apt install libgdal-dev libgeos-dev libproj-dev \
-                 libudunits2-dev libnetcdf-dev
-```
-
-**RHEL / Rocky / Alma / Fedora:**
-```bash
-sudo dnf install gdal-devel geos-devel proj-devel \
-                 udunits2-devel netcdf-devel
-```
-
-**Arch:**
-```bash
-sudo pacman -S gdal geos proj udunits netcdf
-```
-
-Then re-run `renv::restore(prompt = FALSE)`. The R-package install will
-succeed against the freshly-installed system libs.
-
-**Effort: ~5 minutes** if you have sudo on the workstation. This is the
-standard approach for R + geospatial work on Linux and what we'd
-recommend by default if A doesn't immediately work.
-
-### Option C — Singularity / Apptainer container
-
-Maximum reproducibility: a container recipe pins the OS, R version, all
-R packages, and all system libraries. You build the image once (~30 min)
-and run the pipeline inside it. The image is portable; if you ever move
-to a different machine, the container goes with it.
-
-We haven't built the container recipe yet. Worth it if (1) you want
-exact reproducibility for the deliverable, (2) the workstation might be
-reimaged or shared, or (3) the pipeline gets handed to a third party who
-may not have the system libs. Not necessary for a single-shot analysis
-run on a known machine.
-
-**Effort: ~half a day** of build + smoke test on your end after we ship
-a `Singularity.def`. Ping us if you want this.
-
-### Recommendation
-
-**Try A first; fall back to B if it errors.** Container (C) only if
-there's a specific reason to want full OS-level reproducibility.
-
-### Bypassing renv
-
-If you'd rather use system-level R packages directly instead of renv's
-isolated library, delete `.Rprofile` from your clone and the
-auto-activation won't trigger. Then ensure your system R has compatible
-package versions (the lockfile lists them).
+Maximum reproducibility: a Singularity / Apptainer recipe pinning the
+OS, R version, all R packages, and all system libraries. You build the
+image once (~30 min) and run the pipeline inside it. We haven't built
+the recipe yet; ping us if you want this (~half a day of build + smoke
+test on your end after we ship a `Singularity.def`). Not necessary for
+a single-shot analysis run on a known machine.
 
 ## 3.5 Install the input-data bundle
 

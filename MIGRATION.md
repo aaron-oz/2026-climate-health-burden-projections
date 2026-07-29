@@ -117,8 +117,8 @@ works from anywhere:
 `./run_production.sh` prints a block of PASS lines before it launches anything:
 
 ```
-[PASS] renv library is active
-[PASS] pinned packages load                             data.table 1.18.4
+[PASS] R package library matches renv setting           system library (renv opt-in not set)
+[PASS] required packages load                           data.table 1.18.4
 [PASS] runs from any working directory
 [PASS] shapefile resolves and covers all locations      204 level-3 | 6/6 micro-nations
 [PASS] CCKP local mirror is readable                    /data (29 model-scenario dirs)
@@ -289,9 +289,15 @@ larger multiplier, and only then `MAX_WORKERS_PER_LOCATION`.
    rather than converted. If most of a location's combos came back as gaps for
    no obvious reason, this was why.
 
-3. **Runs now work from any directory.** Previously renv only activated when R
-   started in the project root, so launching elsewhere silently used different
-   package versions, or none.
+3. **The pipeline now uses your machine's own R library by default, and runs
+   work from any directory.** renv (the R package pinning tool activated by
+   `.Rprofile`) is now opt-in via `RENV_ACTIVATE_PROJECT=TRUE`; without it,
+   your Nix-managed packages are used as-is and no restore is needed. The
+   launch directory no longer matters either: previously renv activated only
+   when R started in the project root, so launches from elsewhere silently
+   used different package versions, or none. `renv.lock` remains in the repo
+   as the record of the package versions we validated against, and the
+   preflight checks report if your `data.table` version differs from it.
 
 4. **Large locations are much cheaper.** The convert step used to build a table
    over the whole bounding box and throw most of it away. Only 5.8% of the US
