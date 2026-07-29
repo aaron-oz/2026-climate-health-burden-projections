@@ -123,6 +123,25 @@ One row per location per phase.
 4. **Progress is tracked per combo**, so the numbers in `./status.sh` are
    correct no matter how the work was split, and they survive a restart.
 
+## Finishing one scenario before starting the others
+
+```bash
+SCENARIOS=ssp245 ./run_production.sh
+```
+
+or set `SCENARIOS=ssp245` in `run_env.sh`. Drop the setting later and re-run to
+pick up the remaining three; everything ssp245 already produced is skipped.
+
+Use the full model list. The per-scenario filtering you had to do before is no
+longer needed, and leaving it in place would silently omit models.
+
+One thing to expect: `./status.sh` reflects the scope of the most recent
+launch, not everything ever computed. After an ssp245-only run it shows the
+ssp245 grid. When you later run all four, the ssp245 combos reappear as `skip`
+and the totals cover the full grid again. Nothing was lost in between; the
+outputs on disk are what count, and the status view is derived from the run you
+last asked for.
+
 ## Running only some locations
 
 ```bash
@@ -130,6 +149,28 @@ LOCATIONS="62 102" ./run_production.sh
 ```
 
 Useful for retrying a handful without walking the whole list.
+
+## _INCOMPLETE does not block anything
+
+`_DONE` and `_INCOMPLETE` are status only. Nothing reads them to decide what to
+run, so there is never a need to delete one by hand. A location marked
+`_INCOMPLETE` is retried in full on the next launch exactly like any other, and
+the marker is rewritten from what actually finished.
+
+What a location does skip is any combo whose **output file already exists**.
+That is the only thing that governs resumption, and it is per combo, not per
+location or per model.
+
+So if a location seemed not to start on a restart, the marker was not the
+cause. Two real causes existed, both now fixed:
+
+- The convert phase stopped at the first model and scenario missing from the
+  mirror and still exited 0, abandoning every combo after it (item 1 below).
+- An unset `CCKP_POP_LOCAL_ROOT` was being passed down as the literal string
+  `TRUE`, so the population file was looked for under a directory named
+  `TRUE/`. Any combo whose population file was not already cached was recorded
+  as a gap rather than converted. If most of a location's combos came back as
+  gaps for no obvious reason, this was why.
 
 ## If the machine runs short of memory
 

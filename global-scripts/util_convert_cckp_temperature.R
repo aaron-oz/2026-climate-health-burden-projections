@@ -364,7 +364,7 @@ convert_cckp <- function(temp_nc_path,
   if (is.null(output_path)) {
     output_path <- file.path(TEMP_DIR, paste0(location_id, "_daily_temp.rds"))
   }
-  saveRDS(dt, output_path)
+  save_rds_atomic(dt, output_path)
   log_msg("Saved -> ", output_path)
   invisible(dt)
 }

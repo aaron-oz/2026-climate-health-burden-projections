@@ -1,19 +1,119 @@
-# Copy to run_env.sh and edit. run_env.sh is machine-specific and gitignored,
-# so it survives a git pull and never causes a merge conflict.
+# =============================================================================
+# run_env.sh — machine-specific settings for this checkout
+#
+# Copy to run_env.sh and edit. run_env.sh is gitignored, so it survives a
+# git pull and never causes a merge conflict. run_production.sh sources it.
+#
+#
+# HOW SETTINGS REACH THE CODE
+#
+# Three layers. Later ones win.
+#
+#   1. Script defaults   Every runner opens with a `defaults <- list(...)`
+#                        block. Those apply only when nothing else set the
+#                        value, because the loop under them reads
+#                        `if (!exists(k)) assign(k, ...)`.
+#
+#   2. Environment       Exported here. Only the settings config.R explicitly
+#                        reads with Sys.getenv() arrive this way, and they are
+#                        all listed below. Exporting some other name does
+#                        nothing at all.
+#
+#   3. Command line      --flags on an Rscript call. Highest priority, because
+#                        config.R's parse_args() runs after its Sys.getenv()
+#                        lines and overwrites them.
+#
+#
+# THE lower_case FLAG / UPPER_CASE VARIABLE CONVENTION
+#
+# You pass a flag in lower case and the R code reads it in UPPER case. They are
+# the same setting. parse_args() takes each --flag=value, upper-cases the name,
+# and assigns it as a global variable:
+#
+#     --n_cores=4                 the R code sees  N_CORES         = 4
+#     --location_id=62                             LOCATION_ID     = 62
+#     --cckp_local_root=/data                      CCKP_LOCAL_ROOT = "/data"
+#
+# So there is no separate list of accepted flags to memorise. Anything in a
+# runner's `defaults` block can be set from the command line by lower-casing
+# the name and prefixing --. That is the whole rule.
+#
+# Three details worth knowing:
+#
+#     --flag        no "=" at all, means TRUE
+#     --flag=       nothing after the "=", means the empty string, NOT TRUE
+#     --flag=3      becomes a number; TRUE / FALSE become logicals;
+#                   anything else stays a character string
+#
+#
+# WHEN TO EXPORT vs WHEN TO PASS A FLAG
+#
+# Export it HERE when it describes this machine and should apply to everything
+# you run on it: where the mirror lives, how many jobs the box can take. These
+# are read once, by config.R, at startup.
+#
+# Use a --flag when it describes one particular invocation: which location,
+# which years, whether to force a recompute. That is why util_run_global.R
+# forwards --location_id and friends to the scripts it calls rather than
+# exporting them: each child needs a different value.
+#
+# In practice you should not need to pass flags by hand. run_production.sh
+# builds them from the variables below.
+#
+# =============================================================================
+
+
+# --- Required ----------------------------------------------------------------
 
 # Where the local CCKP mirror lives. Must contain cmip6-daily-x0.25/ and
-# pop-x0.25/ laid out exactly as the public bucket does.
+# pop-x0.25/ laid out exactly as the public S3 bucket does.
 export CCKP_LOCAL_ROOT=/data
 
 # Only if the population files sit under a different root than temperature.
+# Leave this commented out when both live under CCKP_LOCAL_ROOT.
 # export CCKP_POP_LOCAL_ROOT=/data/pop
+
+
+# --- Scale -------------------------------------------------------------------
 
 # How many locations to run at once.
 export JOBS=100
 
-# Cap on workers given to any single location (default 4). Lower it to 2 or 1
-# if the machine runs short of memory during the run. Peak per combo after the
-# in-country cell selection is roughly 3 GB for the US and 4 GB for Russia,
-# against 20 GB and 14 GB before it, so 4 workers now costs less than one
-# worker used to.
+# Cap on workers given to any single location. Large locations (the US, Russia
+# and a few others) get several so they stop being the pacing item; small ones
+# always get one. Lower it to 2, or to 1 to switch the extra workers off, if
+# the machine runs short of memory. Peak per combo after the in-country cell
+# selection is roughly 3 GB for the US and 4 GB for Russia, against 20 GB and
+# 14 GB before it, so 4 workers now costs less than one worker used to.
 export MAX_WORKERS_PER_LOCATION=4
+
+
+# --- Scope (all optional; leave unset to run everything) ----------------------
+
+# Which scenarios, comma separated with no spaces. Default is all four:
+#   ssp245,ssp370,ssp585,ssp126
+# Set this to finish one scenario before starting the others.
+# export SCENARIOS=ssp245
+
+# Which years. Default 2022-2050.
+# export YEARS=2022-2050
+
+# Which locations, space or comma separated. Default is every location in
+# output/intermediate/ihme_loc_map.rds. Useful for retrying a handful.
+# export LOCATIONS="62 102"
+
+
+# --- Set for you; you should not need to touch these -------------------------
+#
+# CCKP_REQUIRE_LOCAL    run_production.sh forces this on, so a file missing
+#                       from the mirror is recorded as a gap instead of
+#                       quietly pulling gigabytes from the public bucket.
+#
+# OMP_NUM_THREADS       both pinned to 1. Each location is already its own
+# OPENBLAS_NUM_THREADS  process, so letting the maths libraries fan out too
+#                       oversubscribes the machine badly.
+#
+# DT_THREADS            data.table threads per process, default 1, same reason.
+#
+# PROJECT_ROOT          derived from the script's own location, so runs work
+#                       from any working directory.

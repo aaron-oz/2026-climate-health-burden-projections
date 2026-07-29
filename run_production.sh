@@ -63,6 +63,12 @@ if [ ! -f data/shapefiles/GBD2023_mapping_final_augmented.shp ]; then
   Rscript global-scripts/util_augment_shapefile.R 2>&1 | tail -5
 fi
 
+# A previous run killed mid-write can leave a truncated output file. It would
+# look finished to the skip check and never be recomputed, so clear any out
+# before launching. Cheap: only recently-modified files are checked.
+say ">>> Checking for half-written files from any interrupted run..."
+Rscript global-scripts/util_repair_outputs.R 2>&1 | tail -3
+
 if [ "${1:-}" != "--skip-verify" ]; then
   say ">>> Verifying this machine before launching..."
   say ""

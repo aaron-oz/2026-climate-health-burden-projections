@@ -147,7 +147,7 @@ run_one_combo <- function(loc, model, scen, year) {
         d <- readRDS(src)
         d$model <- model
         d$scenario <- scen
-        saveRDS(d, dst)
+        save_rds_atomic(d, dst)
         TRUE
       }, error = function(e) FALSE)
       if (!success) { ok <- FALSE; break }

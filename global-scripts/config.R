@@ -317,22 +317,35 @@ IHME_CAUSE_FILES <- c(
 parse_args <- function() {
   args <- commandArgs(trailingOnly = TRUE)
   for (arg in args) {
-    if (grepl("^--", arg)) {
-      parts <- strsplit(sub("^--", "", arg), "=", fixed = TRUE)[[1]]
-      key <- parts[1]
-      # A bare flag (--foo, no =) means TRUE; otherwise take the value after =.
-      if (length(parts) < 2 || is.na(parts[2])) {
-        val <- TRUE
-      } else {
-        val <- parts[2]
+    if (!grepl("^--", arg)) next
+    body <- sub("^--", "", arg)
+    eq <- regexpr("=", body, fixed = TRUE)
+    if (eq < 0L) {
+      # A bare flag (--foo, no "=") means TRUE.
+      key <- body
+      val <- TRUE
+    } else {
+      key <- substr(body, 1L, eq - 1L)
+      # substring, not strsplit: a value may legitimately contain "=" and
+      # strsplit("a=b=c", "=")[[1]][2] silently truncated it to "b".
+      val <- substring(body, eq + 1L)
+      # "--foo=" with nothing after the "=" is an EMPTY value, not TRUE. The
+      # old code split on "=", got a length-1 vector, and fell through to the
+      # bare-flag branch. That turned callers passing an unset optional path
+      # (util_run_global.R forwards --cckp_pop_local_root=$CCKP_POP_LOCAL_ROOT,
+      # normally empty) into the literal TRUE, so the population mirror path
+      # became "TRUE/pop-x0.25/..." and every combo whose population file was
+      # not already in the cache was recorded as a missing model x scenario
+      # rather than converted.
+      if (nzchar(val)) {
         # Try numeric conversion, fall back to character / logical
         val_num <- suppressWarnings(as.numeric(val))
         if (!is.na(val_num)) val <- val_num
         else if (val == "TRUE") val <- TRUE
         else if (val == "FALSE") val <- FALSE
       }
-      assign(toupper(key), val, envir = globalenv())
     }
+    assign(toupper(key), val, envir = globalenv())
   }
 }
 
@@ -485,6 +498,23 @@ write_run_progress <- function(loc, phase, done, total, tally = list(), last = "
 # tracked in memory, so they are correct no matter how the work was divided up,
 # and they survive a crash: a resumed run re-reads what actually completed.
 # =============================================================================
+
+# Atomic saveRDS. Combo outputs double as the resume marker: both runners skip a
+# combo when its output file exists, without opening it. A plain saveRDS that is
+# interrupted (Ctrl-C, OOM kill, node reboot) leaves a truncated file that still
+# satisfies file.exists(), so the combo is skipped for good and the damage only
+# surfaces later as an unreadable input. Writing to a temporary name and
+# renaming means an interrupted write leaves either the previous file or
+# nothing, and either is correct on resume.
+save_rds_atomic <- function(object, path, ...) {
+  tmp <- paste0(path, ".tmp.", Sys.getpid())
+  saveRDS(object, tmp, ...)
+  if (!file.rename(tmp, path)) {
+    unlink(tmp)
+    stop("Could not move temporary file into place at ", path)
+  }
+  invisible(path)
+}
 
 # tmp + rename in the destination directory. rename(2) within a filesystem is
 # atomic, so a concurrent reader sees either the old file or the new one.
