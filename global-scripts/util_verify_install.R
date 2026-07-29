@@ -11,7 +11,7 @@
 #
 # Checks:
 #   1  the R package library matches the RENV_ACTIVATE_PROJECT setting and the
-#      required packages load
+#      required packages load, and no tracked file is missing from the checkout
 #   2  the same is true when launched from a different working directory
 #   3  the shapefile resolves and contains the micro-nations
 #   4  the CCKP local mirror is configured and readable
@@ -93,6 +93,44 @@ check("required packages load", function() {
   note <- if (!is.na(pin) && !identical(have, pin))
     paste0(" (lockfile pins ", pin, ")") else ""
   ok_with(paste0("data.table ", have, note))
+})
+
+# --- 1b. tracked files the run depends on are present ------------------------
+# Caspar's 2026-07-29 preflight failed reading renv.lock, which is tracked in
+# git, so his working tree had a tracked file missing. Worth surfacing on its
+# own: if one tracked file can go missing so can a script or an input, and the
+# failure then appears somewhere far from the cause.
+#
+# But only files the run actually needs may block a launch. renv.lock,
+# .Rprofile and renv/ are records and switches for a mode that is off by
+# default: renv is opt-in because the production machine manages R packages with
+# Nix, and activating renv there masks the Nix packages behind an unrestored
+# project library (that is what broke Caspar's first attempt). Their absence is
+# therefore reportable but harmless, and failing on it would repeat the mistake
+# this check was written to catch: blocking a good machine over bookkeeping.
+check("tracked files the run needs are present", function() {
+  inside <- suppressWarnings(system2("git",
+    c("-C", shQuote(PROJECT_ROOT), "rev-parse", "--is-inside-work-tree"),
+    stdout = TRUE, stderr = FALSE))
+  if (!identical(trimws(inside[1]), "true"))
+    return(ok_with("SKIPPED: not a git checkout"))
+  gone <- suppressWarnings(system2("git",
+    c("-C", shQuote(PROJECT_ROOT), "ls-files", "--deleted"),
+    stdout = TRUE, stderr = FALSE))
+  gone <- gone[nzchar(gone)]
+  if (length(gone) == 0) return(ok_with("all tracked files present"))
+
+  # Needed to run: pipeline code, tracked inputs, the launcher scripts.
+  needed <- grepl("^(global-scripts/|data/|samuel-runner/)", gone) |
+            grepl("^[^/]+\\.sh$", gone)
+  optional <- gone[!needed]
+  if (any(needed))
+    return(no_with(sprintf("%d required file(s) missing, e.g. %s -- restore with: git checkout -- .",
+                           sum(needed), paste(utils::head(gone[needed], 3), collapse = ", "))))
+  # Only renv bookkeeping or docs are gone. Say so, but do not block: renv is
+  # opt-in and off by default on this machine.
+  ok_with(sprintf("%d non-essential file(s) missing (%s); harmless, restore with git checkout -- . if you want them",
+                  length(optional), paste(utils::head(optional, 3), collapse = ", ")))
 })
 
 # --- 2. works from another working directory ---------------------------------
