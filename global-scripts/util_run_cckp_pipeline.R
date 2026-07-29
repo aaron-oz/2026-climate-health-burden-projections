@@ -273,26 +273,32 @@ run_cckp_grid <- function() {
         # ensure_download returned NA on 404 / size-0 -- the combo isn't on
         # S3 (known gaps for some model x scenario pairs; see MODELS_ALL in
         # config.R). Record and move on rather than crashing the grid.
+        #
+        # This MUST be the value of the if/else, not a return(). A return()
+        # inside a tryCatch() expression exits run_cckp_grid() itself (the
+        # expression is a promise evaluated in the caller's frame), which
+        # silently abandoned every remaining combo at the first gap.
         log_msg("  -> MISSING-ON-S3 (skipping)")
-        return(data.table(grid[i], status = "missing-on-s3", out_path = out_path,
-                          rows = NA_integer_,
-                          message = if (is.na(temp_nc)) basename(temp_url)
-                                    else basename(pop_url)))
+        data.table(grid[i], status = "missing-on-s3", out_path = out_path,
+                   rows = NA_integer_,
+                   message = if (is.na(temp_nc)) basename(temp_url)
+                             else basename(pop_url))
+      } else {
+        dt <- convert_cckp(temp_nc_path = temp_nc,
+                           pop_nc_path  = pop_nc,
+                           location_id  = LOCATION_ID,
+                           shapefile_path = SHAPEFILE,
+                           shapefile_subloc_field = SHAPEFILE_SUBLOC_FIELD,
+                           output_path  = out_path,
+                           subnational  = SUBNATIONAL)
+        if (!KEEP_NETCDFS) {
+          try(file.remove(temp_nc), silent = TRUE)
+          # Pop NetCDFs are shared across years; only delete if not used
+          # elsewhere in this grid (cheap heuristic: keep them all in the cache).
+        }
+        data.table(grid[i], status = "ok", out_path = out_path,
+                   rows = nrow(dt), message = "")
       }
-      dt <- convert_cckp(temp_nc_path = temp_nc,
-                         pop_nc_path  = pop_nc,
-                         location_id  = LOCATION_ID,
-                         shapefile_path = SHAPEFILE,
-                         shapefile_subloc_field = SHAPEFILE_SUBLOC_FIELD,
-                         output_path  = out_path,
-                         subnational  = SUBNATIONAL)
-      if (!KEEP_NETCDFS) {
-        try(file.remove(temp_nc), silent = TRUE)
-        # Pop NetCDFs are shared across years; only delete if not used elsewhere
-        # in this grid (cheap heuristic: keep them all in the cache).
-      }
-      data.table(grid[i], status = "ok", out_path = out_path,
-                 rows = nrow(dt), message = "")
     }, error = function(e) {
       log_msg("  -> FAIL: ", conditionMessage(e))
       data.table(grid[i], status = "fail", out_path = out_path,
@@ -320,6 +326,18 @@ run_cckp_grid <- function() {
                    fail          = sum(done$status == "fail"),
                    `missing-s3`  = sum(done$status == "missing-on-s3")),
       last = sprintf("%s/%s/%d", g$model, g$scenario, g$year))
+  }
+
+  # Completeness assertion. The grid loop must record an outcome for every
+  # combo; anything less means it exited early. A silent early exit is what the
+  # tryCatch/return() bug above produced -- 65% of a full 4-scenario grid was
+  # abandoned at the first model x scenario gap while the script still exited 0,
+  # so util_run_global.R went on to the burden phase as if conversion had
+  # succeeded. Fail loudly instead of writing a short manifest.
+  n_recorded <- sum(!vapply(results, is.null, logical(1)))
+  if (n_recorded != nrow(grid)) {
+    stop("Grid loop exited early: recorded ", n_recorded, " of ", nrow(grid),
+         " combos. This is a bug in run_cckp_grid(), not a data problem.")
   }
 
   manifest <- rbindlist(results, fill = TRUE)
