@@ -75,12 +75,21 @@ check("required packages load", function() {
   # only: in system-library mode a different version is allowed, but the
   # operator should know about the drift.
   have <- as.character(packageVersion("data.table"))
-  lock <- readLines(file.path(PROJECT_ROOT, "renv.lock"), warn = FALSE)
-  i    <- grep('"Package": "data.table"', lock, fixed = TRUE)
-  pin  <- if (length(i) == 1) {
-    v <- grep('"Version"', lock[i + seq_len(5)], value = TRUE)[1]
-    sub('.*"Version": "([^"]+)".*', "\\1", v)
-  } else NA_character_
+  # The lockfile comparison is a courtesy, so it must never be able to fail the
+  # check. Reading it unguarded made a missing or unreadable renv.lock report
+  # "cannot open the connection" as a package failure, which is both wrong and
+  # alarming: it says the packages did not load when they loaded fine.
+  pin <- tryCatch({
+    f <- file.path(PROJECT_ROOT, "renv.lock")
+    if (!file.exists(f)) NA_character_ else {
+      lock <- readLines(f, warn = FALSE)
+      i <- grep('"Package": "data.table"', lock, fixed = TRUE)
+      if (length(i) == 1) {
+        v <- grep('"Version"', lock[i + seq_len(5)], value = TRUE)[1]
+        sub('.*"Version": "([^"]+)".*', "\\1", v)
+      } else NA_character_
+    }
+  }, error = function(e) NA_character_, warning = function(w) NA_character_)
   note <- if (!is.na(pin) && !identical(have, pin))
     paste0(" (lockfile pins ", pin, ")") else ""
   ok_with(paste0("data.table ", have, note))
@@ -333,32 +342,14 @@ check("parallel burden matches serial on real data", function() {
                   cand$loc, length(cand$models), cand$year, nrow(a)))
 })
 
-# --- 10. conversion still produces exactly what it used to ------------------
-# The convert step now tags cells against the country polygon before expanding
-# the pixel-day table instead of after. That is a large change to the hot path,
-# so require byte-identical output against the previous implementation (read out
-# of git) on two real locations: one ordinary, one that straddles the dateline.
-check("mask-first conversion matches the old output", function() {
-  if (!nzchar(CCKP_LOCAL_ROOT) || !dir.exists(CCKP_LOCAL_ROOT))
-    return(ok_with("SKIPPED: no CCKP mirror to read a NetCDF from"))
-  # The comparison needs the previous implementation, which is read out of git.
-  # A checkout without history (an export, a copied tree) cannot supply it, so
-  # skip rather than fail: that is a property of the working copy, not a fault
-  # in the machine this is checking.
-  git_ok <- suppressWarnings(system2("git",
-    c("-C", shQuote(PROJECT_ROOT), "cat-file", "-e",
-      "main:global-scripts/util_convert_cckp_temperature.R"),
-    stdout = FALSE, stderr = FALSE)) == 0
-  if (!git_ok)
-    return(ok_with("SKIPPED: no git history here to read the old version from"))
-  out <- suppressWarnings(system2("Rscript",
-    c(file.path(SCRIPTS_DIR, "util_test_convert_mask.R"), "--locs=125,22"),
-    stdout = TRUE, stderr = FALSE))
-  hit <- grep("locations produce identical output", out, value = TRUE)
-  if (length(hit) == 1) return(ok_with("loc 125 + 22 (wrapped): identical"))
-  fail <- grep("^FAILED", out, value = TRUE)
-  no_with(if (length(fail)) trimws(fail[1]) else "test did not report a verdict")
-})
+# The conversion refactor is no longer checked here. It was a regression test
+# comparing the new implementation against its predecessor read out of git, which
+# made sense while the change was in review. Now that it is merged, "main" IS the
+# new implementation, so the comparison compares merged code against itself and
+# proves nothing, while still costing two full NetCDF reads and being able to
+# fail for reasons that have nothing to do with this machine. The test itself
+# lives on in util_test_convert_mask.R for anyone revisiting that code; it takes
+# --ref=<pre-merge commit> to name the version to compare against.
 
 unlink(tmp_root, recursive = TRUE)
 unlink(file.path(cckp_marker_root(), as.character(VLOC)), recursive = TRUE)
