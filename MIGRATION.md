@@ -79,9 +79,21 @@ One row per location per phase.
    started in the project root, so launching elsewhere silently used different
    package versions, or none.
 
-3. **Large locations get extra workers automatically.** The US and Russia span
-   the whole longitude range and are far slower than everything else; they now
-   run several combos at once. You do not configure this.
+3. **Large locations are much cheaper, and get extra workers automatically.**
+   The convert step used to build a table over the whole bounding box and throw
+   most of it away. Only 5.8% of the US bounding box is actually inside the US,
+   because the Aleutians straddle the dateline and Hawaii and Point Barrow
+   stretch the latitudes. It now selects the cells inside the country first.
+   Measured on real data, output unchanged:
+
+   | location | time | peak memory |
+   |---|---|---|
+   | United States | 51.8s -> 10.7s | 20.5 GB -> 2.9 GB |
+   | Russia | 56.3s -> 20.6s | 14.3 GB -> 4.2 GB |
+   | Brazil | 11.2s -> 7.0s | 1.8 GB -> 1.0 GB |
+
+   Large locations also run several combos at once now. You do not configure
+   either of these.
 
 4. **Progress is tracked per combo**, so the numbers in `./status.sh` are
    correct no matter how the work was split, and they survive a restart.

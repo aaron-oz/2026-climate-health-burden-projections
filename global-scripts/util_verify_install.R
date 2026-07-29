@@ -309,6 +309,23 @@ check("parallel burden matches serial on real data", function() {
                   cand$loc, length(cand$models), cand$year, nrow(a)))
 })
 
+# --- 10. conversion still produces exactly what it used to ------------------
+# The convert step now tags cells against the country polygon before expanding
+# the pixel-day table instead of after. That is a large change to the hot path,
+# so require byte-identical output against the previous implementation (read out
+# of git) on two real locations: one ordinary, one that straddles the dateline.
+check("mask-first conversion matches the old output", function() {
+  if (!nzchar(CCKP_LOCAL_ROOT) || !dir.exists(CCKP_LOCAL_ROOT))
+    return(ok_with("SKIPPED: no CCKP mirror to read a NetCDF from"))
+  out <- suppressWarnings(system2("Rscript",
+    c(file.path(SCRIPTS_DIR, "util_test_convert_mask.R"), "--locs=125,22"),
+    stdout = TRUE, stderr = FALSE))
+  hit <- grep("locations produce identical output", out, value = TRUE)
+  if (length(hit) == 1) return(ok_with("loc 125 + 22 (wrapped): identical"))
+  fail <- grep("^FAILED", out, value = TRUE)
+  no_with(if (length(fail)) trimws(fail[1]) else "test did not report a verdict")
+})
+
 unlink(tmp_root, recursive = TRUE)
 unlink(file.path(cckp_marker_root(), as.character(VLOC)), recursive = TRUE)
 unlink(file.path(OUTPUT_DIR, "intermediate", as.character(VLOC)), recursive = TRUE)
