@@ -102,9 +102,28 @@ auto_n_cores <- function(loc, shapefile) {
 run_one_location <- function() {
   loc <- LOCATION_ID
   causes <- strsplit(as.character(CAUSES), ",", fixed = TRUE)[[1]]
-  n_cores <- as.integer(N_CORES)
-  if (is.na(n_cores) || n_cores < 1L) n_cores <- auto_n_cores(loc, SHAPEFILE)
-  log_msg(sprintf("loc=%d workers=%d", loc, n_cores))
+
+  # Workers are given to the convert phase only, by default.
+  #
+  # The two phases have opposite cost profiles. Convert scales with the size of
+  # the location: the US bbox is 300,000 grid cells against a median of 570, so
+  # a few locations dominate the tail and splitting exactly those shortens the
+  # run. Burden costs roughly the same per combo everywhere, because it is one
+  # run_location.R invocation over that combo's data, so extra workers there do
+  # not fix an imbalance; they just raise throughput, which is what the outer
+  # -j already controls, and they multiply the phase's memory.
+  #
+  # Burden is also the memory-hungry phase: a single combo peaked at 3.7 GB
+  # measured on Colombia in summary mode with one cause, so production draws
+  # and 17 causes will be at least that. At the default -j that is already the
+  # dominant memory consumer, which is why burden gets one worker unless
+  # someone deliberately raises BURDEN_WORKERS.
+  n_convert <- as.integer(N_CORES)
+  if (is.na(n_convert) || n_convert < 1L) n_convert <- auto_n_cores(loc, SHAPEFILE)
+  n_burden <- suppressWarnings(as.integer(Sys.getenv("BURDEN_WORKERS", "1")))
+  if (is.na(n_burden) || n_burden < 1L) n_burden <- 1L
+  log_msg(sprintf("loc=%d convert_workers=%d burden_workers=%d",
+                  loc, n_convert, n_burden))
 
   # Compose the per-location mortality-file list (one RDS per cause). Filter
   # to files that actually exist on disk -- missing causes get logged but
@@ -141,7 +160,7 @@ run_one_location <- function() {
                              paste0("--cckp_local_root=", CCKP_LOCAL_ROOT),
                              paste0("--cckp_pop_local_root=", CCKP_POP_LOCAL_ROOT),
                              paste0("--require_local=", CCKP_REQUIRE_LOCAL),
-                             paste0("--n_cores=", n_cores),
+                             paste0("--n_cores=", n_convert),
                              paste0("--force=", FORCE)))
   log_msg(sprintf("util_run_cckp_pipeline.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))
@@ -158,7 +177,7 @@ run_one_location <- function() {
                                     if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
                              paste0("--n_draws_run=",     N_DRAWS_RUN),
                              paste0("--force=",           FORCE),
-                             paste0("--n_cores=",         n_cores),
+                             paste0("--n_cores=",         n_burden),
                              paste0("--mortality_file=",  mort_file_arg)))
   log_msg(sprintf("util_run_cckp_burden.R exit=%d in %.1fs",
                   rc, as.numeric(Sys.time() - t0, units = "secs")))

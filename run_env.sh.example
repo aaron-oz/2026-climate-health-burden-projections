@@ -79,13 +79,29 @@ export CCKP_LOCAL_ROOT=/data
 # How many locations to run at once.
 export JOBS=100
 
-# Cap on workers given to any single location. Large locations (the US, Russia
-# and a few others) get several so they stop being the pacing item; small ones
-# always get one. Lower it to 2, or to 1 to switch the extra workers off, if
-# the machine runs short of memory. Peak per combo after the in-country cell
-# selection is roughly 3 GB for the US and 4 GB for Russia, against 20 GB and
-# 14 GB before it, so 4 workers now costs less than one worker used to.
+# CEILING on workers a single location may use for the CONVERT step. It is not
+# a number applied to every location: the count is sized from how large the
+# location is on the grid, and 180 of 204 locations get 1 regardless. Of the
+# rest, 13 get 2, 8 get 3, and 3 get 4 (the US, Russia, New Zealand).
+#
+# Setting this to 2 means "no location gets more than 2". Setting it to 1
+# switches the extra workers off. One GNU parallel job is one location, so
+# per-location and per-job mean the same thing here.
+#
+# Convert peak per combo after the in-country cell selection is roughly 3 GB
+# for the US and 4 GB for Russia, against 20 GB and 14 GB before it.
 export MAX_WORKERS_PER_LOCATION=4
+
+# Workers for the BURDEN step, per location. Left at 1 on purpose.
+#
+# Burden costs about the same per combo for every location, so splitting it
+# does not fix an imbalance the way it does for convert; it only raises
+# throughput, and JOBS above already controls that. It is also the
+# memory-hungry phase: one combo peaked at 3.7 GB measured on Colombia in
+# summary mode with a single cause, so the production configuration will be at
+# least that. Raise this only with RAM headroom you have actually checked, and
+# lower JOBS to match.
+export BURDEN_WORKERS=1
 
 
 # --- Scope (all optional; leave unset to run everything) ----------------------
