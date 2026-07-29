@@ -56,17 +56,28 @@ for (k in names(defaults)) {
 # Workers to give this location, from the size of its bounding box on the CCKP
 # 0.25-degree grid.
 #
-# Cost per combo scales with the number of grid cells the location's bbox spans,
-# and that is extremely skewed: the median level-3 location covers about 570
-# cells while the US covers 305,000 and Russia 238,000. A handful of locations
-# therefore take orders of magnitude longer than the rest, and they are the ones
-# worth splitting. The outer fan-out already runs many locations at once, so
-# this only adds workers where they change the finish time, and the extra
-# processes stay in the low tens overall.
+# The bbox is the right scale to key on even though the conversion now keeps
+# only the in-country cells, because the array read out of the NetCDF is still
+# bbox-sized (bbox cells x days x 8 bytes) and that read is the floor on both
+# time and memory per combo. It is a proxy, not a measurement: a location with
+# a lot of ocean in its box, like Fiji, is cheaper than its bbox suggests. Being
+# generous there is harmless, since every location has the same several-thousand
+# combo grid to get through.
+#
+# The distribution is heavily skewed. The median level-3 location covers about
+# 570 cells; the US covers 306,000 and Russia 239,000. With these thresholds 24
+# of 204 locations get more than one worker, adding 38 processes in total on top
+# of one per location.
+#
+# MAX_WORKERS_PER_LOCATION caps this. Lower it if the machine runs short of
+# memory: peak is roughly 3 GB per US combo and 4 GB per Russia combo after the
+# in-country selection, against 20 GB and 14 GB before it.
 #
 # Returns 1 (unchanged behaviour) when the shapefile cannot be read, so a
 # geometry problem degrades to the old serial path rather than stopping the run.
 auto_n_cores <- function(loc, shapefile) {
+  cap <- suppressWarnings(as.integer(Sys.getenv("MAX_WORKERS_PER_LOCATION", "4")))
+  if (is.na(cap) || cap < 1L) cap <- 1L
   tryCatch({
     suppressPackageStartupMessages(library(sf))
     sf::sf_use_s2(FALSE)
@@ -76,10 +87,11 @@ auto_n_cores <- function(loc, shapefile) {
     b <- sf::st_bbox(g)
     cells <- (as.numeric(b["xmax"] - b["xmin"]) / 0.25 + 3) *
              (as.numeric(b["ymax"] - b["ymin"]) / 0.25 + 3)
-    if      (cells >= 100000) 4L
-    else if (cells >=  20000) 3L
-    else if (cells >=   5000) 2L
-    else                      1L
+    n <- if      (cells >= 100000) 4L
+         else if (cells >=  20000) 3L
+         else if (cells >=   5000) 2L
+         else                      1L
+    min(n, cap)
   }, error = function(e) {
     log_msg("auto_n_cores: could not size loc=", loc, " (", conditionMessage(e),
             "); using 1 worker")

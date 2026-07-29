@@ -28,6 +28,7 @@ export PROJECT_ROOT
 [ -f ./run_env.sh ] && . ./run_env.sh
 
 JOBS="${JOBS:-100}"
+export MAX_WORKERS_PER_LOCATION="${MAX_WORKERS_PER_LOCATION:-4}"
 SCENARIOS="${SCENARIOS:-ssp245,ssp370,ssp585,ssp126}"
 YEARS="${YEARS:-2022-2050}"
 
@@ -80,6 +81,7 @@ say "   scenarios      : $SCENARIOS"
 say "   years          : $YEARS"
 say "   concurrency    : $JOBS locations at a time"
 say "   CCKP mirror    : $CCKP_LOCAL_ROOT"
+say "   max workers/loc: $MAX_WORKERS_PER_LOCATION"
 say "   logs           : $LOG_DIR/"
 say "=============================================================="
 say ""

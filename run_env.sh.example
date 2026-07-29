@@ -10,3 +10,10 @@ export CCKP_LOCAL_ROOT=/data
 
 # How many locations to run at once.
 export JOBS=100
+
+# Cap on workers given to any single location (default 4). Lower it to 2 or 1
+# if the machine runs short of memory during the run. Peak per combo after the
+# in-country cell selection is roughly 3 GB for the US and 4 GB for Russia,
+# against 20 GB and 14 GB before it, so 4 workers now costs less than one
+# worker used to.
+export MAX_WORKERS_PER_LOCATION=4

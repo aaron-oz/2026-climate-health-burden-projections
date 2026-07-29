@@ -98,6 +98,13 @@ One row per location per phase.
 4. **Progress is tracked per combo**, so the numbers in `./status.sh` are
    correct no matter how the work was split, and they survive a restart.
 
+## If the machine runs short of memory
+
+Lower `MAX_WORKERS_PER_LOCATION` in `run_env.sh` to 2, or 1 to turn the extra
+workers off entirely, and re-run `./run_production.sh`. Nothing else changes.
+For reference, 4 workers on the US now use about 12 GB against the 20 GB a
+single worker used before the in-country selection landed.
+
 ## One thing to know about earlier output
 
 Nothing produced before this change is wrong, but a lot of it is incomplete,
