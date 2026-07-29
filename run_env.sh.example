@@ -127,6 +127,20 @@ export MAX_WORKERS_PER_LOCATION=4
 export BURDEN_WORKERS=1
 
 
+# --- R package library (optional) ---------------------------------------------
+
+# By default the pipeline uses whatever R library this machine provides (on
+# the production box, packages come from Nix). renv.lock in the repo records
+# the package versions the pipeline was validated against, for reference;
+# util_verify_install.R reports if the loaded data.table differs from it.
+#
+# To instead use renv's pinned project library, opt in here. It needs a
+# one-time restore from the repo root first:
+#   Rscript -e 'install.packages("renv", repos="https://cloud.r-project.org")'
+#   Rscript -e 'renv::restore(prompt = FALSE)'
+# export RENV_ACTIVATE_PROJECT=TRUE
+
+
 # --- Scope (all optional; leave unset to run everything) ----------------------
 
 # Which scenarios, comma separated with no spaces. Default is all four:

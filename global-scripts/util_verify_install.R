@@ -10,7 +10,8 @@
 # marker, or manifest belonging to a real location is written or removed.
 #
 # Checks:
-#   1  renv is active and the pinned packages load
+#   1  the R package library matches the RENV_ACTIVATE_PROJECT setting and the
+#      required packages load
 #   2  the same is true when launched from a different working directory
 #   3  the shapefile resolves and contains the micro-nations
 #   4  the CCKP local mirror is configured and readable
@@ -46,20 +47,43 @@ no_with <- function(detail) structure(FALSE, detail = detail)
 
 cat("\n=== Verifying install at ", PROJECT_ROOT, " ===\n\n", sep = "")
 
-# --- 1. renv + packages ------------------------------------------------------
-check("renv library is active", function() {
+# --- 1. package library + packages -------------------------------------------
+# renv is opt-in (see config.R): without RENV_ACTIVATE_PROJECT=TRUE the
+# machine's own library is the intended one, so "renv not active" is the
+# expected PASS state, not a failure.
+check("R package library matches renv setting", function() {
+  optin <- tolower(Sys.getenv("RENV_ACTIVATE_PROJECT", "FALSE")) %in%
+             c("true", "t", "1")
   lib <- normalizePath(file.path(PROJECT_ROOT, "renv", "library"), mustWork = FALSE)
-  if (any(startsWith(normalizePath(.libPaths(), mustWork = FALSE), lib)))
-    ok_with(basename(.libPaths()[1]))
-  else no_with("renv library not on .libPaths(); packages may be the wrong version")
+  active <- any(startsWith(normalizePath(.libPaths(), mustWork = FALSE), lib))
+  if (optin && active)
+    ok_with(paste("renv:", basename(.libPaths()[1])))
+  else if (optin)
+    no_with("RENV_ACTIVATE_PROJECT=TRUE but renv library not on .libPaths(); run renv::restore() from the repo root")
+  else if (active)
+    no_with("renv is active although RENV_ACTIVATE_PROJECT is not TRUE")
+  else
+    ok_with("system library (renv opt-in not set)")
 })
 
-check("pinned packages load", function() {
+check("required packages load", function() {
   need <- c("data.table", "sf", "ncdf4")
   miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
-  if (length(miss) == 0)
-    ok_with(paste0("data.table ", as.character(packageVersion("data.table"))))
-  else no_with(paste("missing:", paste(miss, collapse = ", ")))
+  if (length(miss) > 0)
+    return(no_with(paste("missing:", paste(miss, collapse = ", "))))
+  # Compare the loaded data.table against the lockfile pin. Informational
+  # only: in system-library mode a different version is allowed, but the
+  # operator should know about the drift.
+  have <- as.character(packageVersion("data.table"))
+  lock <- readLines(file.path(PROJECT_ROOT, "renv.lock"), warn = FALSE)
+  i    <- grep('"Package": "data.table"', lock, fixed = TRUE)
+  pin  <- if (length(i) == 1) {
+    v <- grep('"Version"', lock[i + seq_len(5)], value = TRUE)[1]
+    sub('.*"Version": "([^"]+)".*', "\\1", v)
+  } else NA_character_
+  note <- if (!is.na(pin) && !identical(have, pin))
+    paste0(" (lockfile pins ", pin, ")") else ""
+  ok_with(paste0("data.table ", have, note))
 })
 
 # --- 2. works from another working directory ---------------------------------
@@ -72,8 +96,8 @@ check("runs from any working directory", function() {
     'cat("OK", as.character(packageVersion("data.table")), "\n")'), probe)
   # Rscript inherits this process's cwd, so run the probe from a directory that
   # is certainly not the project root. That is the case that used to fail:
-  # .Rprofile is only read from the working directory, so renv never activated
-  # and .libPaths() silently fell back to the user/system library.
+  # path resolution and (when opted in) renv activation both depended on the
+  # working directory, so launches from elsewhere broke silently.
   old <- setwd(tempdir()); on.exit(setwd(old), add = TRUE)
   out <- suppressWarnings(system2("Rscript", c(probe, SCRIPTS_DIR),
                                   stdout = TRUE, stderr = FALSE))
