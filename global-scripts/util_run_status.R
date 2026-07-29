@@ -55,10 +55,13 @@ rows <- rbindlist(lapply(locs, function(loc) {
   state <- if (file.exists(file.path(d, "_DONE"))) "DONE"
            else if (file.exists(file.path(d, "_INCOMPLETE"))) "INCOMPLETE"
            else "(running)"
-  prog <- read_kv(file.path(d, "_progress.tsv"))
   out <- lapply(c("convert", "burden"), function(ph) {
     st <- read_combo_statuses(loc, ph)
     if (nrow(st) == 0) return(NULL)
+    # Per-phase progress file, so convert keeps its own total after burden
+    # starts overwriting the combined one.
+    prog <- read_kv(file.path(d, paste0("_progress_", ph, ".tsv")))
+    if (is.null(prog)) prog <- read_kv(file.path(d, "_progress.tsv"))
     n <- function(s) sum(st$status == s, na.rm = TRUE)
     data.table(loc = as.integer(loc), phase = ph, state = state,
                done = nrow(st),
@@ -94,8 +97,11 @@ cat(sprintf("locations DONE            : %d\n", uniqueN(rows[state == "DONE"]$lo
 cat(sprintf("locations INCOMPLETE      : %d\n", uniqueN(rows[state == "INCOMPLETE"]$loc)))
 cat(sprintf("locations still running   : %d\n", uniqueN(rows[state == "(running)"]$loc)))
 cat(sprintf("combos failed (all locs)  : %d\n", sum(rows$fail, na.rm = TRUE)))
+# Count gaps once, in convert. A model and scenario absent from the mirror
+# makes the burden phase report missing-temp for the same combo, so summing
+# both phases would report each gap twice.
 cat(sprintf("combos in CCKP gaps       : %d  (expected; rerunning will not fill these)\n",
-            sum(rows$gap, na.rm = TRUE)))
+            sum(rows[phase == "convert"]$gap, na.rm = TRUE)))
 
 if (sum(rows$fail, na.rm = TRUE) > 0) {
   cat("\nSome combos FAILED. Rerun the same command that launched the run:\n",

@@ -466,6 +466,10 @@ write_run_progress <- function(loc, phase, done, total, tally = list(), last = "
              paste0("last_combo\t", last),
              paste0("updated\t",    format(Sys.time(), "%Y-%m-%dT%H:%M:%S")))
   atomic_write_lines(lines, file.path(d, "_progress.tsv"))
+  # Also keep a copy per phase. _progress.tsv holds whichever phase wrote last,
+  # so once burden starts, convert's own total is no longer recoverable from it
+  # and a status view has nothing to compute a percentage against.
+  atomic_write_lines(lines, file.path(d, paste0("_progress_", phase, ".tsv")))
 }
 
 # =============================================================================

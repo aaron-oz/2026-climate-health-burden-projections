@@ -16,8 +16,11 @@
 #   JOBS       concurrent locations                  (default 100)
 #   SCENARIOS  comma separated                       (default all four)
 #   YEARS      range                                 (default 2022-2050)
+#   LOCATIONS  space/comma separated loc ids to run, instead of all of them.
+#              Use it to retry or spot-check a few, e.g. LOCATIONS="62 102"
 #   CCKP_LOCAL_ROOT      path to the local CCKP mirror        (required)
 #   CCKP_POP_LOCAL_ROOT  if population sits elsewhere         (optional)
+#   MAX_WORKERS_PER_LOCATION  cap on workers per location     (default 4)
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -69,9 +72,15 @@ if [ "${1:-}" != "--skip-verify" ]; then
   fi
 fi
 
-LOC_LIST="$(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')"
+if [ -n "${LOCATIONS:-}" ]; then
+  LOC_LIST="$(printf '%s' "$LOCATIONS" | tr ',' ' ')"
+else
+  LOC_MAP=output/intermediate/ihme_loc_map.rds
+  [ -f "$LOC_MAP" ] || die "$LOC_MAP not found. Run util_convert_ihme_batch.R first, or set LOCATIONS."
+  LOC_LIST="$(Rscript -e "cat(readRDS('$LOC_MAP')\$loc_id)")"
+fi
 N_LOC="$(printf '%s\n' $LOC_LIST | wc -w)"
-[ "$N_LOC" -gt 0 ] || die "No locations found in output/intermediate/ihme_loc_map.rds"
+[ "$N_LOC" -gt 0 ] || die "No locations to run."
 
 say ""
 say "=============================================================="

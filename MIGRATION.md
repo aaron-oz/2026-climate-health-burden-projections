@@ -1,6 +1,31 @@
 # Migrating to the fixed pipeline
 
-Three commands total. Everything else is automatic.
+## If a run is currently going, stop it
+
+```bash
+# Ctrl-C the running ./run_production.sh, or:
+pkill -f util_run_global.R
+```
+
+Stop it rather than waiting for it to finish. The run in flight cannot produce
+a complete result: it is working from a model list filtered per scenario to
+dodge the convert-abort bug, so 15 or more models per scenario are missing by
+construction. Letting it finish only delays the restart.
+
+Nothing computed so far is lost or has to be redone:
+
+- **Converted temperature files stay valid.** The conversion was rewritten for
+  speed, but its output is byte-identical, verified against the old version on
+  six locations. Existing files are recognised and skipped.
+- **Burden outputs stay valid.** They are incomplete, not wrong. Each file
+  holds the correct numbers for the model and scenario it names.
+- **Old progress markers are harmless.** They get rewritten on the next run.
+
+Optional tidy-up, not required: the old code left staging files at
+`output/results/burden_<loc>.rds` and similar. Nothing reads them now. Delete
+them if you like the tree clean.
+
+## Then, three commands total. Everything else is automatic.
 
 ```bash
 cd <project>
@@ -97,6 +122,14 @@ One row per location per phase.
 
 4. **Progress is tracked per combo**, so the numbers in `./status.sh` are
    correct no matter how the work was split, and they survive a restart.
+
+## Running only some locations
+
+```bash
+LOCATIONS="62 102" ./run_production.sh
+```
+
+Useful for retrying a handful without walking the whole list.
 
 ## If the machine runs short of memory
 

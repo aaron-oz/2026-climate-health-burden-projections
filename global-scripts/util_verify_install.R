@@ -317,6 +317,16 @@ check("parallel burden matches serial on real data", function() {
 check("mask-first conversion matches the old output", function() {
   if (!nzchar(CCKP_LOCAL_ROOT) || !dir.exists(CCKP_LOCAL_ROOT))
     return(ok_with("SKIPPED: no CCKP mirror to read a NetCDF from"))
+  # The comparison needs the previous implementation, which is read out of git.
+  # A checkout without history (an export, a copied tree) cannot supply it, so
+  # skip rather than fail: that is a property of the working copy, not a fault
+  # in the machine this is checking.
+  git_ok <- suppressWarnings(system2("git",
+    c("-C", shQuote(PROJECT_ROOT), "cat-file", "-e",
+      "main:global-scripts/util_convert_cckp_temperature.R"),
+    stdout = FALSE, stderr = FALSE)) == 0
+  if (!git_ok)
+    return(ok_with("SKIPPED: no git history here to read the old version from"))
   out <- suppressWarnings(system2("Rscript",
     c(file.path(SCRIPTS_DIR, "util_test_convert_mask.R"), "--locs=125,22"),
     stdout = TRUE, stderr = FALSE))
