@@ -64,11 +64,23 @@ if [ ! -f data/shapefiles/GBD2023_mapping_final_augmented.shp ]; then
   Rscript global-scripts/util_augment_shapefile.R 2>&1 | tail -5
 fi
 
-# A previous run killed mid-write can leave a truncated output file. It would
-# look finished to the skip check and never be recomputed, so clear any out
-# before launching. Cheap: only recently-modified files are checked.
-say ">>> Checking for half-written files from any interrupted run..."
-Rscript global-scripts/util_repair_outputs.R 2>&1 | tail -3
+# A run killed mid-write can leave a truncated output file, which would look
+# finished to the resume check and never be recomputed. Only worth looking for
+# when the previous run did not exit cleanly, which the marker below tells us:
+# it is written at launch and removed on normal completion. Checking
+# unconditionally cost minutes of silence on a full output tree for nothing.
+RUN_MARKER=output/.run_active
+if [ -f "$RUN_MARKER" ]; then
+  say ">>> The previous run did not exit cleanly (started $(cat "$RUN_MARKER" 2>/dev/null))."
+  say ">>> Checking its most recent output files for truncation..."
+  Rscript global-scripts/util_repair_outputs.R 2>&1 | tail -6
+  say ""
+else
+  # First launch under this version: earlier code wrote outputs in place, so a
+  # small check covers anything a past interruption left behind. Bounded low
+  # enough to be unnoticeable.
+  Rscript global-scripts/util_repair_outputs.R --recent=50 --quiet 2>&1 | tail -4
+fi
 
 if [ "${1:-}" != "--skip-verify" ]; then
   say ">>> Verifying this machine before launching..."
@@ -111,6 +123,11 @@ say ""
 
 # --joblog gives one row per location with its exit code, so a location that
 # died is visible without grepping every log.
+date -u +%Y-%m-%dT%H:%M:%SZ > "$RUN_MARKER"
+# Remove the marker however we exit, so only a hard kill leaves it behind. That
+# is exactly the case where the truncation check above is worth running.
+trap 'rm -f "$RUN_MARKER"' EXIT
+
 parallel -j "$JOBS" --joblog "$LOG_DIR/joblog.tsv" --line-buffer \
   "Rscript global-scripts/util_run_global.R --location_id={} \
      --scenarios=$SCENARIOS --years=$YEARS \
