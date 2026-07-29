@@ -21,6 +21,12 @@ Nothing computed so far is lost or has to be redone:
   holds the correct numbers for the model and scenario it names.
 - **Old progress markers are harmless.** They get rewritten on the next run.
 
+Killing a run can leave a file half-written. Under the old code such a file
+looked finished to the resume check and would never have been recomputed;
+`./run_production.sh` now scans for them and clears them before it launches, so
+there is nothing for you to do about it. New writes are atomic and cannot be
+left half-finished at all.
+
 Optional tidy-up, not required: the old code left staging files at
 `output/results/burden_<loc>.rds` and similar. Nothing reads them now. Delete
 them if you like the tree clean.
@@ -63,14 +69,16 @@ separate resume step and nothing to clean up first.
 [PASS] parallel grid matches serial grid                4 workers: identical statuses
 [PASS] concurrent combos get private scratch dirs
 [PASS] parallel burden matches serial on real data      loc 125, 2 models, 2022: identical
-=== 10 of 10 checks passed ===
+[PASS] mask-first conversion matches the old output     loc 125 + 22 (wrapped): identical
+=== 11 of 11 checks passed ===
 ```
 
 If any line says FAIL it stops without launching and tells you which log to
 send. Do not work around a FAIL; it means something on the machine is off.
 
-The last check is skipped on a machine with nothing converted yet. That is
-expected on a first run and is not a failure.
+Some lines may say PASS with "SKIPPED" and a reason, usually that there is
+nothing converted yet to compare against. That is expected on a first run and
+is not a failure.
 
 ## Reading ./status.sh
 
@@ -165,7 +173,7 @@ So if a location seemed not to start on a restart, the marker was not the
 cause. Two real causes existed, both now fixed:
 
 - The convert phase stopped at the first model and scenario missing from the
-  mirror and still exited 0, abandoning every combo after it (item 1 below).
+  mirror and still exited 0, abandoning every combo after it (item 1 above).
 - An unset `CCKP_POP_LOCAL_ROOT` was being passed down as the literal string
   `TRUE`, so the population file was looked for under a directory named
   `TRUE/`. Any combo whose population file was not already cached was recorded
