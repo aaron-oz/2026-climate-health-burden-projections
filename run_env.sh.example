@@ -76,7 +76,18 @@ export CCKP_LOCAL_ROOT=/data
 
 # --- Scale -------------------------------------------------------------------
 
-# How many locations to run at once.
+# How many locations to run at once. This is the dominant memory multiplier.
+#
+# Steady state is roughly JOBS x the per-combo burden peak, because locations
+# spend most of their time in the burden step. Measured peaks, full production
+# configuration (17 causes, 500 draws):
+#
+#     Colombia   3.7 GB per combo
+#     US         4.7 GB per combo
+#
+# So JOBS=100 implies on the order of 400 GB resident at steady state. Check
+# that against this machine's RAM before raising it, and lower it if the run
+# starts swapping.
 export JOBS=100
 
 # CEILING on workers a single location may use for the CONVERT step. It is not
@@ -94,13 +105,15 @@ export MAX_WORKERS_PER_LOCATION=4
 
 # Workers for the BURDEN step, per location. Left at 1 on purpose.
 #
-# Burden costs about the same per combo for every location, so splitting it
-# does not fix an imbalance the way it does for convert; it only raises
-# throughput, and JOBS above already controls that. It is also the
-# memory-hungry phase: one combo peaked at 3.7 GB measured on Colombia in
-# summary mode with a single cause, so the production configuration will be at
-# least that. Raise this only with RAM headroom you have actually checked, and
-# lower JOBS to match.
+# Burden costs about the same per combo everywhere (71s for Colombia, 90s for
+# the US, measured), so splitting it does not correct an imbalance the way it
+# does for convert; it only raises throughput, and JOBS above already controls
+# that at lower risk. It is also the memory-hungry phase, at 3.7 to 4.7 GB per
+# combo, so each extra worker here costs about as much as another whole job.
+#
+# Raising this to 2 doubles a location's burden memory. If you want more burden
+# throughput, raise JOBS instead unless you specifically need one location to
+# finish sooner.
 export BURDEN_WORKERS=1
 
 

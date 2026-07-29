@@ -220,13 +220,25 @@ feature off.
 The **burden** step is left at one combo at a time per location, set by
 `BURDEN_WORKERS` (default 1). It costs about the same per combo everywhere, so
 splitting it does not correct an imbalance the way it does for convert; it only
-raises throughput, and `JOBS` already controls that. It is also the
-memory-hungry phase: one burden combo peaked at 3.7 GB, measured on Colombia in
-summary mode with a single cause, so the production configuration will be at
-least that. The machinery is there and `BURDEN_WORKERS=2` turns it on, but do
-that only after checking real memory headroom on this machine. Each combo log
-reports its own peak as `Peak RSS (VmHWM)`, so the true figure is worth reading
-early in the run.
+raises throughput, and `JOBS` already controls that at lower risk. It is also
+the memory-hungry phase. Measured in the full production configuration, 17
+causes and 500 draws:
+
+| location | burden peak per combo | time per combo |
+|---|---|---|
+| Colombia | 3.7 GB | 71s |
+| United States | 4.7 GB | 90s |
+
+Each extra burden worker therefore costs about as much memory as another whole
+job. `BURDEN_WORKERS=2` turns it on if you want one location to finish sooner,
+but for general throughput raise `JOBS` instead.
+
+**Worth checking early:** steady-state memory is roughly `JOBS` times that
+per-combo peak, because locations spend most of their time in the burden step.
+At `JOBS=100` that is on the order of 400 GB resident. If this machine has less
+headroom than that, lower `JOBS`. Each combo log reports its own figure as
+`Peak RSS (VmHWM)`, so the real number for this hardware is readable a few
+minutes into the run.
 
 Thread counts are pinned to one everywhere, and every worker inherits that, so
 workers add processes but never multiply threads. You do not set this and it is
