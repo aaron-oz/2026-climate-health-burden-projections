@@ -16,9 +16,22 @@ cd /data/HEAT/Burkart/FHS/2026-climate-health-burden-projections   # adjust to y
 ## Step 1. Stop the run that is going now
 
 ```bash
-# Ctrl-C the running job, or:
-pkill -f util_run_global.R
+pkill -f 'run_production\.sh|util_run_global|util_run_cckp|run_location\.R'
 ```
+
+Then confirm nothing survived, because this is the step that actually matters:
+
+```bash
+pgrep -af 'util_run_global|util_run_cckp|run_location' || echo "all stopped"
+```
+
+The pattern has to cover all four names. Killing only `util_run_global.R`
+leaves `util_run_cckp_burden.R` and its `run_location.R` children running, and
+the burden runner keeps working through its entire remaining grid because it
+does not care that its parent died. Ctrl-C in the terminal running the launcher
+normally reaches the whole tree, but if the job was backgrounded or started
+over an ssh session that has since dropped, it will not. Run the `pgrep` check
+either way.
 
 Stop it rather than waiting for it to finish. The run in flight cannot produce
 a complete result: it is working from a model list filtered per scenario to
