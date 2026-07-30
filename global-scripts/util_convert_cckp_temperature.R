@@ -361,6 +361,21 @@ convert_cckp <- function(temp_nc_path,
 
   log_msg("Final pixel-day rows: ", format(nrow(dt), big.mark = ","))
 
+  # An empty conversion is not a success, so do not let one be written as if it
+  # were. Everything downstream would read this file, find nothing, and fail
+  # somewhere with less to say; and because the output file exists, the resume
+  # check would skip the combo on a rerun rather than retry it. Failing here
+  # records the combo as a convert failure with the location and the input file
+  # both named. No location with any usable cell reaches this.
+  if (nrow(dt) == 0L) {
+    stop("Conversion produced no pixel-days for location ", location_id,
+         " from ", basename(temp_nc_path), ": kept ", n_keep, " of ",
+         nrow(unique_pixels), " cells in the bbox and none of them carried a ",
+         "temperature below the fill value. Either the location is too small ",
+         "for the 0.25 degree grid and the nearest-cell fallback found nothing ",
+         "with data, or this model's field is empty in that window.")
+  }
+
   if (is.null(output_path)) {
     output_path <- file.path(TEMP_DIR, paste0(location_id, "_daily_temp.rds"))
   }

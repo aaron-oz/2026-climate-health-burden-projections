@@ -99,13 +99,25 @@ across locations. A location where the model spread is far tighter or wider
 than its neighbours is worth opening up.
 
 **The locations the climate grid barely resolves.** Thirty of the 204 locations
-contain at most one 0.25 degree grid cell centre, and 15 contain none. Those
-get a nearest-cell fallback: the location is assigned the climate series of the
-closest cell carrying data. Eight of them also produced the failures Caspar
-reported. Even where they succeeded, their entire climate signal comes from one
-snapped pixel, so they deserve to be looked at as a group rather than trusted
-because they returned a number. Singapore, Malta, Barbados, Dominica, Grenada,
-Bermuda, Saint Kitts and Nevis, and San Marino are the eight with failures.
+contain at most one 0.25 degree grid cell centre, and 15 contain none. Those get
+a nearest-cell fallback: the location is assigned the climate series of the
+closest cell carrying data, so its entire climate signal is one grid cell.
+
+The conversion step for these was tested directly against CCKP data pulled from
+the public bucket on 2026-07-30, for two models chosen to differ as much as
+possible in native resolution (access-cm2 and canesm5). All of them convert, in
+about four seconds each, and the annual mean temperature they produce is within
+about 1.5 degrees C of published values for every case checked except San Marino,
+which comes out 3.4 degrees C warm because its one cell sits lower and further
+from the Apennine ridge than the country does. So the fallback works, and these
+locations are not empty or crashing.
+
+What has not been checked is the variance. The PAF depends on the distribution of
+daily temperature around the TMREL, not on the annual mean, and an island's cell
+is a grid-box average heavily weighted by ocean, which physically damps the daily
+spread relative to land. The mean being right does not make the spread right, and
+the spread is what drives the burden. Worth looking at the 30 sub-grid locations
+as a group against comparable larger neighbours before their numbers are used.
 
 **YLLs per attributable death.** This ratio is roughly the remaining life
 expectancy at the age at which the attributable deaths occur, so it should sit
