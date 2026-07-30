@@ -1,4 +1,4 @@
-# util_summarize_run.R — collapse a finished production run into review-sized
+# util_summarize_run.R: collapse a finished production run into review-sized
 # tables, and check the arithmetic of every combo on the way past.
 #
 # A finished scenario is one output file per (location, model, year): on the
@@ -249,7 +249,7 @@ if (!is.null(cov)) {
 qa_path <- file.path(OUT, "qa_report.txt")
 con <- file(qa_path, "w")
 w <- function(...) cat(..., "\n", sep = "", file = con)
-w("Run summary QA — ", format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))
+w("Run summary QA, ", format(Sys.time(), "%Y-%m-%dT%H:%M:%S"))
 w("scenarios: ", paste(scenarios, collapse = ","), "   locations: ", uniqueN(qa$location_id),
   "   combos read: ", nrow(qa))
 w("")
