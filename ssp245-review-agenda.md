@@ -74,16 +74,25 @@ wrong.
 **2022 against a known answer.** 2022 is the first projection year and is close
 enough to the present to be checkable. Two anchors:
 
-- The Colombia national benchmark computed 2026-06-16 (location 125, IHME
-  mortality, national resolution, 500 draws) gave attributable deaths of about
-  1,721 with a 95% interval of roughly [978, 2,417]. That figure is from
-  project notes and should be re-confirmed from its source file before being
-  used as a reference. It was computed from observed temperature, whereas the
-  ssp245 run uses each climate model's own 2022 field, so the right check is
-  whether the 27-model spread brackets it, not whether any single model matches.
-- Published GBD 2023 non-optimal temperature attributable deaths, for whichever
-  locations and years overlap. We should pull these rather than quote them from
-  memory.
+- **Burkart et al. 2021, Table 1**, now committed at
+  `data/benchmarks/burkart2021_table1.csv`. Published attributable deaths, PAFs
+  and rates per 100,000, with uncertainty intervals, split into high, low and
+  non-optimal temperature, for 1990 and 2019, for nine countries: Brazil, Chile,
+  China, Colombia, Guatemala, Mexico, New Zealand, South Africa and the United
+  States. All nine are in our 204, so ssp245 produces a comparable number for
+  each at no extra cost and with nothing to download. This is the first
+  comparison to run, and read the caveats in `data/benchmarks/README.md` first:
+  it is a check on magnitude, on the heat-to-cold balance and on the ordering
+  across countries, not a target to match to the digit.
+- The Colombia national benchmark of 1,721 attributable deaths recorded in
+  project notes for 2026-06-16 is **ischemic heart disease only**, not the
+  17-cause total. Confirmed by reading its source file, `output/results/burden_125.rds`,
+  which contains one cause and 500 draws and whose per-draw totals mean to
+  exactly 1,721 [978, 2,417]. It is not comparable to a published national
+  figure and should not be quoted as one.
+- Published GBD non-optimal temperature attributable deaths for 2022, which
+  would extend the nine-country check to all 204 and to the year our run starts.
+  These are human-gated downloads; the query list is separate.
 
 If 2022 is right, the projection is a question about the climate inputs. If it
 is wrong, nothing downstream is worth reading.
