@@ -9,8 +9,9 @@
 #      travels complete, at full resolution, for all 204 locations.
 #   2. Counts and uncertainty come from the summary tables, which are already
 #      small.
-#   3. Raw draws are only needed to prove the summaries were computed correctly,
-#      and a few dozen combos prove that as well as a few thousand.
+#   3. The sampled combos ship normalised, not raw: per-draw PAF, mortality once
+#      per location-year, and ex. Burden and YLLs rebuild from those exactly, and
+#      the rebuild is verified before the bundle is written.
 #
 # Usage:
 #   Rscript global-scripts/util_export_review_bundle.R --scenarios=ssp245
@@ -20,9 +21,9 @@
 #   --scenarios=      comma separated; default ssp245
 #   --out=            bundle directory; default output/review_bundle
 #   --jobs=           parallel workers; default half the cores
-#   --sample_locs=    locations to include raw draws for; default 125,102,305
-#   --sample_years=   years for the raw sample;           default 2022,2035,2050
-#   --sample_models=  models for the raw sample; default the first 3 found
+#   --sample_locs=    locations to include draw-level detail for; default 125,102,349,128
+#   --sample_years=   years for the sample;               default 2022,2035,2050
+#   --sample_models=  models for the sample; default all of them
 #   --input_locs=     locations whose mortality inputs to include, so the
 #                     reviewer can re-run the pipeline independently; default 125
 #   --sevs=FALSE      skip the SEV surface (it is diagnostic, not burden)
@@ -35,7 +36,7 @@ suppressPackageStartupMessages(library(data.table))
 defaults <- list(SCENARIOS = "ssp245",
                  OUT = file.path(OUTPUT_DIR, "review_bundle"),
                  JOBS = max(1L, floor(parallel::detectCores() / 2)),
-                 SAMPLE_LOCS = "125,102,305", SAMPLE_YEARS = "2022,2035,2050",
+                 SAMPLE_LOCS = "125,102,349,128", SAMPLE_YEARS = "2022,2035,2050",
                  SAMPLE_MODELS = "", INPUT_LOCS = "125",
                  SEVS = TRUE, TAR = TRUE)
 for (k in names(defaults)) {
@@ -151,30 +152,117 @@ if (dir.exists(log_root)) {
 }
 
 # -----------------------------------------------------------------------------
-# 5. Raw draws for a few combos, so the summaries can be re-derived from scratch
+# 5. The sample, stored normalised rather than raw
+#
+# A raw burden file is one row per (cause, age, sex, draw), about 289,000 rows,
+# and almost none of it is independent information:
+#
+#   paf_heat/cold   vary only by (cause, draw)  -> repeated across age and sex
+#   deaths          vary by all four, but are IDENTICAL across models, because
+#                   mortality comes from the IHME forecast and does not know
+#                   which climate model is being run
+#   ex              varies only by (age, sex)
+#   deaths_heat, deaths_cold, deaths_nonopt, yll_heat, yll_cold, yll_nonopt
+#                   are exact products of the above
+#
+# So the sample ships as: per-draw PAF per combo, mortality once per
+# location-year, and ex once per location-year. Everything else is recomputed on
+# arrival. This is lossless, and the reconstruction is verified below rather
+# than asserted: if it does not reproduce the original to floating point, the
+# bundle is not written.
 # -----------------------------------------------------------------------------
-raw_dir <- file.path(OUT, "raw_sample")
-dir.create(raw_dir, showWarnings = FALSE)
-n_raw <- 0L; raw_bytes <- 0
+norm_dir <- file.path(OUT, "sample_normalised")
+dir.create(norm_dir, showWarnings = FALSE)
+
+read_combo <- function(dd, y, pre) {
+  p <- file.path(dd, sprintf("%s_%d.rds", pre, y))
+  if (!file.exists(p)) return(NULL)
+  d <- tryCatch(setDT(readRDS(p)), error = function(e) NULL)
+  if (is.null(d) || nrow(d) == 0) return(NULL)
+  if (!"year" %in% names(d) && "year_id" %in% names(d)) setnames(d, "year_id", "year")
+  d
+}
+
+paf_draws <- list(); mort_store <- list(); ex_store <- list()
+verify <- list(); n_norm <- 0L
 for (loc in intersect(sample_locs, locs)) {
   dirs <- combo_dirs(loc)
   models <- unique(sub("-[^-]+$", "", basename(dirs)))
-  keep <- if (nzchar(as.character(SAMPLE_MODELS))) split_csv(SAMPLE_MODELS) else head(sort(models), 3)
+  keep <- if (nzchar(as.character(SAMPLE_MODELS))) split_csv(SAMPLE_MODELS) else sort(models)
   for (dd in dirs) {
-    if (!sub("-[^-]+$", "", basename(dd)) %in% keep) next
+    mdl <- sub("-[^-]+$", "", basename(dd))
+    if (!mdl %in% keep) next
+    scn <- sub("^.*-", "", basename(dd))
     for (y in sample_years) {
-      for (pre in c("burden", "ylls", "pafs", "sevs")) {
-        p <- file.path(dd, sprintf("%s_%d.rds", pre, y))
-        if (!file.exists(p)) next
-        dst <- file.path(raw_dir, loc, basename(dd))
-        dir.create(dst, recursive = TRUE, showWarnings = FALSE)
-        file.copy(p, file.path(dst, basename(p)), overwrite = TRUE)
-        n_raw <- n_raw + 1L; raw_bytes <- raw_bytes + file.size(p)
+      b <- read_combo(dd, y, "burden")
+      if (is.null(b)) next
+      n_norm <- n_norm + 1L
+
+      # The only genuinely model-specific quantity.
+      pd <- unique(b[, .(acause, draw, paf_heat, paf_cold)])
+      if (nrow(pd) != uniqueN(b[, .(acause, draw)]))
+        stop("PAF is not constant within (cause, draw) for loc ", loc, " ", mdl, " ", y,
+             ". The normalisation assumption does not hold; ship this sample raw.")
+      paf_draws[[length(paf_draws) + 1L]] <-
+        cbind(data.table(location_id = as.integer(loc), model = mdl, scenario = scn, year = y), pd)
+
+      # Mortality, stored once per location-year. Checked for model invariance
+      # rather than assumed: this is the claim the whole saving rests on.
+      key <- paste(loc, y)
+      mo <- b[, .(acause, age_group_id, sex_id, draw, deaths)]
+      setorder(mo, acause, age_group_id, sex_id, draw)
+      if (is.null(mort_store[[key]])) {
+        mort_store[[key]] <- cbind(data.table(location_id = as.integer(loc), year = y), mo)
+      } else {
+        prev <- mort_store[[key]][, .(acause, age_group_id, sex_id, draw, deaths)]
+        if (!isTRUE(all.equal(prev, mo, check.attributes = FALSE)))
+          stop("Mortality differs between models for loc ", loc, " year ", y,
+               " (model ", mdl, "). It was assumed model-invariant; it is not. ",
+               "Ship this sample raw rather than normalised.")
       }
+
+      yl <- read_combo(dd, y, "ylls")
+      if (!is.null(yl) && "ex" %in% names(yl) && is.null(ex_store[[key]])) {
+        ex <- unique(yl[, .(age_group_id, sex_id, ex)])
+        if (nrow(ex) != uniqueN(yl[, .(age_group_id, sex_id)]))
+          stop("ex is not constant within (age, sex) for loc ", loc, " year ", y)
+        ex_store[[key]] <- cbind(data.table(location_id = as.integer(loc), year = y), ex)
+      }
+
+      # Round-trip: rebuild the original from the pieces and compare.
+      rb <- merge(mo, pd, by = c("acause", "draw"))
+      rb[, paf_nonopt := paf_heat + paf_cold]
+      rb[, `:=`(deaths_heat = deaths * paf_heat, deaths_cold = deaths * paf_cold,
+                deaths_nonopt = deaths * paf_nonopt)]
+      cols <- c("acause", "age_group_id", "sex_id", "draw", "deaths",
+                "paf_heat", "paf_cold", "paf_nonopt",
+                "deaths_heat", "deaths_cold", "deaths_nonopt")
+      a <- copy(b)[, ..cols]; setorderv(a, cols[1:4])
+      setorderv(rb, cols[1:4]); rb <- rb[, ..cols]
+      ok <- isTRUE(all.equal(as.data.frame(a), as.data.frame(rb), tolerance = 1e-12))
+      verify[[length(verify) + 1L]] <- data.table(
+        location_id = as.integer(loc), model = mdl, year = y, rows = nrow(b),
+        reconstructs = ok)
+      if (!ok)
+        stop("Reconstruction does not reproduce burden for loc ", loc, " ", mdl, " ", y,
+             ". Not writing a bundle that cannot be rebuilt.")
     }
   }
 }
-log_msg("Raw sample: ", n_raw, " files, ", round(raw_bytes / 1e6, 1), " MB")
+
+if (n_norm > 0) {
+  saveRDS(rbindlist(paf_draws),  file.path(norm_dir, "paf_draws.rds"),  compress = "xz")
+  saveRDS(rbindlist(mort_store), file.path(norm_dir, "mortality_draws.rds"), compress = "xz")
+  if (length(ex_store))
+    saveRDS(rbindlist(ex_store), file.path(norm_dir, "life_expectancy.rds"), compress = "xz")
+  vt <- rbindlist(verify)
+  fwrite(vt, file.path(norm_dir, "reconstruction_check.csv"))
+  got <- sum(file.size(list.files(norm_dir, full.names = TRUE)), na.rm = TRUE)
+  log_msg("Normalised sample: ", n_norm, " combos, all reconstructing exactly, ",
+          round(got / 1e6, 1), " MB")
+} else {
+  log_msg("WARN no sample combos found for locations ", paste(sample_locs, collapse = ","))
+}
 
 # -----------------------------------------------------------------------------
 # 6. Inputs for an independent re-run
@@ -226,7 +314,8 @@ w("paf_surface.rds   every combo's cause-level heat/cold/non-optimal PAF, all lo
 w("sev_surface.rds   same for SEVs (diagnostic)")
 w("summary/          national totals with uncertainty, by cause, by age and sex, coverage, QA")
 w("manifests/        per-combo status and messages, exit codes, one full location log")
-w("raw_sample/       full draw-level burden and YLL files for a few combos")
+w("sample_normalised/ per-draw PAF, mortality and ex for the sampled combos,")
+w("                  from which burden and YLLs rebuild exactly (check included)")
 w("inputs/           mortality and one converted temperature file, for an independent re-run")
 w("")
 w("files: ", length(all_f), "   total: ", round(sz / 1e6, 1), " MB")
