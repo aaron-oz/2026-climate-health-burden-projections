@@ -39,7 +39,11 @@ suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(SCENARIOS = "ssp245", LOCATIONS = "", YEARS = "2022-2050",
                  JOBS = max(1L, floor(parallel::detectCores() / 2)),
-                 OUT = file.path(OUTPUT_DIR, "summary"), FORCE = FALSE)
+                 OUT = file.path(OUTPUT_DIR, "summary"), FORCE = FALSE,
+                 # Age and sex detail for a few years only. At every year it
+                 # would be 204 x 27 x 29 x 17 x 2 rows, which is 5.4 million
+                 # for a pattern that four years show just as well.
+                 AGE_YEARS = "2022,2030,2040,2050")
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -67,6 +71,7 @@ parse_years <- function(s) {
 
 scenarios <- split_csv(SCENARIOS)
 want_years <- parse_years(YEARS)
+age_years <- parse_years(AGE_YEARS)
 cckp_root <- file.path(RESULTS_ROOT, "cckp")
 cache_dir <- file.path(OUT, "_cache")
 dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
@@ -162,7 +167,21 @@ summarize_combo <- function(dir, year, loc, model, scen) {
           cd)
   } else NULL
 
-  list(nat = nat, cause = cause, qa = qa)
+  # --- age and sex, for the requested years only -----------------------------
+  # The age pattern is one of the few checks that can actually come out wrong:
+  # temperature-attributable deaths should sit overwhelmingly in the elderly,
+  # with lower respiratory infections the exception at young ages.
+  agesex <- if (year %in% age_years && all(c("age_group_id", "sex_id") %in% names(d))) {
+    ad <- if ("draw" %in% names(d)) {
+      d[, lapply(.SD, sum, na.rm = TRUE), by = .(age_group_id, sex_id, draw), .SDcols = vals][
+        , lapply(.SD, mean, na.rm = TRUE), by = .(age_group_id, sex_id), .SDcols = vals]
+    } else {
+      d[, lapply(.SD, sum, na.rm = TRUE), by = .(age_group_id, sex_id), .SDcols = vals]
+    }
+    cbind(data.table(location_id = loc, model = model, scenario = scen, year = year), ad)
+  } else NULL
+
+  list(nat = nat, cause = cause, qa = qa, agesex = agesex)
 }
 
 # -----------------------------------------------------------------------------
@@ -178,6 +197,7 @@ summarize_location <- function(loc) {
   dirs <- list.dirs(ldir, recursive = FALSE)
   dirs <- dirs[basename(dirs) != "status"]
   out_nat <- list(); out_cause <- list(); out_qa <- list(); out_cov <- list()
+  out_age <- list()
   for (dd in dirs) {
     nm <- basename(dd)
     # "<model>-<scenario>": the scenario never contains a dash, the model
@@ -194,6 +214,7 @@ summarize_location <- function(loc) {
       if (is.null(r)) next
       out_nat[[length(out_nat) + 1L]]     <- r$nat
       if (!is.null(r$cause)) out_cause[[length(out_cause) + 1L]] <- r$cause
+      if (!is.null(r$agesex)) out_age[[length(out_age) + 1L]] <- r$agesex
       out_qa[[length(out_qa) + 1L]]       <- r$qa
     }
     missing <- setdiff(want_years, have)
@@ -206,6 +227,7 @@ summarize_location <- function(loc) {
   res <- list(
     nat   = if (length(out_nat))   rbindlist(out_nat, fill = TRUE)   else NULL,
     cause = if (length(out_cause)) rbindlist(out_cause, fill = TRUE) else NULL,
+    agesex = if (length(out_age)) rbindlist(out_age, fill = TRUE) else NULL,
     qa    = if (length(out_qa))    rbindlist(out_qa, fill = TRUE)    else NULL,
     cov   = if (length(out_cov))   rbindlist(out_cov, fill = TRUE)   else NULL)
   saveRDS(res, cache)
@@ -230,6 +252,7 @@ pull <- function(field) {
   if (length(parts) == 0) NULL else rbindlist(parts, fill = TRUE)
 }
 nat <- pull("nat"); cause <- pull("cause"); qa <- pull("qa"); cov <- pull("cov")
+agesex <- pull("agesex")
 if (is.null(nat)) stop("No combos summarized. Wrong --scenarios, or the run has no output yet.")
 
 setorder(nat, location_id, scenario, model, year)
@@ -241,6 +264,10 @@ if (!is.null(cause)) {
 if (!is.null(cov)) {
   setorder(cov, location_id, scenario, model)
   fwrite(cov, file.path(OUT, "coverage.csv"))
+}
+if (!is.null(agesex)) {
+  setorder(agesex, location_id, scenario, model, year, age_group_id, sex_id)
+  fwrite(agesex, file.path(OUT, "by_age_sex.csv"))
 }
 
 # -----------------------------------------------------------------------------
@@ -316,6 +343,7 @@ cat("\nWrote:\n",
     "  ", file.path(OUT, "national_by_year.csv"), "  (", nrow(nat), " rows)\n",
     if (!is.null(cause)) paste0("  ", file.path(OUT, "by_cause.csv"), "  (", nrow(cause), " rows)\n") else "",
     if (!is.null(cov))   paste0("  ", file.path(OUT, "coverage.csv"), "  (", nrow(cov), " rows)\n") else "",
+    if (!is.null(agesex)) paste0("  ", file.path(OUT, "by_age_sex.csv"), "  (", nrow(agesex), " rows)\n") else "",
     "  ", qa_path, "\n\n", sep = "")
 cat(readLines(qa_path), sep = "\n")
 cat("\n")
