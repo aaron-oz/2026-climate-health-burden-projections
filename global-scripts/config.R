@@ -559,6 +559,15 @@ write_combo_status <- function(loc, phase, model, scenario, year, status,
 }
 
 # Read every combo status for one phase into a data.table (0 rows if none yet).
+#
+# A full grid is one file per (model, scenario, year), so a large location holds
+# on the order of a thousand of them and this runs after every combo. One
+# readLines() per file is unavoidable, but building a one-row data.table per
+# file was costing about four times the I/O itself (measured on 841 files:
+# 0.14 s the old way, 0.034 s this way). Parse into a plain character matrix and
+# build the table once.
+STATUS_FIELDS <- c("model", "scenario", "year", "status", "elapsed_s", "message")
+
 read_combo_statuses <- function(loc, phase, root = cckp_marker_root()) {
   d <- combo_status_dir(loc, phase, root)
   f <- list.files(d, pattern = "\\.tsv$", full.names = TRUE)
@@ -566,24 +575,23 @@ read_combo_statuses <- function(loc, phase, root = cckp_marker_root()) {
     model = character(), scenario = character(), year = integer(),
     status = character(), elapsed_s = numeric(), message = character())
   if (length(f) == 0) return(empty)
-  rows <- lapply(f, function(p) {
-    kv <- tryCatch(strsplit(readLines(p, warn = FALSE), "\t", fixed = TRUE),
-                   error = function(e) NULL)
-    if (is.null(kv)) return(NULL)
-    kv <- kv[lengths(kv) >= 1]
-    v <- setNames(vapply(kv, function(x) if (length(x) > 1) x[2] else "", ""),
-                  vapply(kv, `[`, "", 1))
-    data.table::data.table(
-      model     = unname(v["model"]),
-      scenario  = unname(v["scenario"]),
-      year      = suppressWarnings(as.integer(v["year"])),
-      status    = unname(v["status"]),
-      elapsed_s = suppressWarnings(as.numeric(v["elapsed_s"])),
-      message   = unname(v["message"]))
-  })
-  rows <- rows[!vapply(rows, is.null, logical(1))]
-  if (length(rows) == 0) return(empty)
-  data.table::rbindlist(rows, fill = TRUE)
+  na_row <- setNames(rep(NA_character_, length(STATUS_FIELDS)), STATUS_FIELDS)
+  m <- vapply(f, function(p) {
+    ln <- tryCatch(readLines(p, warn = FALSE), error = function(e) character())
+    if (length(ln) == 0) return(na_row)
+    # Split each "key<TAB>value" line without strsplit()'s per-line list.
+    unname(setNames(sub("^[^\t]*\t?", "", ln), sub("\t.*$", "", ln))[STATUS_FIELDS])
+  }, character(length(STATUS_FIELDS)), USE.NAMES = FALSE)
+  st <- data.table::data.table(
+    model     = m[1, ],
+    scenario  = m[2, ],
+    year      = suppressWarnings(as.integer(m[3, ])),
+    status    = m[4, ],
+    elapsed_s = suppressWarnings(as.numeric(m[5, ])),
+    message   = m[6, ])
+  # An unreadable file has no status and is dropped, as before, rather than
+  # counting toward the done total as a row of NAs.
+  st[!is.na(status)]
 }
 
 # Refresh _progress.tsv from the combo-status files on disk. `total` is the size
@@ -594,6 +602,11 @@ refresh_run_progress <- function(loc, phase, total, last = "",
   st <- read_combo_statuses(loc, phase, root)
   tally <- as.list(table(factor(
     st$status, levels = c("ok", "skip", "fail", "missing-on-s3", "missing-temp"))))
+  # Carry the typical per-combo time in the progress file too. It is free here
+  # (the statuses are already in hand) and it lets a monitoring view report
+  # timing from this one small file instead of re-reading the whole status dir.
+  ok_s <- st$elapsed_s[st$status == "ok"]
+  tally[["median_ok_s"]] <- if (any(!is.na(ok_s))) round(median(ok_s, na.rm = TRUE), 1) else ""
   write_run_progress(loc, phase = phase, done = nrow(st), total = total,
                      tally = tally, last = last, root = root)
   invisible(st)
