@@ -110,8 +110,26 @@ a 502 from the life-table downloader means the service is down, not that the
 token is bad. Check `curl -sI https://population.un.org/dataportalapi/index.html`
 before spending time on auth.
 
-Token-free fallback, **tested 2026-08-05 and exact**. The public WPP bulk CSVs
-need no auth:
+**Token-free path, and the one to prefer: `util_fetch_un_lifetables_bulk.R`.**
+It builds the same life tables from the public WPP bulk CSVs, needs no
+credentials, makes two HTTP requests instead of ~204, and is not subject to the
+API's rate limiting.
+
+```bash
+Rscript global-scripts/util_fetch_un_lifetables_bulk.R                  # all
+Rscript global-scripts/util_fetch_un_lifetables_bulk.R --locations=14,413
+```
+
+Existing files are skipped unless `--force`; `--refetch` re-downloads the bulk
+CSVs rather than reusing the ~290 MB cache under `data/un-wpp-bulk/` (override
+the cache location with `UN_WPP_BULK_DIR`). Verified 2026-08-05: it reproduces
+all 204 committed life tables exactly, zero difference in `ex` across 769,896
+values.
+
+The rest of this section documents the underlying data, for anyone needing to
+change the script or reproduce it by hand.
+
+The public WPP bulk CSVs need no auth:
 
 ```
 https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/
@@ -119,12 +137,11 @@ https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_
   WPP2024_Life_Table_Abridged_Medium_2024-2100.csv.gz   (148,739,104 bytes)
 ```
 
-The API path uses indicator 76 (complete, single-year ages) but keeps `ex` only
-at the 5-year age starts 0, 5, ..., 80 (`AGE_STARTS`), which the *abridged*
-table also carries. Verified equivalent: life tables rebuilt from the bulk CSVs
-reproduce **all 198** existing API-derived tables in `data/lifetables/` exactly,
-zero differences in `ex` across 198 x 3,774 = 747,252 values, with identical row
-counts and key sets. The six previously missing locations were sourced this way.
+Why the two sources agree despite reading differently named files: the API path
+uses indicator 76 (complete, single-year ages) but keeps `ex` only at the 5-year
+age starts 0, 5, ..., 80 (`AGE_STARTS`), and the *abridged* bulk table carries
+`ex` at those same exact ages. So the abridged file is not a coarser
+approximation of what the API returns, it is the same values.
 
 Extraction recipe, if it needs repeating:
 
