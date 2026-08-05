@@ -33,9 +33,20 @@ INDICATOR_ID <- 76  # Life expectancy E(x) - complete (single-year ages)
 # Chile is 98). Two pieces, joined on ISO3:
 #   GBD loc_id <-> ISO3 : from the GBD2023 shapefile .dbf (ihme_lc_id, level 3)
 #   ISO3 <-> UN M49 id  : from the UN Data Portal /locations endpoint
-SHAPEFILE <- Sys.getenv(
-  "GBD_SHAPEFILE",
-  file.path(PROJECT_ROOT, "data", "shapefiles", "GBD2023_mapping_final.shp"))
+#
+# Prefer the augmented shapefile when it exists, matching config.R's
+# DEFAULT_SHAPEFILE. The original GBD2023 file carries 198 level-3 rows; the
+# burden universe is 204. The 6 it omits (Maldives 14, Marshall Islands 24,
+# Monaco 367, Nauru 369, Tokelau 413, Tuvalu 416) have no geometry in the GBD
+# mapping file, so building the crosswalk from it silently dropped them: their
+# life tables were never requested, and every run of those locations died in
+# 07_compute_ylls.R. util_augment_shapefile.R adds those 6 rows with their
+# ihme_lc_id, which is all the crosswalk needs.
+SHAPEFILE <- Sys.getenv("GBD_SHAPEFILE", local({
+  shp_dir <- file.path(PROJECT_ROOT, "data", "shapefiles")
+  aug <- file.path(shp_dir, "GBD2023_mapping_final_augmented.shp")
+  if (file.exists(aug)) aug else file.path(shp_dir, "GBD2023_mapping_final.shp")
+}))
 
 # Optional subset: --locations=125,135 (GBD loc_ids). Empty = all national.
 .args <- commandArgs(trailingOnly = TRUE)
