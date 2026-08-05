@@ -74,6 +74,18 @@ export CCKP_LOCAL_ROOT=/data
 # export CCKP_POP_LOCAL_ROOT=/data/pop
 
 
+# --- Credentials (optional) ---------------------------------------------------
+
+# Only util_download_un_lifetables.R reads this. The production run never does,
+# so leave it unset unless you are refilling data/lifetables/.
+#
+# A token for this project ALREADY EXISTS and is valid to 2027-04-07. On the
+# machine that has it, it is already set in run_env.sh; `source ./run_env.sh`
+# is all you need. See the "Credentials" section of CLAUDE.md before requesting
+# a new one.
+# export UN_API_TOKEN="..."
+
+
 # --- Scale -------------------------------------------------------------------
 
 # How many locations to run at once. This is the dominant memory multiplier and

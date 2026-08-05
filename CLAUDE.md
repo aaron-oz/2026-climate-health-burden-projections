@@ -66,6 +66,108 @@ The original 12-script Colombia pipeline in Spanish. Kept for reference. Not use
 - **TMREL sparse years**: Files only contain 1990, 2010, 2020 — pipeline fills gaps by nearest-year
 - **Colombia verification**: `COLOMBIA_VERIFICATION` flag toggles 4 methodological deviations from Burkart. Waiting on Samuel's output numbers for calibration.
 
+## Credentials
+
+### UN Data Portal API token (`UN_API_TOKEN`)
+
+Needed only by `global-scripts/util_download_un_lifetables.R`, which fetches UN
+WPP 2024 life tables into `data/lifetables/`.
+
+**A token already exists. Do not ask for a new one before checking here.** It
+lives in `run_env.sh` at the repo root, which is gitignored (`.gitignore:102`)
+and mode 600. Load it with:
+
+```bash
+source ./run_env.sh
+```
+
+A second copy is still embedded in this checkout's Claude permissions allowlist,
+`.claude/settings.local.json`, inside an allowed `Bash(export UN_API_TOKEN=...)`
+rule. That was its only home until 2026-08-05, and repeated sessions failed to
+find it there and wrongly concluded no token existed. Treat `run_env.sh` as
+authoritative; the allowlist copy is a leftover that a `/permissions` cleanup
+may delete at any time.
+
+Facts verified 2026-08-05:
+
+- The token is a JWT valid from 2026-04-07 to **2027-04-07** (`nbf` / `exp` claims).
+  It is not expired.
+- The token **value** has never been committed. `git log -S` on the value returns
+  nothing across all branches. Only the variable name appears in tracked files
+  (`util_download_un_lifetables.R`, commit 816b4ce).
+- `.claude/settings.local.json` is ignored globally via
+  `~/.config/git/ignore:1`, and `run_env.sh` via `.gitignore:102`.
+
+**Do not paste the token value into chat, commit messages, or any tracked file.**
+
+New tokens are free from https://population.un.org/dataportalapi/index.html.
+
+### UN Data Portal outage (observed 2026-08-05)
+
+The whole `population.un.org/dataportalapi` service was returning HTTP 502,
+including its own `index.html`, while `population.un.org/wpp/` returned 200. So
+a 502 from the life-table downloader means the service is down, not that the
+token is bad. Check `curl -sI https://population.un.org/dataportalapi/index.html`
+before spending time on auth.
+
+Token-free fallback, **tested 2026-08-05 and exact**. The public WPP bulk CSVs
+need no auth:
+
+```
+https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/
+  WPP2024_Life_Table_Abridged_Medium_1950-2023.csv.gz   (144,479,958 bytes)
+  WPP2024_Life_Table_Abridged_Medium_2024-2100.csv.gz   (148,739,104 bytes)
+```
+
+The API path uses indicator 76 (complete, single-year ages) but keeps `ex` only
+at the 5-year age starts 0, 5, ..., 80 (`AGE_STARTS`), which the *abridged*
+table also carries. Verified equivalent: life tables rebuilt from the bulk CSVs
+reproduce **all 198** existing API-derived tables in `data/lifetables/` exactly,
+zero differences in `ex` across 198 x 3,774 = 747,252 values, with identical row
+counts and key sets. The six previously missing locations were sourced this way.
+
+Extraction recipe, if it needs repeating:
+
+- Join on `ISO3_code` against `ihme_lc_id` from the augmented shapefile. All 204
+  locations are present in the bulk files.
+- Filter `Variant == "Medium"` (the only variant in these files), `SexID` in
+  1, 2 (the files also carry 3 = Total; 1 = Male / 2 = Female already match the
+  GBD `sex_id` convention, no remapping needed), `AgeGrpStart` in
+  0, 5, ..., 80, and `Time` in 1990–2100.
+- Age 0 appears twice per sex-year in an abridged table, as the span-1 infant
+  row and inside a wider band. Keep `AgeGrpSpan == 1`. Skipping this silently
+  doubles the age-0 rows.
+- Emit `year_id, age_group_id, sex_id, ex, location_id`, which is the format
+  `07_compute_ylls.R` merges on. Correct output is 3,774 rows per location
+  (111 years x 17 age groups x 2 sexes).
+
+## Life table coverage: 204 locations, not 198
+
+The burden universe is **204** GBD locations. `GBD2023_mapping_final.shp` carries
+only **198** level-3 rows: it has no geometry at all for Maldives (14), Marshall
+Islands (24), Monaco (367), Nauru (369), Tokelau (413), Tuvalu (416).
+
+Anything that derives a location list from the *un-augmented* shapefile will
+silently drop those six. That is what happened to the life-table downloader
+before 2026-08-05: the six were never in its UN crosswalk, so their life tables
+were never requested, and every run of those locations died in
+`07_compute_ylls.R` with "No life table found for location N", ~40 seconds of
+PAF computation after the real problem.
+
+Use `config.R::DEFAULT_SHAPEFILE`, which auto-prefers
+`GBD2023_mapping_final_augmented.shp` when present. Build it once per machine
+with `util_augment_shapefile.R`. `util_download_un_lifetables.R` now mirrors that
+auto-prefer logic rather than hardcoding the original file.
+
+UN WPP coverage is **not** the constraint for microstates: all 204 locations,
+including the six, are present in the WPP 2024 bulk life tables.
+
+Resolved 2026-08-05: all six were built from the WPP bulk CSVs (see the fallback
+recipe above) and installed, so `data/lifetables/` now holds **204** tables.
+These files are tracked in git (`.gitignore:59` un-ignores
+`data/lifetables/*_lifetable.csv`), so collaborators get them on pull rather
+than needing to re-download.
+
 ## R Dependencies
 
 Core: `data.table`, `ggplot2`
