@@ -63,7 +63,12 @@ Thumbs.db
 # they are reference data rather than inputs, and a comparison is only auditable
 # if the numbers it compares against are under version control.
 !data/benchmarks/*.csv
-data/cmip6-scratch/
+# Large data lives at /var/home/aoz/data/wb-temp-attr-projections/ and is
+# symlinked into place (since 2026-08-14). No trailing slash on these rules:
+# `dir/` matches only real directories, not the symlinks now at these paths.
+data/cmip6-scratch
+data/erf
+data/gbd-forecasts
 data/shapefiles/gadm-colombia/
 data/shapefiles/colombia_divipola_admin1.gpkg
 data/temperature/cckp/
@@ -75,8 +80,8 @@ output/cckp_burden_manifest.csv
 aoz-notes.org
 samuel-meeting-agenda.md
 
-# Duplicate / stale scratch
-GBD2023 Shape/
+# Duplicate / stale scratch (no trailing slash: now a symlink into ~/data)
+GBD2023 Shape
 daily-cmip6-download (1).R
 heatwaves/
 

@@ -1,13 +1,15 @@
-# Vendored Samuel-pipeline directory — ignore the largest reference assets.
-# Anything kept out of git here is preserved in Dropbox sync; the pipeline
-# reads from `data/erf/`, `data/tmrel/`, `data/mortality/` etc. (some are
-# symlinks back into this directory).
+# Vendored Samuel-pipeline directory. The largest reference assets are kept
+# out of git; they live at /var/home/aoz/data/wb-temp-attr-projections/from-samuel/
+# and are symlinked into place here (no trailing slash on those rules, since
+# `dir/` does not match a symlink). The pipeline reads from `data/erf/`,
+# `data/tmrel/`, `data/mortality/` etc. (some are symlinks back into this
+# directory).
 
 # Raw DANE death-certificate archives (~1.25 GB total)
 *.zip
 
 # Burkart 2021 ERF curve samples (~130 MB each, 17 files)
-Info Burkart/ERF/
+Info Burkart/ERF
 
 # Duplicates of curve samples that live at the Info Burkart/ top level
 Info Burkart/*_curve_samples.csv
@@ -18,4 +20,7 @@ Info Burkart/mmc1.pdf
 
 # TMREL collection (~97 MB, 1,034 locations x 2 files each) — already
 # symlinked into data/tmrel/ which is what the pipeline reads
-Info Burkart/TMRELs/
+Info Burkart/TMRELs
+
+# Samuel's Colombia result PDFs (~50 MB)
+results

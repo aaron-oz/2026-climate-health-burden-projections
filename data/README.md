@@ -25,10 +25,14 @@ data/
 
 ### TMRELs (`tmrel/`)
 - 1034 location IDs, two files each:
-  - `tmrel_{loc_id}.csv` — 1000 draws
+  - `tmrel_{loc_id}.csv` — 100 draws
   - `tmrel_{loc_id}_summaries.csv` — mean, lower, upper
-- Columns: `location_id`, `year_id`, `meanTempCat`, `tmrel_0`...`tmrel_999`
-- Years: 1990–2020
+- Columns: `location_id`, `year_id`, `meanTempCat`, `tmrel_0`...`tmrel_99`
+- Years: 1990, 2010, 2020 only (three discrete years, not a continuous
+  range). All 1034 draw files carry exactly these three. The pipeline fills
+  intervening years by nearest-year in `02_load_tmrel.R`.
+- The 100 TMREL draws are recycled to match the 1000 ERF draws when
+  `USE_DRAWS = TRUE`
 
 ### GBD Shapefile (`shapefiles/`)
 - `GBD2023_mapping_final.shp` — global administrative boundaries with `loc_id`

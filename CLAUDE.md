@@ -6,7 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 World Bank statistical consulting project quantifying mortality and morbidity (YLLs / AVPP) attributable to non-optimal temperatures. Currently validating with Colombia data (2010–2019), with the goal of scaling globally and projecting to 2100 under SSP scenarios. Based on the Burkart et al. (Lancet 2021) methodology and the GBD 2023 framework.
 
-The stressor-resilience framework (a related but separate project) has been moved to `../2026-stressor-resilience-framework/`.
+The stressor-resilience framework (a related but separate project) now lives in the Dropbox tree at `~/Dropbox/OZ-Labs/WorldBank/2025-2026-climate-resilience/2026-stressor-resilience-framework/` (it is no longer a sibling of this repo).
+
+## Workspace Layout (Aaron's machine)
+
+Since 2026-08-14 the canonical checkout is `/var/home/aoz/code/2026-climate-health-burden-projections/`. The old Dropbox copy (`~/Dropbox/OZ-Labs/WorldBank/2025-2026-climate-resilience/2026-climate-health-burden-projections/`) was moved here and no longer exists; do not recreate it.
+
+Large untracked data lives at `/var/home/aoz/data/wb-temp-attr-projections/` and is symlinked into the checkout:
+
+- `data/erf`, `data/cmip6-scratch`, `data/gbd-forecasts`, `GBD2023 Shape`: directory symlinks
+- `from-samuel/`: real directory (31 tracked files) with symlinks for the big payloads (`Info Burkart/ERF`, `Info Burkart/TMRELs`, the DANE `*.zip` archives, `results`, large PDFs/CSVs)
+- `output/summary/ssp245`: symlink to `review/ssp245/` under the data root, holding the summary tables from Caspar's ssp245 production run (~1.6 GB, too large for git)
+
+Worktrees for branch work go in `/var/home/aoz/code/2026-climate-health-burden-projections-worktrees/`.
 
 ## Architecture
 
