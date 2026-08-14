@@ -1,0 +1,184 @@
+#+title: SSP2-4.5 review findings, section 3
+#+date: 2026-08-14
+#+author: Aaron Osgood-Zimmerman (analysis drafted by Claude)
+
+Findings from working through section 3 of [[file:ssp245-review-agenda.md][ssp245-review-agenda.md]] on the
+summary tables from Caspar's ssp245 production run (summarizer ran
+2026-08-07; analysis run 2026-08-14). Terms follow the agenda: PAF is the
+population attributable fraction, YLL is years of life lost, TMREL is the
+theoretical minimum risk exposure level, ERF is the exposure-response
+function, and ssp245 is the intermediate emissions scenario SSP2-RCP4.5.
+
+Inputs: the five files under =~/data/wb-temp-attr-projections/review/ssp245/=
+(symlinked at =output/summary/ssp245/=). Analysis scripts and intermediate
+CSVs are in =output/review-ssp245/= (=analysis1.R=, =analysis2_geo.R=,
+=analysis3.R=). All ensemble numbers below are means across climate models of
+per-model draw means, and every share uses the 17 temperature-related causes
+as its denominator, not all-cause deaths, unless said otherwise.
+
+Three combos known to be defective were excluded before any computation, and
+their recompute is pending on Caspar's machine (email sent 2026-08-14):
+Colombia (125) and Equatorial Guinea (172) under access-cm2-r1i1p1f1 in 2022
+(single-cause leftovers of a benchmark run; those two countries' 2022
+ensembles therefore use 26 models instead of 27), and Vietnam (20) under
+kace-1-0-g-r1i1p1f1 in 2029 (missing YLL file; YLL aggregates skip it).
+
+* Gate checks (agenda section 2): all pass
+
+From =qa_report.txt= (2026-08-07): the two additive identities hold (worst
+deviation 5.8e-11 deaths), |PAF| <= 1 everywhere (max 0.777), all values
+finite, zero all-zero-burden combos. Coverage is complete: 204 locations x
+27 models x 29 years (2022 to 2050), no missing years, and 159,731 of
+159,732 combos have YLLs (the one gap is the Vietnam combo above).
+
+* The 2022 anchor against Burkart et al. 2021
+
+** Global magnitude
+
+Our 2022 global ensemble total is 1.684 million deaths attributable to
+non-optimal temperature (356,686 heat + 1,327,087 cold) across the 204
+locations. Burkart et al. 2021 report 1.69 million (95% UI 1.52 to 1.83) for
+2019 (verified against the paper text held in the repo). The agreement is
+consistent with the pipeline reproducing the published methodology at global
+scale; it is not proof, since our number differs from theirs in temperature
+source (CMIP6 models, no ERA5 baseline shift), mortality (IHME forecasts),
+year (2022 vs 2019), and it is possible for offsetting errors to land near a
+published total.
+
+** Nine-country comparison
+
+The table below compares our 2022 ensemble against Burkart Table 1 for 2019
+(their most recent year). "models" is our across-model range of per-model
+draw means; "draws" is the mean of per-model 95% draw intervals. Full table
+with heat/cold splits: =output/review-ssp245/anchor_vs_burkart2022.csv=.
+
+#+caption: Attributable non-optimal-temperature deaths: Burkart 2019 (with 95% UI) vs our ssp245 2022 ensemble. Counts are deaths per year.
+| country       | Burkart 2019 [95% UI]     |   ours 2022 | models range       | draws interval     |
+|---------------+---------------------------+-------------+--------------------+--------------------|
+| China         | 499,605 [425,094-573,429] |     555,481 | 533,651-591,516    | 465,901-658,282    |
+| United States | 110,588 [98,410-119,580]  |     103,964 | 97,072-109,558     | 87,604-118,073     |
+| Mexico        | 19,055 [16,111-22,083]    |      20,787 | 19,714-21,795      | 17,419-24,276      |
+| Brazil        | 17,286 [15,386-19,185]    |      14,383 | 11,572-16,781      | 9,312-18,350       |
+| South Africa  | 8,815 [7,846-9,823]       |       9,575 | 8,426-10,646       | 7,816-11,430       |
+| Colombia      | 4,820 [3,669-6,148]       |       4,746 | 4,607-4,891        | 3,708-5,873        |
+| Chile         | 3,759 [3,244-4,267]       |       3,747 | 3,631-3,850        | 3,179-4,326        |
+| Guatemala     | 1,258 [976-1,637]         |       1,095 | 956-1,229          | 755-1,360          |
+| New Zealand   | 1,191 [996-1,361]         |       1,177 | 941-1,414          | 941-1,414          |
+
+- Point ratios (ours / Burkart) run 0.83 to 1.11. Eight of nine ensemble
+  means fall inside Burkart's 95% UI; Brazil (ratio 0.83) sits below it,
+  though our draw interval overlaps their UI.
+- Country ordering matches: Spearman rank correlation 0.983.
+- The heat-to-cold balance is similar but our heat side is somewhat lighter
+  in the tropical countries: heat share of the non-optimal total is 0.274 vs
+  Burkart's 0.340 for Brazil, 0.087 vs 0.186 for Guatemala, 0.144 vs 0.202
+  for Colombia. Brazil's total shortfall is almost entirely on the heat side
+  (3,938 vs 5,881 heat deaths). A plausible contributor is the missing
+  CMIP6-to-ERA5 baseline shift (IHME applies one; we do not), which would
+  bias hot-tail exposure where the bias correction matters most, but this is
+  a hypothesis, not something these tables can establish.
+
+* Trend direction and shape, 2022 to 2050
+
+Raw counts move the intuitive way for heat and the counterintuitive way for
+cold: heat-attributable deaths rise in 197 of 204 locations, but
+cold-attributable deaths ALSO rise in 184 of 204 (global cold total 1.33M in
+2022 to 1.99M in 2050). Two composition effects, not climate, appear to
+account for the cold rise:
+
+1. Aging. Attributable shares standardized to fixed 2022 age-sex death
+   weights flip the picture: the cold share rises in only 64 of 204
+   locations after standardization (vs 141 crude), while the heat share
+   rises in 197 of 204 either way. 77 locations flip from crude-rising to
+   standardized-falling on cold.
+2. Cause mix. The residual standardized cold rise concentrates at high
+   latitude (30 of the 33 locations with |centroid latitude| > 45 deg).
+   Decomposing that group by cause: within-cause cold shares are nearly
+   flat (for example COPD 0.121 in 2022 to 0.119 in 2050), but the IHME
+   mortality forecast shifts deaths toward cold-heavy causes: in the
+   high-latitude group, chronic kidney disease deaths grow from 269k to
+   687k, COPD 429k to 678k, LRI 263k to 407k, while ischemic heart disease
+   and stroke shrink. Age-sex standardization cannot remove a cause-mix
+   shift within age groups, so this passes through.
+
+Taken together the climate signal itself behaves as expected: heat share up
+almost everywhere, within-cause cold shares flat to slightly falling. This
+also confirms the agenda's warning that projected burden counts mix the
+mortality forecast with the climate signal; any headline trend statement
+should be made on PAF-style shares (ideally age-standardized), not counts.
+
+* Across-model spread
+
+- No model dominates the ensemble. Using a robust z-score of each model's
+  non-optimal deaths against the per-(location, year) ensemble median, the
+  largest mean |z| is 1.27 (ukesm1-0-ll), and no model exceeds |z| > 5 in
+  more than 0.8% of combos. The three warmest-tilted models (ukesm1-0-ll,
+  hadgem3-gc31-ll, kace-1-0-g, mean z 0.42 to 0.54) are all models the
+  climate literature flags as high-sensitivity, so their position is
+  expected rather than suspicious.
+- Location-level spread is modest for most of the grid: the across-model
+  coefficient of variation (CV) of 2050 non-optimal deaths has median 0.09,
+  but a long tail (95th percentile 0.58).
+- The wide-spread tail is mostly the sub-grid locations (next section), plus
+  a few resolved countries worth a look: Malaysia (CV 0.61; 2050 ensemble
+  1,632 attributable deaths, model range 391 to 3,877), Suriname (CV 0.75),
+  Brunei (CV 0.64), and Singapore, where the ensemble mean is -96 deaths
+  with models disagreeing on sign (range -171 to +135). Near-zero
+  non-optimal totals make CV explode arithmetically, so sign disagreement
+  rather than CV is the meaningful flag for these.
+
+* The sub-grid locations
+
+Using 0.25-degree grid centres offset by 0.125 deg (the alignment that
+reproduces the agenda's counts: 15 locations contain no centre, 29 contain
+at most one), the 29 sub-grid locations differ sharply from the rest:
+
+#+caption: Sub-grid (at most one 0.25-degree cell centre) vs resolved locations, ssp245 ensemble. Shares use the 17-cause death total as denominator.
+| group              |   n | 2050 model CV, median | 2022 attributable share, median | heat fraction, median |
+|--------------------+-----+-----------------------+---------------------------------+-----------------------|
+| sub-grid           |  29 |                 0.499 |                           0.004 |                 0.946 |
+| resolved           | 175 |                 0.067 |                           0.049 |                 0.194 |
+| resolved, tropical |  87 |                     - |                           0.016 |                 0.794 |
+
+Restricting to tropical locations (|latitude| < 23.5 deg) to control for
+geography, the sub-grid group's median attributable share (0.4%) is still
+roughly a quarter of its resolved tropical peers (1.6%). This is consistent
+with the agenda's damped-variance concern: an island's single ocean-weighted
+grid cell suppresses the daily temperature spread around the TMREL, and the
+spread is what drives the burden. It is also consistent with maritime
+tropical climates genuinely having low temperature variability, and these
+group medians cannot separate the two. Recommendation stands as in the
+agenda: treat the 29 sub-grid locations' numbers as unvalidated until the
+daily-spread comparison against station or reanalysis data is done, and
+flag them in any headline table.
+
+* YLLs per attributable death
+
+For locations with |non-optimal deaths| > 1 in 2022, the ratio of YLLs to
+attributable deaths has median 15.0 years, interquartile range 11.4 to 23.3
+years, which sits in the plausible band for remaining life expectancy at the
+ages where temperature-attributable deaths occur. Two tails worth knowing:
+
+- High end (37 to 51 years): Somalia (37.1, on 1,329 attributable deaths),
+  Cote d'Ivoire (37.3), El Salvador (37.9), Equatorial Guinea (48.8, on 3.8
+  deaths), Solomon Islands (50.6, on 5.0 deaths). Ratios near 40 years imply
+  attributable deaths concentrated at young ages, which is plausible where
+  child LRI or young-adult chronic kidney disease carries the burden, but we
+  have not verified the cause-age split for these; worth one targeted look
+  before publishing them.
+- Negative ratios at near-zero burdens: Cape Verde (-8.3, on 10.2 deaths),
+  Timor-Leste (-2.1), Greenland (-1.6). Deaths and YLL aggregates take
+  opposite signs when heat- and cold-attributable parts nearly cancel and
+  their age profiles differ. Small-number artifact, not a bug; these
+  locations' net burdens are statistically indistinguishable from zero.
+
+* What this review did not do
+
+- No comparison against published GBD 2022 attributable deaths for all 204
+  locations (human-gated download; query list is separate, per the agenda).
+- No quantification of how often the 6 to 28 deg C temperature-zone clamp
+  binds (agenda section 4); still open before anything is said about the
+  hot tail.
+- The sub-grid daily-variance check against observed data (above).
+- Nothing here re-validates the three defective combos; re-verify after
+  Caspar's recompute lands.
