@@ -16,7 +16,7 @@ Large untracked data lives at `/var/home/aoz/data/wb-temp-attr-projections/` and
 
 - `data/erf`, `data/cmip6-scratch`, `data/gbd-forecasts`, `GBD2023 Shape`: directory symlinks
 - `from-samuel/`: real directory (31 tracked files) with symlinks for the big payloads (`Info Burkart/ERF`, `Info Burkart/TMRELs`, the DANE `*.zip` archives, `results`, large PDFs/CSVs)
-- `output/summary/ssp245`: symlink to `review/ssp245/` under the data root, holding the summary tables from Caspar's ssp245 production run (~1.6 GB, too large for git)
+- `output/summary/ssp245`: symlink to `review/ssp245/` under the data root, holding the summary tables from Caspar's ssp245 production run (~640 MB on disk, too large for git)
 
 Worktrees for branch work go in `/var/home/aoz/code/2026-climate-health-burden-projections-worktrees/`.
 
