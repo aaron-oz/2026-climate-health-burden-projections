@@ -251,6 +251,100 @@ second clamp mechanism (within-zone daily truncation) is also not measured.
 
 Per-location clamp shares: =output/review-ssp245/clamp_by_location.csv=.
 
+* Separating the hot-belt shortfall drivers
+
+Run 2026-08-17 (=analysis6_shortfall.R=). Four tests against the candidate
+explanations for the hot-belt shortfall vs GBD. Summary first: the gap is
+almost entirely on the PAF side, not the mortality side; within the PAF
+side, within-zone truncation of hot days is the leading pipeline-side
+mechanism for the Gulf and Sahel, it cannot explain Haiti, temperature bias
+is ruled out where testable, observed-2022 weather is ruled out, and a
+GBD-round revision concentrated in hot countries remains consistent with
+everything but is only indirectly measurable.
+
+** The gap decomposes onto the PAF side
+
+ours/GBD attributable deaths = (ours/GBD 17-cause total deaths) x (ours/GBD
+attributable fraction). Globally the mortality inputs agree (17-cause deaths
+ratio 1.022; per-location median 0.99), so the burden gap is not a
+mortality-forecast artifact in aggregate. For the shortfall countries:
+
+#+caption: Decomposition of the 2022 burden ratio (ours/GBD) into mortality-input and attributable-fraction components. mort = 17-cause deaths ratio; paf = attributable-fraction ratio; burden = mort x paf.
+| country     | burden | mort | paf  |   | country     | burden | mort | paf  |
+|-------------+--------+------+------+---+-------------+--------+------+------|
+| Niger       |   0.38 | 0.70 | 0.54 |   | Chad        |   0.58 | 0.95 | 0.61 |
+| Haiti       |   0.42 | 0.99 | 0.42 |   | Mali        |   0.58 | 0.98 | 0.60 |
+| Sudan       |   0.44 | 0.77 | 0.56 |   | Oman        |   0.60 | 1.10 | 0.54 |
+| South Sudan |   0.46 | 0.83 | 0.56 |   | UAE         |   0.65 | 1.56 | 0.42 |
+| Kuwait      |   0.48 | 1.13 | 0.43 |   | Pakistan    |   0.66 | 1.12 | 0.59 |
+| Iraq        |   0.49 | 0.96 | 0.51 |   | Cambodia    |   1.73 | 1.15 | 1.51 |
+| Nigeria     |   0.57 | 0.96 | 0.60 |   | India       |   0.58 | 0.97 | 0.60 |
+
+Every shortfall country has a PAF ratio of 0.42 to 0.61. The IHME mortality
+forecast contributes a secondary undercount only in the Sahel (Niger 0.70,
+Sudan 0.77, South Sudan 0.83) and actually pushes the other way in the Gulf.
+
+** Within-zone truncation (large for Gulf/Sahel, absent for Haiti)
+
+The ERF for the hottest zone is only defined up to a daily mean of 32.1 deg
+C; hotter days are evaluated at that endpoint. The pop-weighted share of
+person-days above the pixel's zone maximum (access-cm2, 2022): UAE 40.2%,
+Kuwait 37.9% (mean exceedance 5.5 deg C), Oman 37.0%, Qatar 36.9%, Sudan
+32.4%, Iraq 32.1%, Niger 32.0%, Mali 30.4%, Pakistan 30.0%, Chad 25.7%;
+India 16.8% (mean exceedance 3.2 deg C); Nigeria 8.9%; Cambodia 6.9%; Haiti
+0.0%. Spearman correlation with the burden ratio is -0.309. By 2050
+(canesm5) the top values reach the mid-40s%. A quarter to a third of hot
+exposure being flat-capped is mechanically capable of producing PAF ratios
+of the size observed in the Gulf and Sahel, but the burden actually lost is
+still not quantified (the endpoint RR is applied, not zero), and Haiti
+shows the shortfall exists with no truncation at all.
+
+** Temperature bias: ruled out where testable
+
+Pop-weighted comparison of the two CMIP6 models against ERA5 observed 2022
+(hourly, aggregated to daily means) for the seven countries with usable
+local ERA5: annual-mean biases are +0.1 to +0.9 deg C for five of them,
+with two warm outliers (Colombia +2.8 to +2.9, Philippines +1.8 to +1.9);
+none is cool-biased. For India specifically the models see MORE hot-tail
+than ERA5 (13.9% and 12.4% of days above 32.1 deg C vs 10.1% observed), so
+the missing CMIP6-to-ERA5 baseline shift does not explain the Indian
+shortfall. Caveat: no Gulf or Sahel country has local ERA5, so the
+truncation-heavy group is untested for bias, and Mexico and Italy dropped
+out of this check on a data handling step that was not chased.
+
+** Observed-2022 weather: ruled out
+
+GBD's own series is flat or falling 2019 to 2022 in the key countries
+(India 0.99, Niger 0.97, Pakistan 0.94 on non-optimal; Sudan is the
+exception at 1.29), so the shortfall is not our climatological model year
+missing a real 2022 heatwave.
+
+** GBD-round revision: indirect but consistent
+
+Measured directly on the nine Burkart countries (this round's 2019 vs the
+paper's 2019), revisions are modest and two-directional: non-optimal 0.88
+(China) to 1.19 (South Africa). Yet the global 2019 total rose 9% (1.69M to
+1.84M), which arithmetically places the upward revision outside these nine
+temperate-and-large countries, i.e., disproportionately in the hot belt.
+The shortfall countries are not in the paper's table, so their revision
+cannot be measured directly; on this evidence the revision explanation
+stays plausible and unquantified. Per-country factors:
+=output/review-ssp245/gbd_round_revision_9countries.csv=.
+
+** What would settle the remainder
+
+1. A truncation experiment: rerun one Gulf or Sahel country with the
+   zone-28 ERF log-linearly extrapolated past 32.1 deg C and measure the
+   burden change. That bounds the truncation driver directly.
+2. Haiti (and Cambodia on the high side) as case studies: no truncation, no
+   mortality gap, PAF ratio 0.42; candidate causes narrow to TMREL
+   placement and ERF-round differences. Comparing our TMREL against GBD's
+   reported TMREL for Haiti would be the first look.
+3. If the revision driver needs pinning down, the GBD 2021-round results
+   tool carries the paper-era estimates for all 204 locations; a second
+   gated download of that round's 2019 values would make the revision
+   measurable everywhere, not just for nine countries.
+
 * YLLs per attributable death
 
 For locations with |non-optimal deaths| > 1 in 2022, the ratio of YLLs to
@@ -275,12 +369,13 @@ ages where temperature-attributable deaths occur. Two tails worth knowing:
 
 - The sub-grid daily-variance check against observed data (above); the GBD
   comparison could not settle it (only 3 of the 29 have meaningful GBD
-  burden).
-- Separating the drivers of the hot-belt shortfall vs GBD: quantifying the
-  burden actually lost to the zone clamp (as opposed to the exposure share),
-  and the effect of the missing CMIP6-to-ERA5 baseline shift, both remain
-  open. The clamp-burden question needs a pipeline experiment (e.g. rerun a
-  clamped country with the clamp lifted or extrapolated ERFs); the baseline
-  shift question needs an ERA5-vs-CMIP6 comparison over the same years.
-- The clamp analysis covers 2 of 27 models; a full-ensemble version should
-  ride along with a production-side pass on Caspar's machine.
+  burden), and none of the 29 has local ERA5.
+- Quantifying the burden actually lost to truncation (the extrapolated-ERF
+  experiment in the shortfall section) and the Haiti/Cambodia TMREL case
+  studies; the shortfall analysis narrowed the drivers but did not close
+  them.
+- The clamp and truncation analyses cover 2 of 27 models; a full-ensemble
+  version should ride along with a production-side pass on Caspar's
+  machine.
+- The Gulf and Sahel countries remain untested for CMIP6 temperature bias
+  (no local ERA5 coverage there).
