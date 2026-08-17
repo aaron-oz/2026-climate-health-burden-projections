@@ -16,20 +16,25 @@ CSVs are in =output/review-ssp245/= (=analysis1.R=, =analysis2_geo.R=,
 per-model draw means, and every share uses the 17 temperature-related causes
 as its denominator, not all-cause deaths, unless said otherwise.
 
-Three combos known to be defective were excluded before any computation, and
-their recompute is pending on Caspar's machine (email sent 2026-08-14):
-Colombia (125) and Equatorial Guinea (172) under access-cm2-r1i1p1f1 in 2022
-(single-cause leftovers of a benchmark run; those two countries' 2022
-ensembles therefore use 26 models instead of 27), and Vietnam (20) under
-kace-1-0-g-r1i1p1f1 in 2029 (missing YLL file; YLL aggregates skip it).
+Three defective combos found on 2026-08-14 (Colombia 125 and Equatorial
+Guinea 172 under access-cm2-r1i1p1f1 in 2022, single-cause leftovers of a
+benchmark run; Vietnam 20 under kace-1-0-g-r1i1p1f1 in 2029, missing YLL
+file) were recomputed by Caspar and the summary tables re-issued 2026-08-17.
+The re-issued tables verify clean: every combo carries 17 causes, all
+159,732 combos have YLLs, and Colombia's recomputed access-cm2 value (4,731
+non-optimal deaths) sits within its 26-model ensemble range. All numbers in
+this document are from the re-issued tables and use the full 27-model
+ensemble; the differences from the 2026-08-14 pass were negligible
+(Colombia's 2022 heat deaths moved from 685 to 690, nothing else visible at
+the reported precision).
 
 * Gate checks (agenda section 2): all pass
 
-From =qa_report.txt= (2026-08-07): the two additive identities hold (worst
-deviation 5.8e-11 deaths), |PAF| <= 1 everywhere (max 0.777), all values
-finite, zero all-zero-burden combos. Coverage is complete: 204 locations x
-27 models x 29 years (2022 to 2050), no missing years, and 159,731 of
-159,732 combos have YLLs (the one gap is the Vietnam combo above).
+From =qa_report.txt= (re-issued 2026-08-17): the two additive identities
+hold (worst deviation 5.8e-11 deaths), |PAF| <= 1 everywhere (max 0.777),
+all values finite, zero all-zero-burden combos. Coverage is complete: 204
+locations x 27 models x 29 years (2022 to 2050), no missing years, and all
+159,732 combos have YLLs.
 
 * The 2022 anchor against Burkart et al. 2021
 
@@ -77,6 +82,52 @@ with heat/cold splits: =output/review-ssp245/anchor_vs_burkart2022.csv=.
   CMIP6-to-ERA5 baseline shift (IHME applies one; we do not), which would
   bias hot-tail exposure where the bias correction matters most, but this is
   a hypothesis, not something these tables can establish.
+
+* The 2022 anchor against GBD published estimates, all 204 locations
+
+Run 2026-08-17 (=analysis4_gbd.R=), against the GBD Results tool export in
+=data/gbd-comparison/= (GBD 2023 round; attributable deaths and YLLs with
+95% UIs for high, low, and non-optimal temperature, 2019 and 2022). Note a
+framing fact first: this GBD round puts 2019 global non-optimal deaths at
+1.84 million, above the 1.69 million published in the Burkart 2021 paper
+whose methodology and ERFs our pipeline implements. Some of every ratio
+below is GBD-round revision, not pipeline behaviour.
+
+#+caption: Global 2022 totals, GBD 2023-round published vs our ssp245 ensemble.
+| quantity      | GBD 2022 | ours 2022 | ratio |
+|---------------+----------+-----------+-------|
+| deaths, nonopt | 1,926,497 | 1,683,772 | 0.874 |
+| deaths, heat  | 522,450  | 356,690   | 0.683 |
+| deaths, cold  | 1,425,896 | 1,327,082 | 0.931 |
+| YLLs, nonopt  | 40,777,440 | 23,403,025 | 0.574 |
+
+- Structure agrees well: Spearman rank correlation 0.991 across the 204
+  locations, and 203 of 204 match GBD's sign on the net non-optimal burden.
+  104 of 204 land inside GBD's 95% UI for non-optimal deaths (111 for heat,
+  106 for cold). Among the 153 locations where GBD reports more than 100
+  attributable deaths, the ratio ours/GBD has median 0.92 (IQR 0.75 to 1.04).
+- The shortfall is not uniform: it concentrates in the hot belt. The
+  largest disagreements (all with ours low, ratios 0.38 to 0.58) are Niger,
+  Haiti, Mauritius, Sudan, South Sudan, DR Congo, Kuwait, Iraq, Eritrea,
+  Nigeria, Chad, India, Mali. India alone is 375k (GBD) vs 218k (ours).
+  Candidate explanations, not yet separated: the 6 to 28 deg C zone clamp
+  truncating heat exposure exactly where annual means exceed 28 deg C (see
+  the clamp section below), the missing CMIP6-to-ERA5 baseline shift, and
+  GBD-round revisions. An observed-weather explanation looks weak at global
+  scale: GBD's own heat total moved only from 513,673 (2019) to 522,450
+  (2022), a 1.7% rise, so 2022 was not an exceptional year in GBD's series.
+- The YLL ratio (0.574) decomposes exactly into the deaths ratio times the
+  YLL-per-death ratio: 0.874 x (13.9 / 21.2) = 0.574. GBD's 21.2 years per
+  attributable death vs our 13.9 years is consistent with GBD computing
+  YLLs against its standard reference life table while we use national UN
+  WPP remaining life expectancy; that is a definitional difference, not an
+  error, but it should be stated wherever our YLLs are compared to GBD's.
+- Sub-grid check against GBD is inconclusive: only 3 of the 29 sub-grid
+  locations have GBD non-optimal deaths above 20, so no group statement is
+  supportable from this comparison (their ratios are 0.17 to 0.82, low but
+  n = 3).
+
+Per-location table: =output/review-ssp245/gbd2022_comparison.csv=.
 
 * Trend direction and shape, 2022 to 2050
 
@@ -152,6 +203,54 @@ agenda: treat the 29 sub-grid locations' numbers as unvalidated until the
 daily-spread comparison against station or reanalysis data is done, and
 flag them in any headline table.
 
+* How often the temperature-zone clamp binds
+
+Run 2026-08-17 (=analysis5_clamp.R=). The pipeline assigns each pixel a
+temperature zone equal to its rounded annual mean daily temperature, clamped
+to [6, 28] deg C, and the ERF curves exist only for those zones. This
+analysis measures the share of population living in pixels whose rounded
+annual mean falls outside that range, i.e. where the zone assignment is
+clamped, from the global CCKP daily tas NetCDFs for two models (access-cm2,
+a mid-range model, and canesm5, a known high-sensitivity one) under ssp245.
+What it does not measure: the burden impact of the clamp. A clamped pixel
+still gets a burden (evaluated on the zone-28 curve with daily temperatures
+truncated to that zone's modelled range); the direction of the error for
+heat is expected negative, its magnitude is not quantified here. The
+second clamp mechanism (within-zone daily truncation) is also not measured.
+
+#+caption: Share of population in pixels with rounded annual mean outside 6 to 28 deg C, ssp245. Pop weights: GPW gridded population, 2020-2039 climatology for 2022 and 2040-2059 for 2050.
+| model      | year | hot side (>28) | cold side (<6) |
+|------------+------+----------------+----------------|
+| access-cm2 | 2022 |          7.9% |           1.8% |
+| access-cm2 | 2050 |         14.9% |           0.9% |
+| canesm5    | 2022 |          7.8% |           1.9% |
+| canesm5    | 2050 |         23.5% |           0.8% |
+
+- The clamp is already a first-order feature for a band of countries in
+  2022, not a hot-tail hypothetical: 14 locations have more than half their
+  population in hot-clamped pixels (Niger 97%, Burkina Faso 95%, Djibouti
+  94%, Cambodia 92%, Chad 91%, Mali 88%, UAE 84%, Sudan 79%, South Sudan
+  73%, Mauritania 71%, Oman 69%, ...), rising to 22 locations by 2050.
+- Overlap with the GBD hot-belt shortfall is substantial but not
+  deterministic: Niger, Chad, Mali, Sudan and South Sudan top both lists,
+  and the Spearman correlation between 2022 clamp share and the ours/GBD
+  ratio is -0.325 (more clamp, lower ratio) over locations with more than
+  100 GBD attributable deaths. But Cambodia (92% clamped, ratio 1.73),
+  Guinea-Bissau (1.47) and Senegal (1.10) run HIGH against GBD despite
+  heavy clamping, so the clamp is at most one of several drivers of the
+  hot-belt disagreement, alongside the missing ERA5 baseline shift and
+  GBD-round revisions.
+- Under ssp245 to 2050 the hot-side clamp roughly doubles to triples in
+  population terms (model-dependent; canesm5's 23.5% reflects its high
+  climate sensitivity). Under ssp585 to 2100 it would be much larger. Every
+  degree of warming above zone 28 is a degree the burden estimate cannot
+  see, so this needs an explicit methods statement, and ideally a
+  sensitivity analysis, before hot-end results are published. Two-model
+  sample; the full 27-model version is a cheap addition to a production-side
+  pass on Caspar's machine.
+
+Per-location clamp shares: =output/review-ssp245/clamp_by_location.csv=.
+
 * YLLs per attributable death
 
 For locations with |non-optimal deaths| > 1 in 2022, the ratio of YLLs to
@@ -174,11 +273,14 @@ ages where temperature-attributable deaths occur. Two tails worth knowing:
 
 * What this review did not do
 
-- No comparison against published GBD 2022 attributable deaths for all 204
-  locations (human-gated download; query list is separate, per the agenda).
-- No quantification of how often the 6 to 28 deg C temperature-zone clamp
-  binds (agenda section 4); still open before anything is said about the
-  hot tail.
-- The sub-grid daily-variance check against observed data (above).
-- Nothing here re-validates the three defective combos; re-verify after
-  Caspar's recompute lands.
+- The sub-grid daily-variance check against observed data (above); the GBD
+  comparison could not settle it (only 3 of the 29 have meaningful GBD
+  burden).
+- Separating the drivers of the hot-belt shortfall vs GBD: quantifying the
+  burden actually lost to the zone clamp (as opposed to the exposure share),
+  and the effect of the missing CMIP6-to-ERA5 baseline shift, both remain
+  open. The clamp-burden question needs a pipeline experiment (e.g. rerun a
+  clamped country with the clamp lifted or extrapolated ERFs); the baseline
+  shift question needs an ERA5-vs-CMIP6 comparison over the same years.
+- The clamp analysis covers 2 of 27 models; a full-ensemble version should
+  ride along with a production-side pass on Caspar's machine.

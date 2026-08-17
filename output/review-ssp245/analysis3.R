@@ -20,7 +20,7 @@ print(ens[year == 2022, .(heat = sum(heat), cold = sum(cold), nonopt = sum(nonop
 # survives age-sex standardization (fixed 2022 cell weights).
 as <- fread(file.path(REV, "by_age_sex.csv"))
 as <- as[year %in% c(2022, 2050)]
-as <- as[!(location_id %in% c(125L, 172L) & model == "access-cm2-r1i1p1f1" & year == 2022L)]
+# (stale-combo exclusion removed 2026-08-17 after Caspar's recompute)
 cell <- as[, .(deaths = mean(deaths), cold = mean(deaths_cold), heat = mean(deaths_heat)),
            by = .(location_id, year, age_group_id, sex_id)]
 w <- cell[year == 2022, .(age_group_id, sex_id, w = deaths / sum(deaths)),

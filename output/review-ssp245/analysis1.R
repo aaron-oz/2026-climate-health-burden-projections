@@ -8,12 +8,9 @@ dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
 nat <- fread(file.path(REV, "national_by_year.csv"))
 
-# Drop the two known-stale single-cause combos (recompute pending on Caspar's
-# machine): 125 & 172 / access-cm2-r1i1p1f1 / 2022.
-stale <- nat$location_id %in% c(125L, 172L) &
-         nat$model == "access-cm2-r1i1p1f1" & nat$year == 2022L
-cat("dropped stale rows:", sum(stale), "\n")
-nat <- nat[!stale]
+# 2026-08-17: Caspar recomputed the three defective combos (125 & 172
+# access-cm2 2022 single-cause; 20 kace 2029 missing YLLs), verified fixed,
+# so no exclusions are needed any more.
 
 # ---- Ensemble per (location, year): mean over models; model spread ----
 ens <- nat[, .(
