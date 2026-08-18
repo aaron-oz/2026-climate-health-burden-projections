@@ -1,0 +1,282 @@
+% ssp245-review-slides.tex -- slide version of the ssp245 validation review
+% Build: TEXINPUTS=/var/home/aoz/Dropbox/OZ-Labs/templates//: xelatex ssp245-review-slides.tex  (run twice)
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usetheme{ozlabs}
+
+\renewcommand{\ozfootbrand}{OZ Labs}
+\renewcommand{\ozfooturl}{ozstats.space}
+
+\usepackage{booktabs}
+
+\title{Validation Review: SSP2-4.5 Global Temperature-Attributable Burden Run}
+\subtitle{204 countries \(\times\) 27 climate models \(\times\) 2022--2050}
+\author{Aaron Osgood-Zimmerman}
+\institute{OZ Labs LLC, for the World Bank climate-health project}
+\date{August 18, 2026}
+
+\begin{document}
+
+\begin{frame}[plain,noframenumbering]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Bottom line}
+  \begin{itemize}
+    \item The first full production run (scenario SSP2-4.5) passes every
+      arithmetic and coverage check.
+    \item Against the published estimates of the methodology we implement
+      (Burkart et al., \textit{The Lancet} 2021), our global total agrees to
+      \ozgreentext{0.1\%}, and 159 of 204 countries fall inside the published
+      95\% uncertainty intervals.
+    \item An apparent large shortfall in hot countries turned out to be
+      \ozcyantext{GBD's own upward revision between rounds}, not a pipeline
+      defect.
+    \item Main quantified limitations: risk curves end at
+      32.1\,\textcelsius{}; a tropical cluster where daily temperature
+      variability looks damped; a YLL definition that differs from GBD's.
+    \item \ozgreentext{Nothing found blocks the remaining three scenarios.}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{What this run is, in one slide}
+  \begin{itemize}
+    \item Goal: deaths and years of life lost (YLLs) attributable to
+      non-optimal ambient temperature, projected under emissions scenarios.
+    \item Method: Burkart et al.\ (2021), the study behind the Global Burden
+      of Disease (GBD) treatment of temperature. We use the risk curves,
+      optimal temperatures, and code released with that paper.
+    \item Per country and cause: daily temperature \(\rightarrow\) relative
+      risk vs.\ the local optimum \(\rightarrow\) population attributable
+      fraction (PAF, the share of deaths attributable to non-optimal
+      temperature) \(\rightarrow\) attributable deaths and YLLs.
+    \item Inputs: CCKP 0.25-degree daily temperature (World Bank), IHME
+      national mortality forecasts, released curves and optima.
+    \item Scale: 204 countries, 27 climate models, 29 years (2022--2050),
+      500 draws; 159{,}732 output files; run by Caspar, July--August 2026.
+  \end{itemize}
+\end{frame}
+
+\ozsection{Data integrity}
+
+\begin{frame}{All quality gates pass; three defects found and fixed}
+  \begin{itemize}
+    \item Heat + cold = non-optimal holds to floating-point precision, for
+      PAFs and deaths; \(|\mathrm{PAF}| \le 1\) everywhere; all values
+      finite; no all-zero combinations.
+    \item Coverage complete: every country has all 27 models and all 29
+      years.
+    \item Three defective combinations surfaced and were recomputed
+      (August 17, 2026), then re-verified:
+    \begin{itemize}
+      \item Colombia and Equatorial Guinea, one model, 2022: single-cause
+        leftovers of an early benchmark run.
+      \item Vietnam, one model, 2029: missing YLL file (interrupted write).
+    \end{itemize}
+    \item After the fix: all 159{,}732 combinations carry all 17 causes and
+      YLLs.
+  \end{itemize}
+\end{frame}
+
+\ozsection{Validation against published estimates}
+
+\begin{frame}{Anchor 1: the nine countries published in the 2021 paper}
+  \centering\small
+  \begin{tabular}{lrrr}
+    \toprule
+    country & published 2019 [95\% UI] & ours 2022 & ratio \\
+    \midrule
+    China          & 499{,}605 [425{,}094--573{,}429] & 555{,}481 & 1.11 \\
+    United States  & 110{,}588 [98{,}410--119{,}580]  & 103{,}964 & 0.94 \\
+    Mexico         & 19{,}055 [16{,}111--22{,}083]    & 20{,}787  & 1.09 \\
+    Brazil         & 17{,}286 [15{,}386--19{,}185]    & 14{,}383  & \alert{0.83} \\
+    South Africa   & 8{,}815 [7{,}846--9{,}823]       & 9{,}575   & 1.09 \\
+    Colombia       & 4{,}820 [3{,}669--6{,}148]       & 4{,}746   & 0.98 \\
+    Chile          & 3{,}759 [3{,}244--4{,}267]       & 3{,}747   & 1.00 \\
+    Guatemala      & 1{,}258 [976--1{,}637]           & 1{,}095   & 0.87 \\
+    New Zealand    & 1{,}191 [996--1{,}361]           & 1{,}177   & 0.99 \\
+    \bottomrule
+  \end{tabular}
+  \vskip0.6em
+  \raggedright
+  Eight of nine inside the published UIs; rank correlation 0.983. Brazil is
+  low, almost entirely on the heat side. (Ours is 2022 modeled climate vs.\
+  their 2019 observed weather; read as a magnitude check, not to the digit.)
+\end{frame}
+
+\begin{frame}{Anchor 2: all 204 countries vs.\ the 2021 paper's estimates}
+  \begin{exampleblock}{Headline}
+    Global total: ours 1.684M vs.\ published 1.686M attributable deaths per
+    year (ratio 0.999). Country ranks correlate at 0.993. 159 of 204
+    countries inside the published 95\% UIs.
+  \end{exampleblock}
+  \begin{itemize}
+    \item Source: the paper's companion dataset (IHME GHDx, DOI
+      10.6069/7QWW-PF74), which we first verified against the paper's own
+      Table 1 (PAFs agree to \(\le 0.015\) percentage points).
+    \item The 45 out-of-UI countries: 41 low (38 tropical, including 18
+      small-island states), 4 high. About two thirds sit within 15\% of a UI
+      bound, where comparison noise plausibly reaches.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{The apparent hot-country shortfall vs.\ the current GBD round}
+  \begin{itemize}
+    \item Against GBD's \emph{current} (2023-round) 2022 estimates, our
+      global total is 0.874 of theirs, and the biggest gaps are all hot
+      countries: Niger 0.38, Sudan 0.44, Iraq 0.49, India 0.58, Nigeria
+      0.57, Mali 0.58.
+    \item We tested four candidate causes: temperature bias (ruled out where
+      testable against the ERA5 reanalysis), unusual observed 2022 weather
+      (ruled out; GBD's own series is nearly flat 2019 to 2022), mortality
+      inputs (agree globally to 2\%), and risk-curve truncation
+      (contributes, next section).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Resolution: it is GBD's between-round revision}
+  \centering\small
+  \begin{tabular}{lrrr}
+    \toprule
+    country & vs.\ current round & vs.\ 2021 paper & GBD's own revision \\
+    \midrule
+    Niger    & 0.38 & \ozgreentext{0.84} & \(\times\)2.27 \\
+    Sudan    & 0.44 & \ozgreentext{1.31} & \(\times\)2.34 \\
+    Kuwait   & 0.48 & \ozgreentext{1.12} & \(\times\)2.24 \\
+    Iraq     & 0.49 & \ozgreentext{0.94} & \(\times\)1.87 \\
+    India    & 0.58 & \ozgreentext{0.96} & \(\times\)1.67 \\
+    Pakistan & 0.66 & \ozgreentext{0.90} & \(\times\)1.45 \\
+    \bottomrule
+  \end{tabular}
+  \vskip0.6em
+  \raggedright
+  Compared against the estimates of the methodology we actually implement,
+  the hot-country gap disappears (all rows inside the published UIs). GBD
+  revised these countries upward by 1.3--2.3\(\times\) between rounds.
+  Whether to track the 2021 methodology or the current round is a scoping
+  decision, not a bug fix.
+\end{frame}
+
+\ozsection{Structural checks}
+
+\begin{frame}{Trends make sense once composition is removed}
+  \begin{itemize}
+    \item Raw cold-attributable deaths \emph{rise} in most countries
+      (1.33M in 2022 to 1.99M in 2050), which looks wrong under warming.
+    \item Two composition effects explain it: population aging, and the
+      mortality forecast shifting deaths toward cold-heavy causes at high
+      latitudes.
+    \item After age-sex standardization: heat share rises in 197 of 204
+      countries; cold share falls in 140 of 204.
+  \end{itemize}
+  \begin{alertblock}{Reporting guidance}
+    Headline trends should be age-standardized attributable
+    \emph{fractions}; raw counts mix the climate signal with demography.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Model spread and the YLL definition}
+  \begin{itemize}
+    \item No climate model dominates the ensemble; the warmest-tilted
+      members (UKESM1-0-LL, HadGEM3-GC31-LL, KACE-1-0-G) are exactly the
+      known high-sensitivity models.
+    \item A few near-zero-burden countries flip sign across models (e.g.\
+      Singapore, ensemble \(-96\) deaths, model range \(-171\) to
+      \(+135\)); flag sign instability there, not spread.
+    \item YLLs per attributable death: ours 13.9 years vs.\ GBD's 21.2. This
+      is definitional: GBD uses its standard reference life table; we use
+      national UN life expectancies. State it wherever YLLs are compared.
+  \end{itemize}
+\end{frame}
+
+\ozsection{Quantified limitations}
+
+\begin{frame}{Risk curves end at a daily mean of 32.1\,\textcelsius}
+  \begin{itemize}
+    \item Curves exist only over each zone's observed temperature range;
+      hotter days get the endpoint risk. IHME's released code does the same:
+      this is the published method, not our shortcut.
+    \item Scale today: 7.9\% of world population lives where the assignment
+      is clamped (2022), rising to 15--23\% by 2050 under SSP2-4.5. In the
+      Gulf and Sahel, 25--40\% of person-days already exceed the endpoint.
+    \item Extrapolating the endpoint log-linearly multiplies 2022 heat
+      burden by 2.30 (Kuwait), 1.60 (Niger), 1.31 (Sudan), 1.00 (Haiti,
+      no truncation): an assumption-based bound, not evidence.
+  \end{itemize}
+  \begin{alertblock}{Projection consequence}
+    Beyond the endpoint, added warming adds no added risk, so hot-country
+    projections are effectively lower bounds; report the extrapolation as a
+    labeled sensitivity band.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{The tropical low cluster traces to the exposure product}
+  \begin{itemize}
+    \item The daily temperature input is NASA NEX-GDDP-CMIP6: climate models
+      quantile-mapped to the GMFD observational dataset. Neither raw CMIP6
+      nor the ERA5 reanalysis the 2021 estimates used.
+    \item Where testable, its day-to-day spread runs 30--40\% below ERA5 in
+      low-variance tropical countries; burden lives in that spread, so
+      damped spread means damped burden. The 18 small-island states are the
+      extreme case.
+    \item Re-referencing to ERA5, tested on four countries, fixes Rwanda but
+      moves the Philippines the \emph{wrong} way (the references disagree by
+      1.9\,\textcelsius{} there). \alert{Not recommended as a production
+      change on current evidence.}
+    \item Takeaway: tropical country results are sensitive up to
+      \(\sim\)2\(\times\) to the choice of observational reference; no
+      published uncertainty interval includes that.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Other standing flags}
+  \begin{itemize}
+    \item \textbf{Sub-grid countries}: 29 countries span at most one
+      0.25-degree grid cell; model spread \(\sim\)7\(\times\) the median,
+      attributable share \(\sim\)4\(\times\) lower than resolved tropical
+      peers. Flag in country tables.
+    \item \textbf{Fixed optimal temperature}: the TMREL is held at its 2020
+      value for all projection years (no adaptation). Defensible to 2050;
+      strong for 2100; an annual derivation exists as a sensitivity.
+    \item \textbf{Forecast mortality}: projected burdens mix climate with
+      IHME's demographic and epidemiological forecasts; attributable
+      fractions isolate the climate signal.
+  \end{itemize}
+\end{frame}
+
+\ozsection{Recommendations}
+
+\begin{frame}{Six recommendations}
+  \begin{enumerate}
+    \item \ozgreentext{Proceed with the remaining three scenarios}
+      (SSP3-7.0, SSP5-8.5, SSP1-2.6); nothing here blocks them.
+    \item State the alignment target in all outputs: these are estimates
+      under the Burkart 2021 methodology. If current-round alignment is
+      wanted later, obtain the current-round curves from IHME; do not tune
+      ours.
+    \item Report projected trends as age-standardized attributable
+      fractions, counts secondary.
+    \item Attach the truncation sensitivity band to hot-country projection
+      results (a small local computation; no full-scale rerun).
+    \item Flag the 29 sub-grid countries and the tropical low cluster in
+      country-level tables.
+    \item State the YLL definition wherever YLLs are shown.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Provenance}
+  \begin{itemize}
+    \item Production summary tables: August 7, 2026 (re-issued August 17,
+      2026, after the three-combo fix), produced by Caspar.
+    \item Review analyses: August 14--17, 2026; notes in
+      \texttt{ssp245-review-findings.org}, scripts and outputs in
+      \texttt{output/review-ssp245/} in the project repository.
+    \item External comparators: Burkart et al.\ (2021) Table 1; IHME GHDx
+      dataset DOI 10.6069/7QWW-PF74 (the paper's companion estimates); GBD
+      Results Tool exports (current round), July 31, 2026.
+    \item A six-page written version of this review exists alongside this
+      deck (\texttt{ssp245-review-summary.pdf}).
+  \end{itemize}
+\end{frame}
+
+\end{document}
