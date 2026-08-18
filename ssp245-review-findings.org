@@ -331,19 +331,217 @@ cannot be measured directly; on this evidence the revision explanation
 stays plausible and unquantified. Per-country factors:
 =output/review-ssp245/gbd_round_revision_9countries.csv=.
 
-** What would settle the remainder
+** The truncation experiment, small version (run 2026-08-17)
 
-1. A truncation experiment: rerun one Gulf or Sahel country with the
-   zone-28 ERF log-linearly extrapolated past 32.1 deg C and measure the
-   burden change. That bounds the truncation driver directly.
-2. Haiti (and Cambodia on the high side) as case studies: no truncation, no
-   mortality gap, PAF ratio 0.42; candidate causes narrow to TMREL
-   placement and ERF-round differences. Comparing our TMREL against GBD's
-   reported TMREL for Haiti would be the first look.
-3. If the revision driver needs pinning down, the GBD 2021-round results
-   tool carries the paper-era estimates for all 204 locations; a second
-   gated download of that round's 2019 values would make the revision
-   measurable everywhere, not just for nine countries.
+=analysis7_experiments.R= replicates the pipeline's summary-mode PAF stage
+(05_compute_pafs.R: RR rescaled to the TMREL bin, per-bin contribution
+pr x (RR-1)/RR, heat = bins above TMREL) at national level for
+access-cm2-r1i1p1f1 / 2022, and validates it against the production run's
+own per-cause results for the same combo: correlation 0.993, median
+absolute PAF difference 0.002 (residual differences trace to the replica
+using summary curves where production used 500 draws). The heat side is
+then re-evaluated with log(RR) extended log-linearly past the zone max
+(slope fitted to the last 0.5 deg C of each curve) instead of capped.
+
+#+caption: Heat burden under log-linear ERF extrapolation relative to the capped baseline, access-cm2 2022, weighted by IHME cause deaths. Right column: the GBD burden ratio if only the PAF changed accordingly.
+| country  | heat ratio ext/cap | non-optimal ratio | ours/GBD: before -> after |
+|----------+--------------------+-------------------+---------------------------|
+| Kuwait   |               2.30 |              1.83 | 0.48 -> 0.88              |
+| Niger    |               1.60 |              1.59 | 0.38 -> 0.60              |
+| Sudan    |               1.31 |              1.28 | 0.44 -> 0.56              |
+| Cambodia |               1.04 |              1.04 | 1.73 -> 1.80              |
+| Haiti    |               1.00 |              1.00 | 0.42 -> 0.42              |
+
+Read as: under a log-linear extension of the hottest ERF, truncation
+accounts for roughly half of the Gulf/Sahel gap in log terms (nearly all
+of Kuwait's), and none of Haiti's. Caveats: log-linear extrapolation is an
+assumption (if the true RR plateaus above 32 deg C this overstates the
+recovery), summary curves not draws, one model, one year. The remaining
+Sahel gap is consistent in size with the GBD-round revision plus, for
+Niger and Sudan, the mortality-input undercount.
+
+** Haiti and Cambodia case-study diagnostics
+
+From the same replica (pop-weighted daily-temperature statistics,
+access-cm2 2022):
+
+- Haiti: modal zone 24, TMREL 25.4 deg C, daily temperature P05/P50/P95 =
+  22.1 / 25.2 / 28.3 deg C. The whole distribution spans about 6 deg C
+  with the TMREL near its middle, so both tails are short and the PAF is
+  small by construction; truncation is exactly zero. Haiti's shortfall
+  therefore traces to exposure spread around the TMREL, not to the clamp;
+  with 39 coastal grid cells this connects to the ocean-damped-variance
+  concern from the sub-grid section rather than to the ERF domain.
+- Cambodia: modal zone 28, TMREL 26.5 deg C, P50 = 29.6 deg C; 88.8% of
+  person-days sit above the TMREL, so nearly the entire year is "heat" and
+  the PAF is large, putting us 73% above GBD. With the TMREL that far into
+  the left tail, small differences in TMREL placement or exposure produce
+  large burden swings; TMREL placement is the variable to scrutinize for
+  Cambodia-like profiles.
+
+Both diagnoses are descriptive: without GBD's own exposure and TMREL for
+these countries we cannot say which side is closer to truth.
+
+** Note on who truncates
+
+Checked 2026-08-17 in IHME's own released code
+(=from-samuel/Info Burkart/environmental_risk_factors-temperature_lancet_2021/pafCalc_sevFix.R=,
+lines 139-144): the paper-era GBD pipeline clamps the zone to [6, 28] and
+each day to the zone's [minTemp, maxTemp], exactly as our
+=03_load_temperature.R= does. Truncation is therefore not a deviation we
+introduced; it is the paper-era method, faithfully reproduced. Whether the
+current GBD round still truncates is unknown to us; its large upward
+hot-belt revisions (next section) would be consistent with an extended or
+re-estimated hot tail, which is what our extrapolation experiment
+approximates.
+
+* Resolution: the round-revision measurement (2026-08-17)
+
+Aaron downloaded the paper-era companion dataset (GHDx "Mortality Burden
+Attributable to Non-Optimal Temperature 1990-2019", DOI 10.6069/7QWW-PF74)
+and =analysis8_revision.R= compares all 204 locations against it. The file
+carries per-person rates and PAFs, not counts; counts were reconstructed
+using population implied by the current-round download (rate x population;
+a PAF-based reconstruction agrees, see the script output). Headline:
+
+- Against the paper era, our 2022 global total is 0.999 of their 2019
+  value; Spearman rank correlation 0.993; 159 of 204 locations fall inside
+  the paper's 95% UI; median ratio 0.94 among the 154 locations with more
+  than 100 paper-era deaths. (Ours is 2022 vs their 2019, but GBD's own
+  2019-to-2022 movement is small, so the comparison is meaningful.)
+- Every hot-belt shortfall country except UAE lands inside the paper-era
+  UI: Niger 0.84, Sudan 1.31, Kuwait 1.12, Iraq 0.94, India 0.96, Chad
+  1.07, Mali 0.97, Oman 0.98, Pakistan 0.90, Mauritania 1.30. Their
+  current-round revision factors are 1.3 to 2.3 (Sudan 2.34, Niger 2.27,
+  Kuwait 2.24, India 1.67; heat-side Iraq reaches 2.68). The hot-belt
+  shortfall vs the current round is therefore, for these countries, GBD
+  round revision, not a pipeline defect: the pipeline reproduces the
+  methodology it implements.
+- Cambodia resolves the other way: ours 1.04 vs paper era, and its
+  current-round 2019 value (2,114) also matches; the 1.73 came from GBD's
+  own estimate dropping 42% between 2019 and 2022 within the current
+  round. Nothing on our side to fix; worth understanding their 2022 drop
+  before quoting Cambodia.
+- YLLs: paper-era global YLL per attributable death is 19.4 years vs our
+  13.9 (current round 21.2), so the YLL gap persists against both rounds
+  and remains consistent with the reference-life-table difference; it
+  should be stated as definitional wherever YLLs are compared.
+
+** Verification of the comparison dataset (added later on 2026-08-17)
+
+Cross-checking the GHDx companion dataset against the paper's own Table 1
+for the nine countries: PAFs agree to at most 0.015 percentage points with
+digit-identical uncertainty intervals, so the dataset is the paper's
+estimates, verified numerically. The count reconstruction (per-person rate
+x current-round implied population) reproduces Table 1 death counts within
++/-7% for seven of nine countries (Guatemala 0.88, New Zealand 1.10), so
+per-location count ratios above carry roughly +/-10% reconstruction noise;
+PAF-based comparisons are exact.
+
+** Composition of the 45 locations outside the paper-era UI
+
+Of the 45 (of 204) locations whose 2022 ensemble falls outside the
+paper-era 95% UI: 41 are low and 4 are high. The lows split into the 23
+with more than 50 paper-era deaths discussed above (20 of them tropical)
+plus 18 with at most 50 paper-era deaths, and those 18 are ALL tropical
+and nearly all small islands (Solomon Islands, Fiji, Timor-Leste, Cape
+Verde, Maldives, Kiribati, ...; 11 of the 45 are sub-grid locations),
+uniformly at 0.25 to 0.65 of the paper value. The 4 highs (The Gambia
+1.60, Saudi Arabia 1.38, Thailand 1.35, Ecuador 1.34) fit neither
+mechanism below. 28 of the 45 sit within 15% of a UI bound, close enough
+that the ~10% count-reconstruction noise plus the 2022-vs-2019 year
+mismatch plausibly account for them; a perfect reimplementation would not
+reach 95% coverage on this comparison anyway, since ours is climate-model
+2022 against their observed-weather 2019.
+
+** Exposure provenance, and the ERA5 re-referencing test
+
+The CCKP daily product the production run consumes is NASA NEX-GDDP-CMIP6
+(verified from the NetCDF =wb_*= attributes; Thrasher et al. 2022): CMIP6
+already bias-corrected and downscaled by quantile mapping against GMFD
+(the Princeton Global Meteorological Forcing Dataset) over 1960-2014. So
+the pipeline's exposure is neither raw CMIP6 nor ERA5, and the "tropical
+variance deficit" measured earlier is more precisely a NEX/GMFD-vs-ERA5
+reference disagreement (the paper's exposure was ERA5-based).
+
+A local re-referencing test (=analysis10_qm.R=: per-pixel empirical
+quantile mapping of the 2022 CCKP series onto 2022 ERA5, through the
+validated replica) gives a mixed verdict:
+
+#+caption: Replica non-optimal burden (deaths) under three exposure variants vs the paper-era value. access-cm2, 2022; single-year QM conflates weather with climatology.
+| country     |   raw | mean-shift | QM to ERA5 | paper [95% UI]      |
+|-------------+-------+------------+------------+---------------------|
+| Rwanda      |   765 |        893 |        900 | 937 [771, 1150]     |
+| Philippines | 3,964 |      2,473 |      2,125 | 5,180 [3,891, 6,878] |
+| Costa Rica  |   267 |        398 |        395 | 245 [179, 318]      |
+| Colombia    | 4,917 |      4,989 |      5,008 | 4,986 [3,796, 6,360] |
+
+Re-referencing fixes Rwanda, leaves the control (Colombia) unchanged,
+overshoots Costa Rica, and moves the Philippines away from the paper
+value. On this evidence ERA5 re-referencing is NOT supported as a blanket
+production change; the mechanism is real in places but country-specific
+structure dominates, and a proper test would need multi-year correction
+windows (roughly 6 GB of additional CCKP years, feasible locally).
+
+** UAE: exposure ruled out, gap unexplained but within joint uncertainty
+
+With ERA5 2022 for the UAE fetched from the public ARCO-ERA5 archive
+(=fetch_uae_era5.py=), the CCKP exposure there is close to unbiased:
+pop-weighted mean 28.6/29.1 deg C (two models) vs 29.0 observed, P95
+within 0.7 deg C, share of days above 32.1 deg C 40/45% vs 38% observed.
+Re-referencing to ERA5 moves the replica burden from 834 to 824-850,
+nowhere near the paper's 1,520. So the UAE's point-estimate gap (~0.5 vs
+both GBD vintages) is not exposure, not mortality inputs (ours are 56%
+higher), not the truncation rule (shared with the paper), and not the
+curves or TMRELs (same released files). It remains unexplained at the
+point-estimate level; our draw interval [431, 1184] does overlap the
+paper's UI [958, 2165], so the two are not statistically inconsistent.
+
+23 locations with more than 50 paper-era deaths sit below the paper-era
+95% UI (=revision_all204.csv=): Singapore, Haiti (0.35), Malaysia (0.45),
+UAE (0.52), Uganda, Indonesia (0.56), Mauritius, Namibia, Papua New
+Guinea, Botswana, Tanzania, Honduras, DR Congo, Malta, Zambia, Mozambique,
+Nicaragua, Malawi, Zimbabwe, Georgia, Ethiopia, Portugal, Brazil (0.86).
+19 of the 23 are tropical or subtropical, including large well-resolved
+countries (Indonesia has 2,454 grid cells), so this is not the sub-grid
+island problem; it looks like damped tropical daily variance in CMIP6.
+Local tests (=analysis9_variance.R=):
+
+- Within-pixel daily SD, ERA5 vs CMIP6, for the ERA5-covered countries:
+  in the two low-variance tropical countries CMIP6 underestimates the
+  daily SD by roughly 30 to 40% (Rwanda: ERA5 1.04 deg C vs 0.71/0.74 for
+  the two models; Philippines: 1.17 vs 0.82/0.68), while mid- and
+  high-variance countries are close to unbiased (Bangladesh 0.94, South
+  Africa 0.91 to 0.96, India 0.91 to 1.04, Colombia 0.94 to 1.10). Seven
+  countries, two models, one year: suggestive of a tropical variance
+  deficit, not proof.
+- Haiti's paper-era value (416) lies inside our production draw interval
+  ([-1329, 510]), so the Haiti discrepancy is within our stated
+  uncertainty; the point estimate is low, not inconsistent.
+- Variance-inflation sensitivity in the replica: scaling daily anomalies
+  by about 1.2 to 1.25 reproduces the paper-era Haiti burden. Treat as
+  order-of-magnitude only: the replica (summary curves, one model)
+  overstates near-zero-burden countries relative to production, and its
+  Indonesia run is not validated.
+
+* What remains open, and where it must run
+
+1. A decision, not an analysis: which target should the pipeline agree
+   with, the paper-era methodology it implements (it does, globally to
+   0.1%) or the current GBD round (which would need the hot-tail
+   extension, full version on Caspar's machine, and possibly other
+   round-2023 changes we have not identified)? Aaron's call; Samuel is away
+   for the coming months, so nothing here waits on a meeting.
+2. Tropical variance bias-correction: tested locally 2026-08-17 (see the
+   re-referencing section above) with a mixed verdict, so NOT recommended
+   as a production change on current evidence. If revisited, the next step
+   is a multi-year correction window (~6 GB of additional CCKP downloads).
+3. Gulf bias check: done for the UAE (see above); exposure ruled out, gap
+   unexplained at point level, intervals overlap. Sahel countries remain
+   untested for exposure bias but sit inside the paper-era UIs anyway.
+4. Cosmetic: Mexico and Italy drop out of the SD comparison because some
+   of their CMIP6 pixels carry NA over the year (their rows are NaN in
+   =daily_sd_era5_vs_cmip6.csv=); an na.rm fix would restore them.
 
 * YLLs per attributable death
 
@@ -367,15 +565,14 @@ ages where temperature-attributable deaths occur. Two tails worth knowing:
 
 * What this review did not do
 
-- The sub-grid daily-variance check against observed data (above); the GBD
-  comparison could not settle it (only 3 of the 29 have meaningful GBD
-  burden), and none of the 29 has local ERA5.
-- Quantifying the burden actually lost to truncation (the extrapolated-ERF
-  experiment in the shortfall section) and the Haiti/Cambodia TMREL case
-  studies; the shortfall analysis narrowed the drivers but did not close
-  them.
+(Superseded in part by the resolution section above; remaining items are
+consolidated there under "What remains open". Still true and not covered
+there:)
+
+- The sub-grid island group (29 locations, at most one grid cell) still
+  has no direct daily-variance check: none of the 29 has local ERA5, and
+  the tropical SD test above covers resolved countries only. The measured
+  tropical variance deficit makes the concern more plausible, not less.
 - The clamp and truncation analyses cover 2 of 27 models; a full-ensemble
   version should ride along with a production-side pass on Caspar's
   machine.
-- The Gulf and Sahel countries remain untested for CMIP6 temperature bias
-  (no local ERA5 coverage there).
