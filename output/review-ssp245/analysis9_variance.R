@@ -12,7 +12,7 @@ suppressPackageStartupMessages({library(ncdf4); library(data.table); library(sf)
 sf_use_s2(FALSE)
 
 C   <- "/var/home/aoz/data/wb-temp-attr-projections/cckp-test"
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 REV <- "/var/home/aoz/data/wb-temp-attr-projections/review/ssp245"
 meta <- fread(file.path(OUT, "location_meta.csv"))
 M    <- fread(file.path(OUT, "revision_all204.csv"))

@@ -4,7 +4,7 @@
 
 Run Samuel's original Colombia pipeline (`from-samuel/Scripts/Colombia/11_carga_atribuible.R`) against the same input data the global pipeline uses, save intermediate-stage outputs, and diff them against the global pipeline's outputs to localize where they diverge.
 
-The global pipeline (with `COLOMBIA_VERIFICATION = TRUE`) reproduces Samuel's published Colombia totals to within 5–10% on most metrics, but heat-side per-cause PAFs are still 24-39% off (heat homicide -24%, heat road -39%). An independent code-comparison agent enumerated 36 differences in `comparison-report-pipeline-vs-samuel.md`. We've patched the toggleable ones (Batches A and B in the git history). The remaining gap is hypothesized to come from the depto × day aggregation difference (Samuel keeps department × day granularity through PAF/SEV/burden; we collapse to year × cause early). **We need to confirm that hypothesis** — that the residual divergence is structural, not a hidden bug — before investing in a depto-day refactor of our pipeline.
+The global pipeline (with `COLOMBIA_VERIFICATION = TRUE`) reproduces Samuel's published Colombia totals to within 5–10% on most metrics, but heat-side per-cause PAFs are still 24-39% off (heat homicide -24%, heat road -39%). An independent code-comparison agent enumerated 36 differences in `../validation/comparison-report-pipeline-vs-samuel.md`. We've patched the toggleable ones (Batches A and B in the git history). The remaining gap is hypothesized to come from the depto × day aggregation difference (Samuel keeps department × day granularity through PAF/SEV/burden; we collapse to year × cause early). **We need to confirm that hypothesis** — that the residual divergence is structural, not a hidden bug — before investing in a depto-day refactor of our pipeline.
 
 The way to confirm: run Samuel's calculation and compare at intermediate stages, not just final totals.
 
@@ -13,7 +13,7 @@ The way to confirm: run Samuel's calculation and compare at intermediate stages,
 - **Working directory:** `/var/home/aoz/Dropbox/OZ-Labs/WorldBank/2026-climate-health-burden-projections/`
 - **Branch:** `samuel-verification-patches` (already checked out). Commit your work on this branch.
 - **Samuel's scripts are at** `from-samuel/Scripts/Colombia/`, vendored in commit `0bdec33`. The script that does the burden calculation is `11_carga_atribuible.R` (~600 lines, in Spanish). The earlier scripts (01-10) are data prep that we don't need — we already have the cleaned inputs.
-- **The global pipeline has already been validated** end-to-end by running through `global-scripts/run_location.R` with `COLOMBIA_VERIFICATION = TRUE` and comparing against Samuel's published numbers. See `comparison-report-pipeline-vs-samuel.md` for the detailed difference enumeration.
+- **The global pipeline has already been validated** end-to-end by running through `global-scripts/run_location.R` with `COLOMBIA_VERIFICATION = TRUE` and comparing against Samuel's published numbers. See `../validation/comparison-report-pipeline-vs-samuel.md` for the detailed difference enumeration.
 - **R is available only inside the `emacs-r` distrobox container.** Use `distrobox enter emacs-r -- Rscript ...` to invoke R. The host has no R installed.
 - **Samuel's script uses `tidyverse` / `dplyr` syntax**; the global pipeline uses `data.table`. The Samuel-checkpoint runner you build can use either.
 
@@ -60,7 +60,7 @@ You'll write a sibling R script (suggested location: `samuel-runner/run_samuel_w
 
 1. **The runner script** (`samuel-runner/run_samuel_with_checkpoints.R`) committed to `samuel-verification-patches`. It should be self-contained: invokable via `distrobox enter emacs-r -- Rscript samuel-runner/run_samuel_with_checkpoints.R`. Should produce all 5 checkpoints.
 
-2. **A markdown report** at `/var/home/aoz/Dropbox/OZ-Labs/WorldBank/2026-climate-health-burden-projections/samuel-runner-checkpoint-report.md` containing:
+2. **A markdown report** at `/var/home/aoz/Dropbox/OZ-Labs/WorldBank/2026-climate-health-burden-projections/../validation/samuel-runner-checkpoint-report.md` containing:
 
    - **Executive summary** (3-5 bullets): which checkpoint shows the first meaningful divergence? Is the divergence consistent with the depto × day aggregation hypothesis, or does it suggest a different / additional cause?
    - **Per-checkpoint diff tables** with the metrics mentioned above (mean abs % diff, max, top-divergent cells).
@@ -78,8 +78,8 @@ You'll write a sibling R script (suggested location: `samuel-runner/run_samuel_w
 
 ## Background context the team has
 
-- `step2-comparison.md` — Samuel vs Burkart 2021 reference comparison (different from your mission, but shows the methodology landscape).
-- `comparison-report-pipeline-vs-samuel.md` — the independent code review that triggered this work. Reference items 12, 15, 20, 21, 24, 25 (depto-day aggregation) and 9 (year-varying WorldPop) are the structural items hypothesized to cause the residual.
+- `../validation/step2-comparison.md` — Samuel vs Burkart 2021 reference comparison (different from your mission, but shows the methodology landscape).
+- `../validation/comparison-report-pipeline-vs-samuel.md` — the independent code review that triggered this work. Reference items 12, 15, 20, 21, 24, 25 (depto-day aggregation) and 9 (year-varying WorldPop) are the structural items hypothesized to cause the residual.
 - `handoff-pipeline-vs-samuel-comparison.md` — the brief that produced the comparison report.
 - The git log on `samuel-verification-patches` shows the chain of fixes already applied.
 - `ihme-unscaling-validity-report.md` (may not exist yet — being produced by another agent in parallel; ignore unless you happen to need IHME-forecasting context, which you shouldn't).

@@ -10,7 +10,7 @@ The stressor-resilience framework (a related but separate project) now lives in 
 
 ## Workspace Layout (Aaron's machine)
 
-Since 2026-08-14 the canonical checkout is `/var/home/aoz/code/2026-climate-health-burden-projections/`. The old Dropbox copy (`~/Dropbox/OZ-Labs/WorldBank/2025-2026-climate-resilience/2026-climate-health-burden-projections/`) was moved here and no longer exists; do not recreate it.
+Since 2026-08-14 the canonical checkout is `/var/home/aoz/code/wbg-climate-health-burden-projections/`. The old Dropbox copy (`~/Dropbox/OZ-Labs/WorldBank/2025-2026-climate-resilience/2026-climate-health-burden-projections/`) was moved here and no longer exists; do not recreate it.
 
 Large untracked data lives at `/var/home/aoz/data/wb-temp-attr-projections/` and is symlinked into the checkout:
 
@@ -18,7 +18,14 @@ Large untracked data lives at `/var/home/aoz/data/wb-temp-attr-projections/` and
 - `from-samuel/`: real directory (31 tracked files) with symlinks for the big payloads (`Info Burkart/ERF`, `Info Burkart/TMRELs`, the DANE `*.zip` archives, `results`, large PDFs/CSVs)
 - `output/summary/ssp245`: symlink to `review/ssp245/` under the data root, holding the summary tables from Caspar's ssp245 production run (~640 MB on disk, too large for git)
 
-Worktrees for branch work go in `/var/home/aoz/code/2026-climate-health-burden-projections-worktrees/`.
+Worktrees for branch work go in `/var/home/aoz/code/wbg-climate-health-burden-projections-worktrees/`.
+
+Long-form documents live under `docs/` (since 2026-08-18), one subdirectory
+per kind: `reviews/` (run validation reviews), `validation/` (Colombia-era
+verification), `ops/` (caspar-workflow.md, MIGRATION.md,
+pipeline-state-for-cckp.md), `handoffs/`, `meetings/`, `methodology/`, and
+`notes/` (personal, gitignored). Only README.md, CLAUDE.md, and run/config
+files stay at the repo root; put new docs in the matching `docs/` subdir.
 
 ## Architecture
 
@@ -39,7 +46,7 @@ Run order (managed by `run_location.R`):
 
 Key config flags in `config.R`:
 - `USE_DRAWS` — Full 1000-draw uncertainty propagation (TRUE) vs summary statistics (FALSE)
-- `COLOMBIA_VERIFICATION` — Toggle Samuel's methodological choices for validation (see step2-comparison.md)
+- `COLOMBIA_VERIFICATION` — Toggle Samuel's methodological choices for validation (see docs/validation/step2-comparison.md)
 - `COMPUTE_SEVS` — Whether to compute SEVs
 
 ### Samuel's Original Colombia Scripts (from-samuel/Scripts/Colombia/)

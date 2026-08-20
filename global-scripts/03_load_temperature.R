@@ -121,6 +121,14 @@ temp[, pr := pop / pop_subloc_total]
 
 # --- Temperature draws (if enabled and temp_sd available) ---
 if (USE_DRAWS && "temp_sd" %in% names(temp)) {
+  # UNMAINTAINED PATH, disabled 2026-08-20 pending the exposure-uncertainty
+  # design decision: as written it drops subloc_id/date (05/06 would error on
+  # the missing column), does not group pr by draw (populations would sum to
+  # N_DRAWS across draws), and the rnorm is unseeded. No production input has
+  # ever carried temp_sd (the CCKP converter emits none), so this has never
+  # executed. Fail loudly rather than run broken.
+  stop("temperature-draw path is unmaintained and disabled; input carries ",
+       "temp_sd but this code needs repair before use (see 2026-08-19 audit)")
   log_msg("Generating", N_DRAWS, "temperature draws per pixel-day")
 
   # Create draws by adding Gaussian noise: draw_temp = daily_temp + sd * N(0,1)

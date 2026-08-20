@@ -135,7 +135,7 @@ before generating anything, not after.
 
 ## Related
 
-- `pipeline-state-for-cckp.md` for the forward-run state.
+- `../ops/pipeline-state-for-cckp.md` for the forward-run state.
 - `handoff-cckp-run-failures-2026-07-31.md` for the current forward-run
   failures, which are unrelated to this but worth reading first if you are
   assessing "how the results look."

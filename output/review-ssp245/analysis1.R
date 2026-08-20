@@ -3,7 +3,7 @@
 suppressPackageStartupMessages(library(data.table))
 
 REV <- "/var/home/aoz/data/wb-temp-attr-projections/review/ssp245"
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
 nat <- fread(file.path(REV, "national_by_year.csv"))

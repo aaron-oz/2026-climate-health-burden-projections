@@ -1,0 +1,426 @@
+% ssp245-review-summary.tex -- self-contained review summary for Charlie and Caspar
+% Build: TEXINPUTS=/var/home/aoz/Dropbox/OZ-Labs/templates//: xelatex ssp245-review-summary.tex  (run twice)
+\documentclass[11pt]{ozreport}
+
+\renewcommand{\ozdocmark}{/var/home/aoz/Dropbox/OZ-Labs/templates/assets/oz-eye-gradient.pdf}
+
+\title{Validation Review of the SSP2-4.5 Global\\ Temperature-Attributable Burden Run}
+\author{Aaron Osgood-Zimmerman \quad\textperiodcentered\quad OZ Labs LLC}
+\date{August 20, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We reviewed the first full production run of the global temperature-attributable
+mortality pipeline (scenario SSP2-4.5, 204 countries, 27 climate models, years
+2022--2050). All arithmetic and coverage checks pass. Against the published
+2019 estimates of the methodology the pipeline implements (Burkart et al.,
+\textit{The Lancet} 2021), our 2022 global total agrees to 0.1\%, country
+ranks correlate at 0.993, and 159 of 204 countries fall inside the published
+95\% uncertainty intervals. An apparent large shortfall in hot countries
+relative to the newer GBD 2023 release turned out to be almost entirely
+upward revision by GBD itself between the 2019 and 2023 releases, not a pipeline defect. The main
+genuine limitations we identified and quantified are: risk curves that are
+undefined above a daily mean of 32.1\,\textcelsius{} (a growing share of
+future exposure), a cluster of tropical and small-island countries where our
+burden runs low relative to GBD 2019 (temperature bias and damped daily
+variability were tested and ruled out; the addendum identifies the
+principal cause), and a years-of-life-lost definition that differs from
+GBD's.
+A post-review addendum (Section~\ref{sec:addendum}) documents a defect in
+how uncertainty draws are paired, found after the main review; it warrants
+rerunning ssp245 before launching the remaining three scenarios.
+Recommendations are at the end.
+\end{abstract}
+
+\section{Background and scope}
+
+The project estimates deaths and years of life lost (YLLs) attributable to
+non-optimal ambient temperature, for 204 countries, projected to 2050 (and
+later 2100) under emissions scenarios, for the World Bank. The methodology
+follows Burkart et al.\ (2021), the study underlying the Global Burden of
+Disease (GBD) treatment of temperature: for each of 17 temperature-related
+causes of death, a set of exposure-response functions (ERFs; relative-risk
+curves relating daily mean temperature to mortality) is combined with daily
+temperature fields, a location-specific theoretical minimum risk exposure
+level (TMREL; the death-weighted optimal temperature), and cause-specific
+mortality, to produce population attributable fractions (PAFs; the share of a
+cause's deaths attributable to non-optimal temperature) and attributable
+deaths and YLLs. We use the ERF curves, TMRELs, and code released with the
+2021 paper; mortality comes from Institute for Health Metrics and Evaluation
+(IHME) national forecasts; daily temperature comes from the World Bank
+Climate Change Knowledge Portal (CCKP) 0.25-degree daily product.
+
+The run under review is the reference-scenario (SSP2-RCP4.5, ``ssp245'')
+production pass executed by Caspar in July--August 2026: 204 countries
+$\times$ 27 climate models $\times$ 29 years (2022--2050), 500 draws per
+combination, 159{,}732 output files, summarized into review tables on
+August 14, 2026. This document reports the review of that run, conducted
+August 14--20, 2026. Unless stated otherwise, ``our'' numbers below are for
+2022 and are built in two steps: each climate model's estimate is the mean
+over its 500 draws, and we then average those 27 per-model estimates (an
+unweighted ensemble mean).
+
+\section{Data integrity}
+
+The run's quality gates all pass: the additive identities (heat plus cold
+equals non-optimal, for PAFs and deaths) hold to floating-point precision;
+$|\mathrm{PAF}| \le 1$ everywhere (maximum 0.777); all values are finite; no
+combination has an all-zero burden; coverage is complete (every country has
+all 27 models and all 29 years; two further models publish no ssp245 data,
+which is expected); and every one of the 159{,}732 combinations carries all
+17 causes and YLLs.
+
+\section{Validation against published estimates}
+
+\subsection{The nine benchmark countries}
+
+Table~1 of Burkart et al.\ (2021) publishes attributable deaths for nine
+countries for 2019. Table~\ref{tab:nine} compares our 2022 ensemble against
+it. Eight of nine of our point estimates fall inside the published 95\%
+uncertainty intervals (UIs); the exception is Brazil (ratio 0.83), which is
+low almost entirely on the heat side. The rank ordering across countries
+matches (Spearman correlation 0.983). Note the comparison is not
+year-matched: our 2022 (modeled climate, forecast mortality) against their
+2019 (observed weather, GBD mortality); GBD's own numbers move little between
+2019 and 2022, so the comparison is informative but should not be read to the
+digit.
+
+\begin{table}[b]
+\centering
+\small
+\begin{tabular}{lrrr}
+\hline
+country & published 2019 [95\% UI] & ours 2022 & ratio \\
+\hline
+China          & 499{,}605 [425{,}094--573{,}429] & 555{,}481 & 1.11 \\
+United States  & 110{,}588 [98{,}410--119{,}580]  & 103{,}964 & 0.94 \\
+Mexico         & 19{,}055 [16{,}111--22{,}083]    & 20{,}787  & 1.09 \\
+Brazil         & 17{,}286 [15{,}386--19{,}185]    & 14{,}383  & 0.83 \\
+South Africa   & 8{,}815 [7{,}846--9{,}823]       & 9{,}575   & 1.09 \\
+Colombia       & 4{,}820 [3{,}669--6{,}148]       & 4{,}746   & 0.98 \\
+Chile          & 3{,}759 [3{,}244--4{,}267]       & 3{,}747   & 1.00 \\
+Guatemala      & 1{,}258 [976--1{,}637]           & 1{,}095   & 0.87 \\
+New Zealand    & 1{,}191 [996--1{,}361]           & 1{,}177   & 0.99 \\
+\hline
+\end{tabular}
+\caption{Attributable non-optimal-temperature deaths per year: Burkart et
+al.\ (2021) Table~1 values for 2019, with 95\% uncertainty intervals, against
+our ssp245 ensemble means for 2022. ``Ratio'' is ours divided by published.}
+\label{tab:nine}
+\end{table}
+
+\subsection{All 204 countries against the GBD 2019 temperature-attributable
+burden estimates}
+
+IHME published the GBD 2019 temperature-attributable burden estimates as a
+dataset accompanying Burkart et al.\ (2021) (GHDx DOI 10.6069/7QWW-PF74):
+attributable death rates and PAFs for all 204 countries for 2019. We
+verified this dataset against Burkart Table~1 (PAFs agree to at most 0.015
+percentage points, with identical UIs), reconstructed absolute counts from
+its per-person rates (accurate to roughly $\pm$10\%, calibrated on the nine
+Table~1 countries), and compared all 204 countries. Below, ``the GBD 2019
+estimates'' refers to this dataset.
+
+\begin{ozresult}{Headline validation result}
+Against the GBD 2019 estimates, our 2022 global total agrees to 0.1\%
+(1.684 vs.\ 1.686 million attributable deaths per year), the country
+ranking correlates at 0.993 (Spearman), and 159 of 204 countries fall
+inside the GBD 2019 95\% UIs. Counting a country as discrepant only when
+the intervals on \emph{both} sides fail to overlap (their 95\% UI vs.\ our
+95\% draw interval), a single country remains: Cape Verde. The pipeline
+reproduces the methodology it implements at global and, for most countries,
+national scale.
+\end{ozresult}
+
+Two disagreement counts are worth keeping separate. Our \emph{point
+estimates} fall outside the GBD 2019 UIs in 45 countries; those decompose
+as 41 low and 4 high, and of the lows 38 are tropical: a cluster of 18
+small, mostly island countries (uniformly at 0.25--0.65 of the GBD 2019
+value), and 23 larger countries (e.g.\ Indonesia at 0.56, Haiti at 0.35).
+Section~\ref{sec:limits} reports the mechanisms tested. But once our own
+uncertainty is included, only Cape Verde has non-overlapping intervals; the
+other 44 are point-estimate differences within joint uncertainty. (Interval
+overlap is a permissive test, since our draw intervals are wide where heat
+and cold nearly cancel, which is why we report both counts.)
+
+\subsection{GBD 2023, and an apparent hot-country shortfall}
+
+Against the published 2022 estimates of GBD's newest release (GBD 2023),
+our global total is 0.874 of theirs. The country-level agreement is
+otherwise strong: ranks correlate at 0.991, and in 203 of 204 countries the
+two estimates agree on the direction of the net burden (a country's net
+non-optimal burden can be negative, i.e.\ net protective, where mild-day
+protection outweighs harmful days; ours and GBD 2023's estimates put the
+same countries on the same side of zero, with one exception). But there is
+a marked pattern: the largest gaps are all hot, mostly lower-income
+countries, with ratios of 0.38--0.58 (Niger, Sudan, Iraq, India, Nigeria,
+Mali, Chad, among others).
+
+We initially treated this as a possible pipeline defect and tested four
+explanations (temperature bias, observed 2022 weather, mortality inputs,
+risk-curve truncation). The decisive test became possible once the GBD 2019
+estimates were in hand: the same countries compared against the \emph{GBD
+2019} estimates are almost all inside those UIs (Niger 0.84, Sudan 1.31,
+Kuwait 1.12, India 0.96, Iraq 0.94, Pakistan 0.90). GBD itself revised
+these countries upward between the 2019 and 2023 releases by factors of
+1.3--2.3 (e.g.\ Sudan 2.34, Niger 2.27, India 1.67).
+
+\begin{ozresult}{Resolution of the hot-country gap}
+The shortfall relative to GBD 2023 is, for these countries,
+GBD's own between-round revision, not a defect in the run: the pipeline
+matches the estimates of the methodology it implements. Which target the
+project \emph{should} track (the implemented 2021 methodology, or the
+GBD 2023) is a scoping decision, discussed in
+Section~\ref{sec:rec}.
+\end{ozresult}
+
+Two country-level curiosities are worth recording. Cambodia appears 73\%
+high against GBD's 2022 value but matches both GBD vintages' 2019 values;
+GBD's own Cambodia estimate falls 42\% between 2019 and 2022 within the
+GBD 2023 series, for reasons we have not identified. The United Arab
+Emirates is the one hot country genuinely low against both GBD vintages:
+our estimate is roughly half of the GBD value in each case (786 vs.\ 1{,}520
+against GBD 2019 and 1{,}206 against GBD 2023). We ruled out temperature
+bias there directly (its CCKP temperatures match the ERA5 reanalysis to
+within 0.4\,\textcelsius{} in the mean), and its remaining gap is
+unexplained at the point-estimate level, though our uncertainty interval
+overlaps GBD's.
+
+\section{Structural checks}
+
+\textbf{Trends decompose sensibly once composition is removed.} Raw
+attributable-death counts rise for both heat and cold in most countries
+(global cold total 1.33M in 2022 to 1.99M in 2050). The cold rise looks
+wrong at first: warming means fewer and milder cold days, so
+cold-attributable deaths might be expected to fall. Two composition effects
+account for it. First, population aging: the \emph{crude} cold share (cold
+attributable deaths as a share of total deaths, with no adjustment for the
+population's changing age mix) rises in 141 of 204 countries, but the
+age-sex-\emph{standardized} share (the same quantity computed holding each
+country's 2022 age-sex composition fixed) \emph{falls} in 140 of 204.
+Second, the IHME mortality
+forecast shifting deaths toward cold-heavy causes at high latitudes (chronic
+kidney disease deaths in the high-latitude group grow from 269k to 687k by
+2050). Within-cause, within-age climate signals behave as expected: the
+age-standardized heat share rises in 197 of 204 countries. Any headline
+trend statement should therefore be made on age-standardized attributable
+\emph{fractions}, not raw counts.
+
+\textbf{No climate model dominates the ensemble.} The models that sit
+furthest from the ensemble median on average are the known
+high-climate-sensitivity models (UKESM1-0-LL, HadGEM3-GC31-LL, KACE-1-0-G),
+as expected. Strong single-model disagreements (one model far outside the
+spread of the other 26) occur in 0.2\% of country-year combinations, and
+inspection shows they concentrate where the burden is small (median case:
+about 125 attributable deaths) or where the other models agree so tightly
+that a modest deviation stands out; in the largest-burden such cases the
+outlying model sits 10--20\% from the ensemble median (e.g.\ India 2034,
+one model 20\% above), which the ensemble mean absorbs without difficulty.
+A handful of near-zero-burden countries show
+sign disagreement across models (e.g.\ Singapore, ensemble $-96$ deaths,
+model range $-171$ to $+135$); for these, sign instability rather than
+spread is the meaningful flag.
+
+\textbf{YLLs per attributable death differ from GBD by construction, and
+the life-table definition accounts for the size of the difference.} Our
+global ratio is 13.9 years per attributable death versus 21.2 (GBD 2023)
+and 19.4 (GBD 2019). GBD computes YLLs against its aspirational reference
+life table (remaining life expectancy 88.87 years at birth, 21.29 years at
+age 70), while we use each country's own United Nations World Population
+Prospects life expectancy. To check that this alone explains the gap, we
+applied GBD's reference table to our own attributable-death age
+distribution: the result is 17.7--21.5 years per death (the range brackets
+where deaths fall within our 5-year age groups), which spans GBD's
+observed 21.2. It is a definitional difference, not an error, but any
+side-by-side YLL comparison must state it.
+
+\section{Quantified limitations}\label{sec:limits}
+
+\subsection{Risk curves end at 32.1\,\textcelsius{}}
+
+The Burkart ERF curves used in this analysis are estimated only over each
+climate zone's observed daily-temperature range; the hottest zone's curve
+ends at a daily mean of 32.1\,\textcelsius, and hotter days are evaluated
+at the endpoint. IHME's released code does the same, so this truncation is
+the published method. Its scale, measured from the CCKP daily fields
+(two models): 7.9\% of world population lived in grid cells whose zone
+assignment is clamped in 2022, rising to 14.9--23.5\% by 2050 under ssp245.
+In the Gulf and Sahel, 25--40\% of person-days already exceed the curve
+endpoint (Kuwait's exceedances average 5.5\,\textcelsius{} above it).
+
+To bound what truncation could hide, we re-evaluated 2022 with the endpoint
+log-linearly extrapolated (slope fitted to each curve's last
+0.5\,\textcelsius): heat burden multiplies by 2.30 in Kuwait, 1.60 in
+Niger, 1.31 in Sudan, and 1.00 in Haiti (which has no truncation). Under
+that assumption, roughly half of the Gulf/Sahel gap to GBD
+2023 (in log terms) closes.
+
+\begin{ozcaveat}{Projection consequence}
+Because the population share above the curve endpoints grows with warming,
+projected burdens in hot countries are effectively lower bounds under the
+published method: beyond the endpoint, additional warming adds no
+additional risk. The extrapolation is an assumption, not evidence
+(the true risk could plateau); we recommend reporting it as a labeled
+sensitivity band alongside projection results, not adopting it silently.
+\end{ozcaveat}
+
+\subsection{The tropical low cluster and the exposure reference}
+
+The temperature input deserves a precise description: the CCKP daily
+product is NASA's NEX-GDDP-CMIP6, i.e.\ CMIP6 climate models bias-corrected
+by quantile mapping to the GMFD observational dataset (Princeton's Global
+Meteorological Forcing Dataset, reference period 1960--2014). It is neither
+raw CMIP6 nor the ERA5 reanalysis that the 2021 estimates used for
+exposure.
+
+The countries where we run genuinely low against the GBD 2019 estimates
+are overwhelmingly tropical. A natural suspect was damped day-to-day
+temperature variability, since the burden lives in the spread of daily
+temperature around the optimum. We tested it against ERA5 2022 in 17
+countries, covering 8 of the 23 low-cluster members directly (Haiti,
+Indonesia, Malaysia, Uganda, Tanzania, Honduras, Nicaragua, and the UAE).
+
+\begin{ozcaveat}{The variance hypothesis did not survive the test}
+Across the 17 compared countries, the CCKP-to-ERA5 ratio of within-pixel
+daily standard deviation is 0.88--1.18 for 7 of the 8 low-cluster members
+(Uganda, at 0.74, is the only marked deficit among them; Rwanda, not a
+cluster member, is at 0.68), and the rank correlation between the spread
+ratio and the burden ratio is near zero (0.11). Haiti
+illustrates the point: spread ratio 0.92, burden ratio 0.35. Damped daily
+variability is therefore not the general explanation for the tropical low
+cluster. At the close of the main review the cluster's cause was
+unidentified; the post-review audit subsequently traced its principal
+cause to the uncertainty-draw pairing (Section~\ref{sec:addendum}).
+\end{ozcaveat}
+
+Two supporting observations. First, re-referencing the daily series to
+ERA5 by per-pixel quantile mapping, tested on four countries, gave a mixed
+verdict (it moves Rwanda onto the GBD 2019 value but moves the Philippines
+\emph{away} from it), consistent with variance not being the driver; we do
+not recommend it as a production change. Second, the exercise surfaced a
+real sensitivity worth stating: the two observational references disagree
+by 1.7\,\textcelsius{} in the Philippines' population-weighted mean
+temperature, and switching between them moves that country's burden by
+roughly a factor of two. No published uncertainty interval (ours or GBD's)
+includes the choice of observational reference as a source of uncertainty.
+
+\subsection{Other standing flags}
+
+\emph{Sub-grid countries.} 29 countries are so small that at most one cell
+center of the 0.25-degree temperature grid falls inside their borders, so
+their entire climate signal comes from a single (usually ocean-dominated)
+grid cell. Two symptoms follow: the 27 climate models disagree far more
+about these countries than elsewhere (median across-model coefficient of
+variation 0.50, versus 0.07 for resolved countries), and their estimated
+attributable shares of death are much lower than comparable resolved
+tropical countries (median 0.4\% of deaths versus 1.6\%). The cause of the
+low shares is unresolved: the ocean-damping explanation was not supported
+where it could be tested (on resolved countries, previous section), and
+none of the 29 has an ERA5 extract for a direct test. Their numbers should
+be flagged in any headline table. The 29:
+American Samoa, Andorra, Antigua and Barbuda, Bahrain, Barbados, Bermuda,
+Cook Islands, Dominica, Micronesia (Fed.\ States), Grenada, Guam, Maldives,
+Malta, Marshall Islands, Monaco, Nauru, Niue, Northern Mariana Islands,
+Palau, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the
+Grenadines, San Marino, Seychelles, Singapore, Tokelau, Tonga, Tuvalu, and
+the U.S.\ Virgin Islands.
+
+\emph{Fixed TMREL.} The optimal temperature is held at its 2020 value for
+all projection years (no adaptation). Defensible to 2050; a strong
+assumption for 2100 that should be stated, with the pipeline's annual
+TMREL derivation available as a sensitivity.
+
+\emph{Forecast mortality.} Projected burdens mix the climate signal with
+IHME's demographic and epidemiological forecasts; attributable
+\emph{fractions} isolate the climate signal and should carry the headline
+trends.
+
+\section{Post-review addendum (August 20, 2026): uncertainty-draw pairing}
+\label{sec:addendum}
+
+After the main review, a line-by-line audit of the pipeline against IHME's
+released code, prompted by the unexplained tropical cluster, found that the
+cluster's principal cause is on our side, in how uncertainty draws are
+paired.
+
+The method propagates uncertainty as matched draws: for each draw, the
+TMREL is defined as the temperature minimizing that same draw's
+death-weighted risk curve; IHME's released TMREL-calculator code computes
+exactly this. IHME's data release, however, contains 1{,}000
+risk-curve draws but only 100 TMREL draws, with no index linking them, and
+we verified the released TMREL draws do not correspond to the released
+curve draws in any order. Our pipeline therefore paired them arbitrarily
+(recycling the 100 across the 500 draws used in production). An
+arbitrarily paired reference point is never the draw's own minimum, so
+each mispaired draw's rescaled curve dips below 1 near its true minimum,
+producing a one-signed downward bias, largest exactly where curves are
+flat near the optimum: the tropical cluster's signature.
+
+We confirmed this experimentally: a replica of the PAF stage using the
+production pairing reproduces production essentially exactly (median ratio
+1.00 across 158 countries; global total to 0.004\%), and switching it to
+correctly derived per-draw TMRELs raises the low cluster substantially
+(14 of 21 cluster members move inside the GBD 2019 UIs, from 5). The
+correction also shifts overall levels up by roughly 7\%, leaving a
+positive residual against GBD 2019 that we cannot yet attribute
+(candidates include IHME's draw-specific TMREL weights, which are not
+reconstructible from released artifacts, their whole-degree TMREL
+rounding, and their subnational aggregation); agreement with GBD 2019
+neither improves nor worsens on net, it redistributes. We judge the fix
+warranted regardless: a bias with a proven sign and mechanism should not
+be retained because it partially cancels against unidentified terms.
+
+Separately, IHME's pipeline propagated daily temperature uncertainty
+(their exposure data carries 1{,}000 draws built from ERA5's published
+uncertainty field); the CCKP product provides no daily uncertainty, so our
+run has no such term. Work is in progress to quantify what this omission
+does to our results, using ERA5's measured uncertainty rather than a tuned
+value, and to decide whether to add the term or to proceed without it as a
+clearly labeled limitation. Three contained implementation bugs found by
+the same audit (none affecting this report's numbers) have been fixed.
+
+Consequence: the ssp245 burden step should be rerun with the pairing fix
+and the temperature-uncertainty decision applied, before launching the
+remaining scenarios. The temperature-conversion outputs are unaffected
+and reusable.
+
+\section{Recommendations}\label{sec:rec}
+
+\begin{enumerate}
+\item \textbf{Apply the draw-pairing fix and rerun ssp245's burden step
+  before launching the remaining scenarios} (SSP3-7.0, SSP5-8.5,
+  SSP1-2.6); see the addendum (Section~\ref{sec:addendum}). The
+  temperature conversions are reusable, and the run machinery itself is
+  validated, reproducible, and complete, so the rerun is a burden-step
+  pass, not a restart.
+\item \textbf{State the alignment target explicitly in all outputs}: these
+  are estimates under the Burkart 2021 (GBD 2019-era) methodology. If
+  alignment with GBD 2023 is later desired, the clean path is
+  obtaining the GBD 2023 risk curves from IHME, not tuning ours.
+\item \textbf{Report projected trends as age-standardized attributable
+  fractions}, with counts secondary. This matches the original Workflow-B
+  design, which built the deliverable around scenario comparisons and
+  fractions precisely because calibration drift cancels there.
+\item \textbf{Attach the truncation sensitivity to projection results} in
+  hot countries (a two-model local computation suffices; no full-scale
+  rerun needed).
+\item \textbf{Flag the sub-grid 29 and the tropical low cluster} in
+  country-level tables, with the exposure-reference caveat above.
+\item \textbf{State the YLL definition} (national life expectancy, not the
+  GBD reference life table) wherever YLLs are shown.
+\end{enumerate}
+
+\medskip
+{\raggedright
+\noindent\textit{Provenance: all numbers in this document come from the
+review analyses in the project repository, run August 14--20, 2026,
+applied to the production summary tables of August 14, 2026, the GBD
+Results Tool exports of July 31, 2026, and the IHME GHDx dataset DOI
+10.6069/7QWW-PF74. Repository files:}
+\code{docs/reviews/ssp245-review-findings.org} \textit{and}
+\code{output/review-ssp245/}\textit{.}
+\par}
+
+\end{document}

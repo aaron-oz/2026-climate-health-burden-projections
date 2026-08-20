@@ -48,7 +48,7 @@ These either pass or the review is premature. All are in `qa_report.txt`.
 
 1. **The two additive identities.** `paf_nonopt == paf_heat + paf_cold` and
    `deaths_nonopt == deaths_heat + deaths_cold`. A failure is a bug, not a
-   modelling choice.
+   modeling choice.
 2. **`|paf_nonopt| <= 1`.** Attributable deaths cannot exceed total deaths.
 3. **All values finite.**
 4. **All-zero burden combos.** The report counts combos whose attributable
@@ -108,7 +108,7 @@ across locations. A location where the model spread is far tighter or wider
 than its neighbours is worth opening up.
 
 **The locations the climate grid barely resolves.** Thirty of the 204 locations
-contain at most one 0.25 degree grid cell centre, and 15 contain none. Those get
+contain at most one 0.25 degree grid cell center, and 15 contain none. Those get
 a nearest-cell fallback: the location is assigned the climate series of the
 closest cell carrying data, so its entire climate signal is one grid cell.
 
@@ -153,7 +153,7 @@ and say so plainly in the writeup either way.
 **Temperature zones are clamped to 6 to 28 degrees C.** A location's zone is
 the rounded annual mean temperature, clamped to [6, 28]
 (`config.R:254-255`, `03_load_temperature.R:99-100`), and daily temperatures
-are then truncated to the modelled range within that zone. The clamp exists
+are then truncated to the modeled range within that zone. The clamp exists
 because the ERF curves are only estimated over that range. Under ssp245 to 2050
 it will bind for the hottest locations; under ssp585 to 2100 it would bind much
 more widely, and every degree beyond the clamp is a degree of warming the

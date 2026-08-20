@@ -7,7 +7,7 @@ Use these as prompts; reorder freely.
 ## Status questions (find out where he is)
 
 1. **Has he started?** If yes, which step (1–9 from
-   [`caspar-workflow.md`](caspar-workflow.md)) is he currently on? If not,
+   [`../ops/caspar-workflow.md`](../ops/caspar-workflow.md)) is he currently on? If not,
    what's blocking him from starting (data download timing, system access,
    competing priorities)?
 
@@ -81,7 +81,7 @@ Use these as prompts; reorder freely.
 - **Anything weird about the CCKP daily files we missed.** Calendar
   variants, unusual fill-value conventions, anything about the bias-
   correction layer that differs from what we documented in
-  `pipeline-state-for-cckp.md` §3.3.
+  `../ops/pipeline-state-for-cckp.md` §3.3.
 
 ## On the pixel/country trace tool
 

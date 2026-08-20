@@ -76,11 +76,11 @@ at \url{https://github.com/aaron-oz/2026-climate-health-burden-projections}:
   \item[\texttt{colombia-validation-state.tex}] Empirical validation of
     the pipeline against Samuel Cuervo's published Colombia 2010--2019
     numbers; 18 of 19 headline metrics within $\pm 5\%$.
-  \item[\texttt{pipeline-math-verification.md}] Row-by-row independent
+  \item[\texttt{docs/validation/pipeline-math-verification.md}] Row-by-row independent
     re-derivation of the per-pixel math.
-  \item[\texttt{pipeline-state-for-cckp.md}] Pipeline architecture,
+  \item[\texttt{docs/ops/pipeline-state-for-cckp.md}] Pipeline architecture,
     script ordering, input file formats.
-  \item[\texttt{caspar-workflow.md}] Step-by-step production run
+  \item[\texttt{docs/ops/caspar-workflow.md}] Step-by-step production run
     instructions.
 \end{description}
 
@@ -608,7 +608,7 @@ Eq.~\eqref{eq:paf-cold} is the sum of such contributions over all
 cold-classified pixel-days in 2010. The pipeline's trace tool reproduces
 each value above exactly; row-by-row independent re-derivation matches
 to 8 decimal places (see
-\texttt{pipeline-math-verification.md}).
+\texttt{docs/validation/pipeline-math-verification.md}).
 
 % =====================================================================
 \section{Within-pipeline trace: contrasting pixels}
@@ -810,7 +810,7 @@ cause rankings all match.
 Row-by-row independent re-derivation of the per-pixel math against the
 pipeline's own saved values (Sections~\ref{sec:trace-one-pixel} and
 \ref{sec:country-agg} above; full details in
-\texttt{pipeline-math-verification.md}) confirms every formula in
+\texttt{docs/validation/pipeline-math-verification.md}) confirms every formula in
 Section~\ref{sec:pipeline-math} is correctly implemented: 9 calculation
 stages match to 8+ decimal places, and the within-subloc aggregation
 reproduces the pipeline's saved per-subloc PAF (0.06956161 vs 0.06956161
@@ -848,7 +848,7 @@ Sections~\ref{sec:trace-one-pixel}--\ref{sec:country-agg} is
 
 Operational instructions for the full production run, including the
 single-combo benchmark and parallelization pattern, are in
-\texttt{caspar-workflow.md} in the project repository.
+\texttt{docs/ops/caspar-workflow.md} in the project repository.
 
 \bigskip
 \hrule

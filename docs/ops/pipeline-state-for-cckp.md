@@ -46,8 +46,8 @@ the Global Burden of Disease (GBD) 2023 framework:
    rate. YLLs derived by multiplying attributable deaths by remaining
    life expectancy.
 
-Key methodology decisions documented in `step2-comparison.md` and the
-project's `comparison-report-pipeline-vs-samuel.md`.
+Key methodology decisions documented in `../validation/step2-comparison.md` and the
+project's `../validation/comparison-report-pipeline-vs-samuel.md`.
 
 ---
 
@@ -409,8 +409,8 @@ will need its own benchmarking.
   (Singularity / Apptainer image, `renv` lockfile) not yet built.
 - **Methodology document.** No standalone document covers all the
   decisions in Section 7 in one place. Either we write that or extract
-  it from existing documents (`step2-comparison.md`,
-  `comparison-report-pipeline-vs-samuel.md`,
+  it from existing documents (`../validation/step2-comparison.md`,
+  `../validation/comparison-report-pipeline-vs-samuel.md`,
   `ihme-unscaling-validity-report.md`).
 
 ---
@@ -423,7 +423,7 @@ will need its own benchmarking.
   aggregation difference (Section 7, O1). All known toggleable
   methodology differences between Samuel and the global pipeline have
   been replicated under `COLOMBIA_VERIFICATION = TRUE` and patches
-  documented in `comparison-report-pipeline-vs-samuel.md`.
+  documented in `../validation/comparison-report-pipeline-vs-samuel.md`.
 - **Other locations:** not yet run on real data. Synthetic test data
   (`util_generate_test_data.R`) confirms end-to-end pipeline mechanics
   but does not validate scientific results.

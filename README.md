@@ -13,21 +13,37 @@ population from the World Bank Climate Change Knowledge Portal (CCKP).
 ## Where to start
 
 - **Production workflow / step-by-step commands (start here if you're Caspar):**
-  [`caspar-workflow.md`](caspar-workflow.md)
+  [`caspar-workflow.md`](docs/ops/caspar-workflow.md)
 - **Overview, architecture, and run instructions:**
-  [`pipeline-state-for-cckp.md`](pipeline-state-for-cckp.md)
+  [`pipeline-state-for-cckp.md`](docs/ops/pipeline-state-for-cckp.md)
 - **Methodology memo (Workflow B, ratio approach):**
   [`gbd/ihme-plan-b-prep.tex`](gbd/ihme-plan-b-prep.tex)
 - **Validation status (Colombia 2010–2019):**
-  [`colombia-validation-state.tex`](colombia-validation-state.tex)
+  [`colombia-validation-state.tex`](docs/validation/colombia-validation-state.tex)
   (18 of 19 headline metrics within ±5% of Samuel Cuervo's published numbers)
 - **End-to-end math verification (worked-example walkthrough):**
-  [`pipeline-math-verification.md`](pipeline-math-verification.md) —
+  [`pipeline-math-verification.md`](docs/validation/pipeline-math-verification.md) —
   hand-verifies all 8 stages between raw input and per-row PAF
   contribution; produced by `util_trace_pipeline.R` then independently
   recomputed
 - **Data inputs and layout:**
   [`data/README.md`](data/README.md)
+- **ssp245 validation review (August 2026): report, slides, and full notes:**
+  [`docs/reviews/`](docs/reviews/)
+
+## Documentation layout
+
+Long-form documents live under `docs/`, one subdirectory per kind:
+
+| directory | contents |
+|---|---|
+| `docs/reviews/` | run validation reviews (agenda, findings, report, slides) |
+| `docs/validation/` | Colombia-era verification reports and comparisons |
+| `docs/ops/` | production workflow, migration, and architecture docs |
+| `docs/handoffs/` | session handoff briefs |
+| `docs/meetings/` | meeting notes and agendas |
+| `docs/methodology/` | methodology walkthrough (LaTeX) |
+| `docs/notes/` | personal working notes (gitignored) |
 
 ## Pipeline summary
 
@@ -83,7 +99,7 @@ diagnostics).
 
 A `renv` lockfile and Singularity / Apptainer container image for
 reproducible cluster execution are TBD (one of the handoff items in
-[`pipeline-state-for-cckp.md`](pipeline-state-for-cckp.md) §9).
+[`pipeline-state-for-cckp.md`](docs/ops/pipeline-state-for-cckp.md) §9).
 
 ## Validation
 

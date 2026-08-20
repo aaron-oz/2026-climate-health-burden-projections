@@ -3,7 +3,7 @@
 suppressPackageStartupMessages(library(data.table))
 
 REV <- "/var/home/aoz/data/wb-temp-attr-projections/review/ssp245"
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 meta <- fread(file.path(OUT, "location_meta.csv"))
 ens  <- fread(file.path(OUT, "ensemble_by_location_year.csv"))
 tr   <- fread(file.path(OUT, "trend_2020s_vs_2040s.csv"))

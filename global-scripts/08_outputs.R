@@ -54,11 +54,18 @@ burden_value_cols <- intersect(names(burden),
                                  "paf_nonopt", "sev"))
 burden <- collapse_draws(burden, burden_value_cols)
 if (has_ylls) {
+  # Include the per-draw PAF columns (carried through from 05 via 07): if any
+  # per-draw column is left out of value_cols it lands in the grouping key,
+  # every (stratum, draw) becomes its own group, no collapse happens, and the
+  # sums below inflate by the draw count (~500x on YLLs; found 2026-08-19).
   yll_value_cols <- intersect(names(ylls),
                               c("yll_heat", "yll_cold", "yll_nonopt",
                                 "deaths", "deaths_heat", "deaths_cold",
-                                "deaths_nonopt", "ex"))
+                                "deaths_nonopt", "ex",
+                                "paf_heat", "paf_cold", "paf_nonopt"))
   ylls <- collapse_draws(ylls, yll_value_cols)
+  stopifnot(!"draw" %in% names(ylls) ||
+            anyDuplicated(ylls, by = setdiff(names(ylls), yll_value_cols)) == 0)
 }
 
 # =============================================================================

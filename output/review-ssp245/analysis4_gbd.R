@@ -2,7 +2,7 @@
 # non-optimal-temperature burden (GBD Results tool export in data/gbd-comparison/).
 suppressPackageStartupMessages(library(data.table))
 
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 gbd <- fread("data/gbd-comparison/gbd_A_anchor_2019_2022.csv")
 gbd <- gbd[year == 2022 & metric_name == "Number"]
 gbd[, risk := fcase(rei_name == "High temperature", "heat",

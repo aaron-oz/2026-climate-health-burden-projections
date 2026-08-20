@@ -91,7 +91,7 @@ Run 2026-08-17 (=analysis4_gbd.R=), against the GBD Results tool export in
 framing fact first: this GBD round puts 2019 global non-optimal deaths at
 1.84 million, above the 1.69 million published in the Burkart 2021 paper
 whose methodology and ERFs our pipeline implements. Some of every ratio
-below is GBD-round revision, not pipeline behaviour.
+below is GBD-round revision, not pipeline behavior.
 
 #+caption: Global 2022 totals, GBD 2023-round published vs our ssp245 ensemble.
 | quantity      | GBD 2022 | ours 2022 | ratio |
@@ -180,11 +180,11 @@ should be made on PAF-style shares (ideally age-standardized), not counts.
 
 * The sub-grid locations
 
-Using 0.25-degree grid centres offset by 0.125 deg (the alignment that
-reproduces the agenda's counts: 15 locations contain no centre, 29 contain
+Using 0.25-degree grid centers offset by 0.125 deg (the alignment that
+reproduces the agenda's counts: 15 locations contain no center, 29 contain
 at most one), the 29 sub-grid locations differ sharply from the rest:
 
-#+caption: Sub-grid (at most one 0.25-degree cell centre) vs resolved locations, ssp245 ensemble. Shares use the 17-cause death total as denominator.
+#+caption: Sub-grid (at most one 0.25-degree cell center) vs resolved locations, ssp245 ensemble. Shares use the 17-cause death total as denominator.
 | group              |   n | 2050 model CV, median | 2022 attributable share, median | heat fraction, median |
 |--------------------+-----+-----------------------+---------------------------------+-----------------------|
 | sub-grid           |  29 |                 0.499 |                           0.004 |                 0.946 |
@@ -214,7 +214,7 @@ clamped, from the global CCKP daily tas NetCDFs for two models (access-cm2,
 a mid-range model, and canesm5, a known high-sensitivity one) under ssp245.
 What it does not measure: the burden impact of the clamp. A clamped pixel
 still gets a burden (evaluated on the zone-28 curve with daily temperatures
-truncated to that zone's modelled range); the direction of the error for
+truncated to that zone's modeled range); the direction of the error for
 heat is expected negative, its magnitude is not quantified here. The
 second clamp mechanism (within-zone daily truncation) is also not measured.
 
@@ -576,3 +576,22 @@ there:)
 - The clamp and truncation analyses cover 2 of 27 models; a full-ensemble
   version should ride along with a production-side pass on Caspar's
   machine.
+
+* Update 2026-08-18: the variance hypothesis fails the wider test
+
+Following Aaron's review, ERA5 2022 was fetched for seven more countries
+(Haiti, Indonesia, Malaysia, Uganda, Tanzania, Honduras, Nicaragua; ARCO
+archive, =fetch_era5_batch.py=), extending the daily-SD comparison
+(=analysis11_variance_ext.R=) to 15 countries including 8 of the 23
+low-cluster members. Result: CCKP/ERA5 within-pixel daily SD ratios are
+0.88 to 1.18 for 7 of the 8 (Uganda 0.74 the exception), and the rank
+correlation between SD ratio and burden ratio across the 15 is 0.15. Haiti:
+SD ratio 0.92, burden ratio 0.35. The damped-variance explanation for the
+tropical low cluster is therefore rejected as a general mechanism, and the
+earlier Rwanda/Philippines finding did not generalize. The cluster's cause
+is unresolved; open candidates are observational-reference mean differences
+interacting with the TMREL, GBD-side exposure processing and population
+weighting, and UAE-type estimation differences. The report and slides were
+updated accordingly (the earlier "consistent with ocean damping" framing is
+superseded). Mexico and Italy still drop out of the comparison silently;
+not chased (both are inside the GBD 2019 UIs).

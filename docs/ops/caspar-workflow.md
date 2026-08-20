@@ -4,7 +4,7 @@ This document is the operational handoff for running the production
 pipeline. It lives in the repo (rather than only in email) so it can be
 edited as questions come up, mistakes get found, or steps get refined.
 
-Companion docs: [`README.md`](README.md) for project orientation,
+Companion docs: [`README.md`](../../README.md) for project orientation,
 [`pipeline-state-for-cckp.md`](pipeline-state-for-cckp.md) for architecture
 and methodology details.
 
@@ -257,7 +257,7 @@ head(yr[zone %in% 20:22][order(-pop)], 1)
 ```
 
 For a worked example of hand verification of one row,
-[`pipeline-math-verification.md`](pipeline-math-verification.md) walks
+[`pipeline-math-verification.md`](../validation/pipeline-math-verification.md) walks
 through pixel 527 in Colombia 2010 with cvd_ihd, showing the
 recomputation for every one of the 8 stages between raw input and per-row
 PAF contribution. All 8 match the trace tool's reported values.

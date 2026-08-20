@@ -10,7 +10,7 @@
 suppressPackageStartupMessages({library(ncdf4); library(data.table)})
 
 C   <- "/var/home/aoz/data/wb-temp-attr-projections/cckp-test"
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 TARGETS <- data.table(loc = c(145L, 213L, 522L, 114L, 10L),
                       name = c("Kuwait", "Niger", "Sudan", "Haiti", "Cambodia"))
 

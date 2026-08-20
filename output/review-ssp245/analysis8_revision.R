@@ -4,7 +4,7 @@
 # revision = current-round (GBD 2023) 2019 value / paper-era 2019 value.
 suppressPackageStartupMessages(library(data.table))
 
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 P <- fread("/var/home/aoz/data/wb-temp-attr-projections/review/gbd-2019-results/IHME_MORTALITY_TEMPERATURE_1990_2019_DATA_Y2021M09D27.CSV")
 cat("rows:", nrow(P), "| measures:", paste(unique(P$measure_name), collapse=","),
     "| metrics:", paste(unique(P$metric_name), collapse=","),

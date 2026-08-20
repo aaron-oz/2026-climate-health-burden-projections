@@ -30,11 +30,13 @@
       \ozgreentext{0.1\%}, and 159 of 204 countries fall inside the published
       95\% uncertainty intervals.
     \item An apparent large shortfall in hot countries turned out to be
-      \ozcyantext{GBD's own upward revision between rounds}, not a pipeline
+      \ozcyantext{GBD's own upward revision between its 2019 and 2023 releases}, not a pipeline
       defect.
     \item Main quantified limitations: risk curves end at
-      32.1\,\textcelsius{}; a tropical cluster where daily temperature
-      variability looks damped; a YLL definition that differs from GBD's.
+      32.1\,\textcelsius{}; a tropical cluster running low vs.\ GBD 2019
+      for reasons not yet identified (temperature bias and damped daily
+      variability both tested and ruled out); a YLL definition that differs
+      from GBD's.
     \item \ozgreentext{Nothing found blocks the remaining three scenarios.}
   \end{itemize}
 \end{frame}
@@ -59,28 +61,20 @@
 
 \ozsection{Data integrity}
 
-\begin{frame}{All quality gates pass; three defects found and fixed}
+\begin{frame}{All quality gates pass}
   \begin{itemize}
     \item Heat + cold = non-optimal holds to floating-point precision, for
       PAFs and deaths; \(|\mathrm{PAF}| \le 1\) everywhere; all values
       finite; no all-zero combinations.
     \item Coverage complete: every country has all 27 models and all 29
       years.
-    \item Three defective combinations surfaced and were recomputed
-      (August 17, 2026), then re-verified:
-    \begin{itemize}
-      \item Colombia and Equatorial Guinea, one model, 2022: single-cause
-        leftovers of an early benchmark run.
-      \item Vietnam, one model, 2029: missing YLL file (interrupted write).
-    \end{itemize}
-    \item After the fix: all 159{,}732 combinations carry all 17 causes and
-      YLLs.
+    \item All 159{,}732 combinations carry all 17 causes and YLLs.
   \end{itemize}
 \end{frame}
 
 \ozsection{Validation against published estimates}
 
-\begin{frame}{Anchor 1: the nine countries published in the 2021 paper}
+\begin{frame}{Anchor 1: the nine countries in Burkart 2021's Table 1}
   \centering\small
   \begin{tabular}{lrrr}
     \toprule
@@ -104,25 +98,28 @@
   their 2019 observed weather; read as a magnitude check, not to the digit.)
 \end{frame}
 
-\begin{frame}{Anchor 2: all 204 countries vs.\ the 2021 paper's estimates}
+\begin{frame}{Anchor 2: all 204 countries vs.\ the GBD 2019 estimates}
   \begin{exampleblock}{Headline}
     Global total: ours 1.684M vs.\ published 1.686M attributable deaths per
     year (ratio 0.999). Country ranks correlate at 0.993. 159 of 204
     countries inside the published 95\% UIs.
   \end{exampleblock}
   \begin{itemize}
-    \item Source: the paper's companion dataset (IHME GHDx, DOI
-      10.6069/7QWW-PF74), which we first verified against the paper's own
-      Table 1 (PAFs agree to \(\le 0.015\) percentage points).
+    \item Source: the GBD 2019 temperature-attributable burden dataset,
+      published alongside Burkart 2021 (IHME GHDx, DOI 10.6069/7QWW-PF74)
+      and verified against Burkart's Table 1 (PAFs agree to \(\le 0.015\)
+      percentage points).
+    \item Intervals that fail to overlap (their UI vs.\ our draw interval):
+      one country, Cape Verde; the other 44 sit within joint uncertainty.
     \item The 45 out-of-UI countries: 41 low (38 tropical, including 18
       small-island states), 4 high. About two thirds sit within 15\% of a UI
       bound, where comparison noise plausibly reaches.
   \end{itemize}
 \end{frame}
 
-\begin{frame}{The apparent hot-country shortfall vs.\ the current GBD round}
+\begin{frame}{The apparent hot-country shortfall vs.\ GBD 2023}
   \begin{itemize}
-    \item Against GBD's \emph{current} (2023-round) 2022 estimates, our
+    \item Against GBD 2023's published 2022 estimates, our
       global total is 0.874 of theirs, and the biggest gaps are all hot
       countries: Niger 0.38, Sudan 0.44, Iraq 0.49, India 0.58, Nigeria
       0.57, Mali 0.58.
@@ -138,7 +135,7 @@
   \centering\small
   \begin{tabular}{lrrr}
     \toprule
-    country & vs.\ current round & vs.\ 2021 paper & GBD's own revision \\
+    country & vs.\ GBD 2023 & vs.\ GBD 2019 & GBD's own revision \\
     \midrule
     Niger    & 0.38 & \ozgreentext{0.84} & \(\times\)2.27 \\
     Sudan    & 0.44 & \ozgreentext{1.31} & \(\times\)2.34 \\
@@ -152,8 +149,8 @@
   \raggedright
   Compared against the estimates of the methodology we actually implement,
   the hot-country gap disappears (all rows inside the published UIs). GBD
-  revised these countries upward by 1.3--2.3\(\times\) between rounds.
-  Whether to track the 2021 methodology or the current round is a scoping
+  revised these countries upward by 1.3--2.3\(\times\) between releases.
+  Whether to track the Burkart 2021 methodology or GBD 2023 is a scoping
   decision, not a bug fix.
 \end{frame}
 
@@ -162,12 +159,14 @@
 \begin{frame}{Trends make sense once composition is removed}
   \begin{itemize}
     \item Raw cold-attributable deaths \emph{rise} in most countries
-      (1.33M in 2022 to 1.99M in 2050), which looks wrong under warming.
+      (1.33M in 2022 to 1.99M in 2050), which looks wrong: warming means
+      fewer cold days, so cold deaths should fall.
     \item Two composition effects explain it: population aging, and the
       mortality forecast shifting deaths toward cold-heavy causes at high
       latitudes.
-    \item After age-sex standardization: heat share rises in 197 of 204
-      countries; cold share falls in 140 of 204.
+    \item After age-sex standardization (attributable share of deaths,
+      holding each country's 2022 age mix fixed): heat share rises in 197
+      of 204 countries; cold share falls in 140 of 204.
   \end{itemize}
   \begin{alertblock}{Reporting guidance}
     Headline trends should be age-standardized attributable
@@ -183,9 +182,11 @@
     \item A few near-zero-burden countries flip sign across models (e.g.\
       Singapore, ensemble \(-96\) deaths, model range \(-171\) to
       \(+135\)); flag sign instability there, not spread.
-    \item YLLs per attributable death: ours 13.9 years vs.\ GBD's 21.2. This
-      is definitional: GBD uses its standard reference life table; we use
-      national UN life expectancies. State it wherever YLLs are compared.
+    \item YLLs per attributable death: ours 13.9 years vs.\ GBD's 21.2.
+      Definitional: GBD uses its reference life table (21.29 years remaining
+      at age 70); we use national UN life expectancies. Applying GBD's table
+      to our attributable-death ages gives 17.7--21.5 years, spanning their
+      21.2. State the definition wherever YLLs are compared.
   \end{itemize}
 \end{frame}
 
@@ -193,9 +194,9 @@
 
 \begin{frame}{Risk curves end at a daily mean of 32.1\,\textcelsius}
   \begin{itemize}
-    \item Curves exist only over each zone's observed temperature range;
+    \item The Burkart ERF curves exist only over each zone's observed range;
       hotter days get the endpoint risk. IHME's released code does the same:
-      this is the published method, not our shortcut.
+      this is the published method.
     \item Scale today: 7.9\% of world population lives where the assignment
       is clamped (2022), rising to 15--23\% by 2050 under SSP2-4.5. In the
       Gulf and Sahel, 25--40\% of person-days already exceed the endpoint.
@@ -210,22 +211,20 @@
   \end{alertblock}
 \end{frame}
 
-\begin{frame}{The tropical low cluster traces to the exposure product}
+\begin{frame}{The tropical low cluster: leading hypothesis tested and rejected}
   \begin{itemize}
-    \item The daily temperature input is NASA NEX-GDDP-CMIP6: climate models
-      quantile-mapped to the GMFD observational dataset. Neither raw CMIP6
-      nor the ERA5 reanalysis the 2021 estimates used.
-    \item Where testable, its day-to-day spread runs 30--40\% below ERA5 in
-      low-variance tropical countries; burden lives in that spread, so
-      damped spread means damped burden. The 18 small-island states are the
-      extreme case.
-    \item Re-referencing to ERA5, tested on four countries, fixes Rwanda but
-      moves the Philippines the \emph{wrong} way (the references disagree by
-      1.9\,\textcelsius{} there). \alert{Not recommended as a production
-      change on current evidence.}
-    \item Takeaway: tropical country results are sensitive up to
-      \(\sim\)2\(\times\) to the choice of observational reference; no
-      published uncertainty interval includes that.
+    \item Daily input is NASA NEX-GDDP-CMIP6 (CMIP6 quantile-mapped to
+      GMFD): not raw CMIP6, not the ERA5 behind the GBD 2019 estimates.
+    \item Suspect: damped day-to-day spread. Tested against ERA5 2022 in 15
+      countries, covering 8 of the 23 low-cluster members directly.
+    \item \alert{Rejected as the general explanation}: spread ratios
+      0.88--1.18 for 7 of 8 (Uganda 0.74), spread-vs-burden correlation
+      0.15. Haiti: spread ratio 0.92, burden ratio 0.35. Cause remains
+      unidentified.
+    \item Surfaced sensitivity: the two observational references disagree
+      by 1.9\,\textcelsius{} for the Philippines; switching moves its
+      burden \(\sim\)2\(\times\). No published uncertainty interval
+      includes that choice.
   \end{itemize}
 \end{frame}
 
@@ -251,8 +250,8 @@
     \item \ozgreentext{Proceed with the remaining three scenarios}
       (SSP3-7.0, SSP5-8.5, SSP1-2.6); nothing here blocks them.
     \item State the alignment target in all outputs: these are estimates
-      under the Burkart 2021 methodology. If current-round alignment is
-      wanted later, obtain the current-round curves from IHME; do not tune
+      under the Burkart 2021 methodology. If GBD 2023 alignment is
+      wanted later, obtain the GBD 2023 curves from IHME; do not tune
       ours.
     \item Report projected trends as age-standardized attributable
       fractions, counts secondary.
@@ -266,14 +265,13 @@
 
 \begin{frame}{Provenance}
   \begin{itemize}
-    \item Production summary tables: August 7, 2026 (re-issued August 17,
-      2026, after the three-combo fix), produced by Caspar.
-    \item Review analyses: August 14--17, 2026; notes in
-      \texttt{ssp245-review-findings.org}, scripts and outputs in
+    \item Production summary tables: August 14, 2026, produced by Caspar.
+    \item Review analyses: August 14--18, 2026; notes in
+      \texttt{docs/reviews/ssp245-review-findings.org}, scripts and outputs in
       \texttt{output/review-ssp245/} in the project repository.
     \item External comparators: Burkart et al.\ (2021) Table 1; IHME GHDx
-      dataset DOI 10.6069/7QWW-PF74 (the paper's companion estimates); GBD
-      Results Tool exports (current round), July 31, 2026.
+      dataset DOI 10.6069/7QWW-PF74 (the GBD 2019 estimates); GBD
+      Results Tool exports (GBD 2023), July 31, 2026.
     \item A six-page written version of this review exists alongside this
       deck (\texttt{ssp245-review-summary.pdf}).
   \end{itemize}

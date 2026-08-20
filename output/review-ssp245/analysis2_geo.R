@@ -3,7 +3,7 @@
 suppressPackageStartupMessages({library(sf); library(data.table)})
 sf_use_s2(FALSE)
 
-OUT <- "/var/home/aoz/code/2026-climate-health-burden-projections/output/review-ssp245"
+OUT <- "/var/home/aoz/code/wbg-climate-health-burden-projections/output/review-ssp245"
 shp <- st_read(file.path("data/shapefiles/GBD2023_mapping_final_augmented.shp"), quiet = TRUE)
 shp <- shp[shp$level == 3 | is.na(shp$level), ]  # keep nations if level col exists
 if (!"loc_id" %in% names(shp)) stop("no loc_id col")

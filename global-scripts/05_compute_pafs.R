@@ -143,9 +143,15 @@ if (USE_DRAWS) {
                     year + subloc_id + acause + risk ~ paste0("draw_", draw),
                     value.var = "paf")
   draw_cols <- paste0("draw_", 0:(N_DRAWS - 1))
-  paf_wide[, paf_mean  := rowMeans(.SD, na.rm = TRUE), .SDcols = draw_cols]
-  paf_wide[, paf_lower := apply(.SD, 1, quantile, 0.025, na.rm = TRUE), .SDcols = draw_cols]
-  paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975, na.rm = TRUE), .SDcols = draw_cols]
+  # A draw with no heat (or cold) days has no row and dcasts to NA; IHME sets
+  # such draws to 0 before summarizing (pafCalc_sevFix.R:219). Averaging with
+  # na.rm instead silently drops them, biasing summaries up where a risk side
+  # is marginal (found 2026-08-19). Match IHME: fill 0.
+  paf_wide[, (draw_cols) := lapply(.SD, function(x) fifelse(is.na(x), 0, x)),
+           .SDcols = draw_cols]
+  paf_wide[, paf_mean  := rowMeans(.SD), .SDcols = draw_cols]
+  paf_wide[, paf_lower := apply(.SD, 1, quantile, 0.025), .SDcols = draw_cols]
+  paf_wide[, paf_upper := apply(.SD, 1, quantile, 0.975), .SDcols = draw_cols]
 
   # Hand downstream code a frame keyed the same way summary mode does, with
   # paf_mean (and lower/upper for diagnostics). The per-draw long form remains

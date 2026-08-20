@@ -107,3 +107,5 @@ data/mortality/citation.txt
 # machine-specific run settings (see run_env.sh.example)
 run_env.sh
 output/logs/
+*.nav
+*.snm

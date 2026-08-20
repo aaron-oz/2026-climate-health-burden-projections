@@ -76,7 +76,7 @@ you find evidence to the contrary.
 - Burden formula: `deaths × PAF × SEV` in verification mode
   (`05_compute_pafs.R`)
 - SEV computation: replicates Samuel's daily-summation-and-cap pattern
-  (`06_compute_sevs.R`); see `step2-comparison.md` section 2b for the
+  (`06_compute_sevs.R`); see `../validation/step2-comparison.md` section 2b for the
   derivation.
 
 **Confirmed not to be the cause:**
@@ -108,7 +108,7 @@ you find evidence to the contrary.
 **Out of scope:**
 - Performance, code style, idiom modernization.
 - Whether either methodology is "correct" relative to Burkart et al. 2021.
-  That comparison is documented separately in `step2-comparison.md`.
+  That comparison is documented separately in `../validation/step2-comparison.md`.
 - Department-level (subnational) breakdowns. The global pipeline does not
   currently track department through the burden calculation; Samuel does.
   Note this as a known structural difference but do not propose
@@ -185,7 +185,7 @@ Source data:
   intermediate RDS files (temperature, mortality, life tables, divipola)
 
 Reference doc already in repo:
-- `step2-comparison.md` — earlier comparison of Samuel vs the Burkart
+- `../validation/step2-comparison.md` — earlier comparison of Samuel vs the Burkart
   reference implementation. Useful background but covers a different
   comparison than this mission. The 7 issues listed there are about
   Samuel-vs-Burkart; your job is global-pipeline-vs-Samuel.
