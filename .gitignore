@@ -109,3 +109,4 @@ run_env.sh
 output/logs/
 *.nav
 *.snm
+data/era5_sd
