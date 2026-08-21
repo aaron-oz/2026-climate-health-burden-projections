@@ -18,11 +18,14 @@ cat("Arguments:", paste(args, collapse = " "), "\n\n")
 # When COLOMBIA_VERIFICATION = TRUE, the burden calculation in 05 needs SEVs,
 # so 06 must run before 05. In normal mode, order doesn't matter (SEVs are
 # diagnostic only), but we keep this order for consistency.
+# 04 runs before 02 because TMREL_MODE = "derived_per_draw" derives TMRELs
+# from the mortality cause weights (02 reads INTERMEDIATE_DIR/mortality.rds);
+# in released_recycled mode the order is inert.
 scripts <- c(
   "01_load_erf.R",
+  "04_load_mortality.R",
   "02_load_tmrel.R",
   "03_load_temperature.R",
-  "04_load_mortality.R",
   "06_compute_sevs.R",
   "05_compute_pafs.R",
   "07_compute_ylls.R",

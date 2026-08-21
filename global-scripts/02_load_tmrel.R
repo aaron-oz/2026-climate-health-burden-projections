@@ -15,7 +15,116 @@ library(data.table)
 
 log_msg("Loading TMRELs for location", LOCATION_ID)
 
-if (USE_DRAWS) {
+if (!TMREL_MODE %in% c("released_recycled", "derived_per_draw")) {
+  stop("Unknown TMREL_MODE '", TMREL_MODE,
+       "' (expected released_recycled or derived_per_draw)")
+}
+if (TMREL_MODE == "derived_per_draw" && !USE_DRAWS) {
+  stop("TMREL_MODE = derived_per_draw requires USE_DRAWS = TRUE ",
+       "(summary mode keeps the released TMREL summaries)")
+}
+
+if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
+  # ===========================================================================
+  # Derive TMREL draw d as the argmin of ERF draw d's death-weighted RR curve
+  # (IHME tmrelCalculator.R:126 definition), so each draw's reference is its
+  # own curve minimum and rescaled curves never dip below 1 at the reference.
+  # Search range 6.6-34.6 C (tmrelCalculator_launch.R), intersected with each
+  # zone's modeled grid. Weights are the location's cause-death shares for
+  # each study year: draw d's mortality shares weight ERF draw d when the
+  # mortality input carries draws, else the year's point shares for all draws.
+  # ===========================================================================
+  erf_file  <- file.path(INTERMEDIATE_DIR, "erf_curves.rds")
+  mort_file <- file.path(INTERMEDIATE_DIR, "mortality.rds")
+  if (!file.exists(erf_file))
+    stop("derived_per_draw needs ", erf_file, " — run 01_load_erf.R first")
+  if (!file.exists(mort_file))
+    stop("derived_per_draw needs ", mort_file, " — run 04_load_mortality.R ",
+         "first (run_location.R orders 04 ahead of 02)")
+  erf  <- setDT(readRDS(erf_file))   # long: zone, daily_temp (t10), acause, draw, rr
+  mort <- setDT(readRDS(mort_file))
+
+  SEARCH_MIN_10 <- 66L    # 6.6 C
+  SEARCH_MAX_10 <- 346L   # 34.6 C
+  erf_s <- erf[daily_temp >= SEARCH_MIN_10 & daily_temp <= SEARCH_MAX_10 &
+               zone >= TEMP_ZONE_MIN]
+  rm(erf); invisible(gc(verbose = FALSE))
+
+  has_mort_draws <- "draw" %in% names(mort)
+  if (has_mort_draws) {
+    cod <- mort[, .(deaths = sum(deaths, na.rm = TRUE)),
+                by = .(year_id, acause, draw)]
+    log_msg("Derived-TMREL weights: per-draw mortality shares (",
+            uniqueN(cod$draw), " draws)")
+  } else {
+    cod <- mort[, .(deaths = sum(deaths, na.rm = TRUE)), by = .(year_id, acause)]
+    log_msg("Derived-TMREL weights: point mortality shares (no mortality draws)")
+  }
+  # Point shares per year, the fallback for draws without a mortality draw.
+  cod_point <- if (has_mort_draws) {
+    cod[, .(deaths = mean(deaths, na.rm = TRUE)), by = .(year_id, acause)]
+  } else cod
+
+  years <- sort(unique(cod$year_id))
+  missing_years <- setdiff(YEAR_START:YEAR_END, years)
+  if (length(missing_years) > 0)
+    log_msg("Derived-TMREL: mortality lacks years ",
+            paste(missing_years, collapse = ","),
+            " — nearest available year's weights are used for them")
+
+  draw_ids <- sort(unique(erf_s$draw))
+  out <- vector("list", 0L)
+  for (z in sort(unique(erf_s$zone))) {
+    ez <- dcast(erf_s[zone == z], acause + daily_temp ~ draw, value.var = "rr")
+    zcauses <- sort(unique(ez$acause))
+    tvals   <- sort(unique(ez$daily_temp))
+    dcols   <- as.character(draw_ids)
+    # Per-cause (temps x draws) blocks on the zone's union grid; a cause
+    # missing a grid point contributes RR = 1 there (neutral), matching the
+    # replica instrument the fix was validated against.
+    blocks <- lapply(zcauses, function(c_) {
+      b <- as.matrix(ez[acause == c_][match(tvals, daily_temp), ..dcols])
+      b[is.na(b)] <- 1
+      b
+    })
+    for (yr in YEAR_START:YEAR_END) {
+      src_yr <- years[which.min(abs(years - yr))]
+      wpt <- cod_point[year_id == src_yr]
+      wpt_v <- setNames(wpt$deaths, wpt$acause)[zcauses]
+      wpt_v[is.na(wpt_v)] <- 0
+      if (sum(wpt_v) <= 0)
+        stop("Derived-TMREL: no deaths in any zone-", z, " cause for year ", yr)
+      # cause x draw weight matrix, normalized within each draw over the
+      # causes present in this zone
+      wmat <- matrix(wpt_v, length(zcauses), length(draw_ids),
+                     dimnames = list(zcauses, NULL))
+      if (has_mort_draws) {
+        wd <- cod[year_id == src_yr & acause %in% zcauses &
+                  draw %in% draw_ids]
+        if (nrow(wd) > 0)
+          wmat[cbind(match(wd$acause, zcauses), match(wd$draw, draw_ids))] <-
+            wd$deaths
+      }
+      wmat <- sweep(wmat, 2, colSums(wmat), "/")
+      W <- matrix(0, length(tvals), length(draw_ids))
+      for (ci in seq_along(zcauses))
+        W <- W + sweep(blocks[[ci]], 2, wmat[ci, ], "*")
+      tm <- tvals[apply(W, 2, which.min)]
+      if (isTRUE(TMREL_ROUND_WHOLE))
+        tm <- pmin(pmax(10L * as.integer(round(tm / 10)), min(tvals)), max(tvals))
+      out[[length(out) + 1]] <- data.table(zone = z, year_id = yr,
+                                           draw = draw_ids, tmrel = tm)
+    }
+  }
+  tmrel <- rbindlist(out)
+  tmrel[, location_id := LOCATION_ID]
+  log_msg("Derived per-draw TMRELs: ", nrow(tmrel), " rows (",
+          uniqueN(tmrel$zone), " zones x ", uniqueN(tmrel$year_id),
+          " years x ", uniqueN(tmrel$draw), " draws); zone means [C]: ",
+          paste(tmrel[, sprintf("%d:%.1f", zone[1], mean(tmrel) / 10),
+                      by = zone]$V1, collapse = " "))
+
+} else if (USE_DRAWS) {
   tmrel_file <- file.path(TMREL_DIR, paste0("tmrel_", LOCATION_ID, ".csv"))
   if (!file.exists(tmrel_file)) stop(paste("TMREL draw file not found:", tmrel_file))
 
