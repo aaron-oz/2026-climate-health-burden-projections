@@ -1,0 +1,344 @@
+#+TITLE: Uncertainty-draws fix: measured-field results and decision memo
+#+AUTHOR: Claude (overnight session 2026-08-20 to 2026-08-21)
+#+DATE: 2026-08-21
+
+* Purpose
+
+This memo closes out the plan in
+=docs/handoffs/handoff-uncertainty-draws-plan-2026-08-20.md=: it reports the
+measured ERA5 uncertainty field (step A), the replica experiments with that
+field (step B), the residual decomposition (step C), the pipeline
+implementation (step D), and the local validation of the flagged pipeline
+(step E). Section [[*Decisions requested]] lists the choices that need Aaron's
+ruling before the Caspar rerun email goes out. Everything else is done and
+committed on branch =uncertainty-draws-fix=.
+
+Abbreviations used throughout: TMREL (theoretical minimum risk exposure
+level), ERF (exposure-response function), PAF (population attributable
+fraction), EDA (ensemble of data assimilations, ERA5's 10-member uncertainty
+ensemble), UI (uncertainty interval), GBD (Global Burden of Disease), CCKP
+(the World Bank Climate Change Knowledge Portal), CDS (Copernicus Climate
+Data Store). "Replica" is the validated local reimplementation of the PAF
+stage (analysis16/17 scripts); "production" is Caspar's ssp245 run.
+
+* Summary
+
+1. The measured ERA5 daily-temperature uncertainty is small: pop-weighted
+   per-country sd has median 0.47 °C (range 0.23 to 0.77 °C) under the
+   correlated intra-day bound and median 0.18 °C (0.10 to 0.29 °C) under the
+   independent bound, both for calendar year 2022. The 1.0 °C scalar tested
+   earlier was 2 to 5 times too large.
+2. Convolving the replica exposure with the measured field moves the global
+   burden by +0.4 % (correlated bound) or +0.1 % (independent bound); the
+   median country moves +0.5 % / +0.1 %. A small set of hot, narrow-spread
+   countries moves more (Malaysia +22 %, Liberia +31 %; micro-burden islands
+   show larger ratios on denominators of a few deaths).
+3. Against GBD 2019, adding measured noise to the pairing-fixed burden (B)
+   changes little: countries inside the published UIs go from 143 to 140 of
+   184, the tropical low cluster from 14 to 15 of 21, previously-in-UI
+   defectors from 26 to 30. It neither clearly helps nor clearly hurts.
+4. The +7 % unattributed residual of the pairing fix is essentially NOT
+   explained by the two remaining reconstructable approximations: IHME's
+   whole-degree TMREL rounding accounts for -0.3 % globally, draw-specific
+   mortality weights for -0.01 % (exact for ischemic heart disease, which
+   dominates the weights; a stress bound perturbing all 17 causes stays
+   within -0.04 % at the median). The residual is documented as external
+   (IHME's subnational aggregation and GBD-round internals).
+5. The pipeline now has both fixes behind config flags
+   (=TMREL_MODE=derived_per_draw=, =TEMP_NOISE_MODE=era5_sd=), verified
+   byte-identical to production behavior at default settings, with derived
+   TMRELs cached per (location, year) so the production-rerun overhead is
+   about +1 % wall-clock rather than +30 %.
+6. The flagged pipeline reproduces the replica's predictions on a
+   10-location validation set (section [[*Step E: local validation of the flagged pipeline]]).
+
+* Step A: the measured uncertainty field
+
+IHME's =era2melt.R= added daily exposure noise with sd equal to ERA5's
+published analysis-uncertainty field: the spread of the EDA, a 10-member
+assimilation ensemble published 3-hourly at 0.5°. Our CCKP/NEX-GDDP input
+has no uncertainty field, so production carries no such term. Step A
+measured the field itself:
+
+- Downloaded: dataset =reanalysis-era5-single-levels=, product
+  =ensemble_spread=, variable 2 m temperature, all of calendar 2022,
+  3-hourly, 0.5°, via the CDS API (12 monthly netCDFs, about 1.5 GB total,
+  in =~/data/wb-temp-attr-projections/era5_sd/raw/=).
+- The published spread is 3-hourly; the pipeline needs the uncertainty of
+  the DAILY MEAN, which depends on the unknown intra-day error correlation.
+  Two bounds are carried through everywhere:
+  - =sd_corr= = mean of the day's eight 3-hourly spreads (errors fully
+    correlated within a day; also the closest reading of "IHME applied the
+    published field as-is").
+  - =sd_indep= = sqrt(mean of squared spreads / 8) (errors independent
+    within a day). Truth lies between the bounds; they differ by a factor
+    of about 2.6.
+- Aggregated to a per-pixel MONTHLY climatology (so winter/summer spread
+  differences survive), bilinearly regridded 0.5° to the CCKP 0.25° grid:
+  =era5_sd/era5_t2m_spread_daily_clim_2022_cckp025.nc=, symlinked at
+  =data/era5_sd/=. Build scripts: =output/review-ssp245/fetch_era5_spread.py=
+  and =build_era5_sd.py= (committed).
+
+Pop-weighted per-country statistics (weighting each pixel-day by its
+population share, 2022, 184 countries with land pixels at 0.25°):
+
+| bound    | min  | p25  | median | p75  | max  |
+|----------+------+------+--------+------+------|
+| sd_corr  | 0.23 | 0.36 | 0.47   | 0.58 | 0.77 |
+| sd_indep | 0.10 | 0.13 | 0.18   | 0.21 | 0.29 |
+
+All values in °C; the maximum in both rows is South Sudan. The 1.0 °C
+scalar previously tested (and rejected as a free dial) exceeds the
+correlated-bound median by 2.1x and the independent-bound median by 5.5x.
+
+* Step B: replica experiments with the measured field
+
+=output/review-ssp245/analysis17_2x2_sdfield.R= extends the all-204 replica
+(access-cm2-r1i1p1f1, ssp245, 2022, 500 ERF draws) with per-pixel-month
+Gaussian convolution of the exposure histogram before zone truncation,
+mathematically identical to per-pixel-day noise draws but about 100x
+cheaper (per the handoff's binning hint). Variants: A = production's
+recycled released-TMREL pairing; B = per-draw argmin TMRELs (the decided
+fix); suffix c/i = plus measured noise, correlated/independent bound.
+Results table (=analysis17_2x2_sdfield_all204.csv=; the metrics below are
+also printed in =analysis17_run.log=):
+
+| variant | global sum | in GBD-2019 UI (of 184) | median ratio to GBD (paper > 100, n = 153) | low cluster in UI (of 21) | defectors (of 149) |
+|---------+-----------+--------------------------+--------------------------------------------+---------------------------+--------------------|
+| A       | 1,741,339 | 145                      | 0.97                                       | 5                         | (reference)        |
+| Ac      | 1,748,761 | 148                      | 0.98                                       | 7                         | 11                 |
+| Ai      | 1,742,417 | 145                      | 0.97                                       | 5                         | 11                 |
+| B       | 1,856,600 | 143                      | 1.07                                       | 14                        | 26                 |
+| Bc      | 1,863,991 | 140                      | 1.08                                       | 15                        | 30                 |
+| Bi      | 1,857,673 | 143                      | 1.07                                       | 14                        | 26                 |
+
+Global sums are attributable deaths (heat + cold, signed PAF) for the one
+model-year; production's own value is 1,741,277 and GBD 2019's published
+central estimates sum to 1,685,952 for the same countries. "Low cluster" =
+the 21 countries with GBD value > 50 deaths sitting below the GBD lower
+bound in production; "defectors" = countries inside the UI under production
+that leave it under the variant. Replica-A reproduces analysis16 to
+5e-10, confirming the instrument.
+
+Reading: the pairing fix (B) does the work (cluster 5 to 14 in-UI). The
+measured noise is a sub-percent global effect (Bc/B = +0.4 %, Bi/B =
++0.1 %; median country +0.5 % / +0.1 %) that helps a couple of hot
+countries (adds Georgia to the cluster's in-UI count at its margin) while
+pushing more previously-in countries out (26 to 30 defectors). Countries
+with material noise effects are the narrow-spread hot ones the handoff
+anticipated: Malaysia +22 %, Liberia +31 %, Gabon +21 % under the
+correlated bound (single-digit-burden islands like Samoa show +60 %
+ratios on denominators of about 1 death). Haiti's overshoot is unchanged:
+B puts it at 684 against a UI of [306, 562] (production sat at 159; the
+replica's emulation of production gives 207).
+
+* Step C: residual decomposition
+
+B sits about +7 % above GBD 2019 globally (B/A = 1.066; median country
+ratio 1.07 vs 0.97 under A). The two reconstructable candidate
+explanations were tested in the same replica run:
+
+- C.1, whole-degree TMREL rounding (IHME =pafCalc_sevFix.R:94= rounds;
+  we keep the ERF grid's 0.1 °C): variant Br gives global Br/B = 0.9968
+  (-0.3 %), median country -0.5 %. Rounding also happens to raise the
+  in-UI count to 147 (from 143) and lower defectors to 23 (from 26).
+- C.2, draw-specific TMREL weights (IHME weighted each RR draw's curve
+  with the matching CoD draw's cause shares; we used fixed point shares):
+  tested two ways. Exact: cvd_ihd (ischemic heart disease, the dominant
+  weight) has real IHME forecast mortality draws for 168 of the 184
+  countries (converted locally from the 6 GB forecast CSV); substituting
+  draw d's cvd_ihd deaths into draw d's weights gives Bw/B median 0.9999,
+  minimum 0.9949. Stress bound: perturbing ALL 17 causes' weights per draw
+  with a seeded lognormal at cvd_ihd's measured relative draw-sd gives
+  Bs/B median 0.9996, minimum 0.9835. Draw-specific weights are therefore
+  immaterial to the level (they only widen the TMREL draws slightly).
+
+Together the two explain well under 1 percentage point of the +7 %. The
+remainder is documented as external: IHME's subnational (admin-1)
+aggregation, their GBD-2019-round CoD draw weights (not reconstructible),
+and other round-internal differences. Per the standing framing, GBD 2019
+is a legitimacy check, not a calibration target, so the residual is not
+chased further.
+
+* Step D: pipeline implementation
+
+Committed on =uncertainty-draws-fix= (global-scripts changes):
+
+- =TMREL_MODE= config flag: =released_recycled= (default; production
+  behavior to date) or =derived_per_draw=. The derived mode implements
+  IHME's =tmrelCalculator.R:126= definition inside =02_load_tmrel.R=:
+  TMREL draw d = argmin over 6.6 to 34.6 °C of ERF draw d's death-weighted
+  RR curve, weights from the location-year's mortality cause shares,
+  PER-DRAW when the mortality input carries draws (production does: the
+  IHME forecast files have 500 draws) and point otherwise.
+  =run_location.R= now runs 04 (mortality) before 02 (TMREL) so the
+  weights are available; the order is inert in released mode.
+- Derived TMRELs are cached per (location, year) under
+  =data/tmrel/derived_cache/= because they do not depend on model or
+  scenario; each cache file stores the weight rows it was derived from and
+  is invalidated automatically if the mortality input changes. Measured on
+  Colombia: first derivation +27 s, cache hit +3 s on an 82 s combo, so a
+  full 27-model grid pays the derivation once per year, about +1 %
+  wall-clock overall.
+- =TMREL_ROUND_WHOLE= flag (default FALSE = keep 0.1 °C) reproduces
+  IHME's whole-degree rounding if wanted.
+- =TEMP_NOISE_MODE= config flag: =none= (default) or =era5_sd=, which
+  makes =03_load_temperature.R= convolve each pixel-day's population mass
+  with the measured per-pixel-month sd (variable chosen by =TEMP_SD_VAR=,
+  =sd_corr= or =sd_indep=) before zone truncation. This is the
+  distribution-level equivalent of IHME's noisy exposure draws, with no
+  draw dimension and no RNG.
+- Both runners (=util_run_cckp_burden.R= and Caspar's driver
+  =util_run_global.R=) forward all new flags to their child processes.
+- Safety: defaults verified byte-identical to the pre-change pipeline
+  (max row difference 0 on the Colombia 2010 draws-mode burden);
+  =util_verify_install.R= still passes 10 of 11 checks with the only FAIL
+  the machine-expected missing CCKP mirror. Known limitation: noise mode
+  outputs the exposure aggregated to temperature bins, so the diagnostic
+  =util_trace_pipeline.R= (which expects pixel-day rows) does not support
+  it, and =COLOMBIA_VERIFICATION= mode refuses it explicitly.
+
+* Step E: local validation of the flagged pipeline
+
+Ten locations (the handoff's seven plus Malaysia, Uganda, Brazil from the
+low cluster), access-cm2-r1i1p1f1, ssp245, 2022, 500 draws, run through
+the REAL pipeline three ways: mode A (defaults), mode B
+(=derived_per_draw=), mode Bc (derived + =era5_sd= noise, correlated
+bound). Mortality input: the production run's by-cause 2022 totals in a
+single age-sex bin (=build_validation_mortality.R=), so derived-mode
+weights equal the replica's point weights by construction; deaths totals
+are unaffected by the age-sex split (PAFs broadcast within cause), but
+the validation runs' YLL (years of life lost) outputs are meaningless and
+were not compared.
+
+All 30 runs completed without failures
+(=output/review-ssp245/stepE_validation_comparison.csv=; deaths are
+attributable non-optimal-temperature deaths for the one model-year):
+
+| location    | production | pipeline A | pipeline B | pipeline Bc | GBD 2019 |
+|-------------+-----------+------------+------------+-------------+----------|
+| China       | 564,170   | 564,196    | 591,990    | 592,660     | 497,514  |
+| Indonesia   | 7,381     | 7,282      | 11,284     | 12,587      | 11,205   |
+| Malaysia    | 734       | 732        | 1,264      | 1,428       | 1,356    |
+| Haiti       | 159       | 207        | 684        | 714         | 416      |
+| Colombia    | 4,731     | 4,732      | 5,201      | 5,289       | 4,986    |
+| Nicaragua   | 230       | 230        | 279        | 294         | 275      |
+| Brazil      | 14,898    | 14,895     | 17,243     | 17,592      | 16,701   |
+| Kuwait      | 441       | 442        | 450        | 450         | 421      |
+| DR Congo    | 1,809     | 1,811      | 2,609      | 2,915       | 2,322    |
+| Uganda      | 402       | 403        | 634        | 684         | 936      |
+
+The real pipeline matches the replica's prediction to 3 decimal places
+(ratio 1.000) in ALL three modes for ALL ten locations, i.e. the replica's
+per-pixel convolution and per-draw argmin are implemented equivalently in
+the production code path. Pipeline A matches production within 0.5 % for
+eight locations; Indonesia is -1.3 % and Haiti +30 %. The Haiti gap is the
+replica's known emulation residual, not a new artifact: replica A predicts
+the same 207 (ratio to pipeline exactly 1.000), and the gap to production
+reflects what the single-bin validation mortality cannot reproduce
+(production pairs each mortality draw with the matching PAF draw, and its
+real age-sex mortality detail), which the ssp245 review already
+characterized (median replica/production 1.00 across 184 countries). Of
+the ten, B lands inside the GBD 2019 UI for seven; the three outside are
+China (a defector: production sat inside at 564,170 against an upper
+bound of 570,884 and B moves it just above), Haiti (overshoots), and
+Uganda (still below), all matching the replica's prediction exactly.
+
+* Decisions requested
+
+Answer by number; 1 and 2 are the substantive rulings, 3 is a
+confirmation. All three only gate the wording of the Caspar rerun email;
+the code supports any combination via flags with no further work.
+
+1. *Daily-temperature noise: include in production, or document only?*
+   - Option (a), document only (*recommended*): the production rerun uses
+     =TEMP_NOISE_MODE=none=; the report documents that the measured ERA5
+     EDA spread implies a bounded omitted effect of +0.1 % to +0.4 % on
+     the global burden (independent / correlated intra-day bounds), with
+     the largest country effects around +20 to +30 % in a few hot,
+     narrow-spread, mostly small-burden countries. Rationale: the effect
+     is far below the other uncertainties carried; the intra-day
+     correlation choice (a 2.6x spread in the sd) cannot be resolved from
+     published data, so including it forces exactly the kind of
+     under-determined choice the review has been removing; and applying
+     ERA5's ANALYSIS uncertainty to CCKP/NEX-GDDP bias-adjusted model
+     output is conceptually shaky in the first place (the CCKP daily field
+     is not an ERA5 analysis; its own error is unquantified).
+   - Option (b), include with the correlated bound (=sd_corr=): most
+     faithful reading of IHME's method (they did add exposure noise, and
+     the published field is what they used). Costs: the bound choice is
+     ours, in-UI agreement worsens slightly (143 to 140), and every future
+     scenario run carries the convolution (sub-second per combo,
+     negligible).
+   - Option (c), include with the independent bound: nearly
+     indistinguishable from (a) in results (+0.1 % global); mostly
+     signaling that the term exists.
+   - Deferring costs nothing: the flag can be flipped in any later run;
+     temperature conversions are unaffected either way.
+
+2. *TMREL resolution: keep 0.1 °C, or round to whole degrees like IHME?*
+   - Option (a), keep 0.1 °C (*recommended*, and Aaron's stated lean):
+     faithful to the argmin definition on the ERF grid. Costs: global
+     burden sits 0.3 % higher than the whole-degree variant, and the
+     GBD-2019 in-UI count is 4 countries lower (143 vs 147). Under the
+     standing framing (GBD is a legitimacy check, not a target), matching
+     IHME's discretization artifact to gain in-UI count would be
+     calibration by the back door.
+   - Option (b), whole-degree (=TMREL_ROUND_WHOLE=TRUE=): replicates
+     IHME's released behavior exactly; the +4 in-UI countries and -0.3 %
+     global are the entire upside.
+
+3. *Confirm the production rerun config*: =TMREL_MODE=derived_per_draw=
+   with the per-draw mortality weights that mode picks up automatically
+   from Caspar's existing 500-draw mortality files (shown immaterial to
+   levels, section [[*Step C: residual decomposition]], but faithful to IHME's
+   method and free), =N_DRAWS=500= unchanged, temperature conversions and
+   summarizer flow unchanged. Burden step is the only recompute.
+
+* Compute cost and Caspar instructions (draft, pending sign-off)
+
+Measured locally (16-core desktop, one worker, some runs contended by
+concurrent jobs): baseline 82 s per (model, year) combo; derived mode
++27 s on the first combo of each (location, year) and +3 s on cache hits;
+the noise convolution itself is sub-second and shrinks the exposure table
+handed to the PAF step, so noise mode's net per-combo effect was within
+run-to-run variation (about ±10 s) in the step-E battery. The ssp245
+burden-only rerun is therefore roughly the same compute as the original
+burden pass (the handoff's estimate stands); conversions are reusable, so
+no temperature work.
+
+Draft steps for the rerun email (to be sent after decisions 1 to 3):
+
+1. =git pull= to the merged commit on the production machine.
+2. =df -h /data= and confirm at least the free space the first ssp245
+   burden pass needed (its outputs are overwritten in place with
+   =--force=, so the requirement is not additive).
+3. Rerun the burden phase exactly as before but with
+   =--tmrel_mode=derived_per_draw --force=TRUE= appended (plus
+   =--temp_noise_mode=era5_sd= and the sd file if decision 1 lands on
+   include; the sd netCDF is 65 MB and would ship alongside).
+4. Rerun the summarizer (=util_summarize_run.R=) as before.
+5. The three stale/missing ssp245 combos flagged on 2026-08-14 (125 and
+   172 access-cm2 2022 single-cause, 20 kace 2029 missing YLLs) get
+   recomputed by the same =--force= pass.
+
+* Limitations and parked items
+
+- The sd field is a single-year (2022) climatology. EDA spread depends on
+  the observing system, which changes slowly; 2022 is representative of
+  the CCKP-era present, but a multi-year climatology would be a cheap
+  upgrade if the noise term is ever included.
+- The intra-day error correlation of the EDA spread is unknown; the two
+  bounds differ by about 2.6x and IHME's exact aggregation in
+  =era2melt.R= is not recoverable from the released code.
+- 16 of the 184 replica countries lack local cvd_ihd forecast draws (the
+  local 6 GB CSV extract covers 187 IHME locations); their C.2 exact test
+  fell back to point weights. Production's own mortality files on
+  Caspar's machine are the authoritative set; where a location's files
+  lack draws the pipeline falls back to point weights with a log line
+  rather than failing.
+- The +7 % residual's external attribution (IHME subnational aggregation,
+  round internals) remains unverifiable without their internal data, as
+  the handoff anticipated. Parked items from the handoff (sub-grid island
+  countries, zone-28 truncation sensitivity, GBD-2023-round curves)
+  remain parked.

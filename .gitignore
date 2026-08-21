@@ -110,3 +110,4 @@ output/logs/
 *.nav
 *.snm
 data/era5_sd
+output/review-ssp245/stepE/
