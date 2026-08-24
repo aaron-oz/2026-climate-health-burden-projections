@@ -119,6 +119,14 @@ run_one_combo <- function(loc, model, scen, year) {
             paste0("--use_draws=",  if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
             paste0("--n_draws=",    N_DRAWS_RUN),
             paste0("--temp_file=",  cckp_temp),
+            # forward the uncertainty-fix flags so a child combo always runs
+            # with the same TMREL / exposure-noise configuration as this
+            # invocation (config defaults or CLI overrides alike)
+            paste0("--tmrel_mode=",        TMREL_MODE),
+            paste0("--tmrel_round_whole=", if (isTRUE(TMREL_ROUND_WHOLE)) "TRUE" else "FALSE"),
+            paste0("--temp_noise_mode=",   TEMP_NOISE_MODE),
+            paste0("--temp_sd_file=",      TEMP_SD_FILE),
+            paste0("--temp_sd_var=",       TEMP_SD_VAR),
             "--run_diagnostics=FALSE")
   if (!is.null(MORTALITY_FILE) && nzchar(as.character(MORTALITY_FILE))) {
     args <- c(args, paste0("--mortality_file=", as.character(MORTALITY_FILE)))

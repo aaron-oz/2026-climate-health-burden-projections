@@ -113,6 +113,46 @@ N_DRAWS <- 500
 # total wall-clock.
 DRAW_CHUNK_SIZE <- 100L
 
+# TMREL source (draw mode only; uncertainty-draws fix, 2026-08-20 handoff).
+#   "released_recycled" — IHME's released 100 TMREL draws, recycled to N_DRAWS
+#       (draw N uses tmrel_(N %% 100)). Production behavior through the ssp245
+#       run. The released draws have no index linkage to the ERF draws, so a
+#       draw's reference is never its own curve minimum and the draw-mean PAF
+#       is biased down (one-signed; see ssp245 review section 6).
+#   "derived_per_draw" — TMREL draw d is derived as the argmin of ERF draw d's
+#       death-weighted RR curve over the tmrelCalculator search range
+#       (6.6-34.6 C), the definition in IHME's tmrelCalculator.R:126. Weights
+#       are the location's cause-death shares for the study year, per-draw
+#       when the mortality input carries draws (draw d's shares weight ERF
+#       draw d), point otherwise. Requires 04_load_mortality.R to have run
+#       (run_location.R orders 04 ahead of 02 for this).
+# Override: --tmrel_mode=derived_per_draw
+TMREL_MODE <- "released_recycled"
+
+# Round derived TMRELs to whole degrees C (IHME's pafCalc_sevFix.R:94 does;
+# we keep the ERF grid's 0.1 C resolution by default as more faithful to the
+# argmin definition). Only consulted when TMREL_MODE = "derived_per_draw".
+TMREL_ROUND_WHOLE <- FALSE
+
+# Daily-temperature exposure uncertainty (2026-08-20 handoff step B).
+#   "none"    — exposure used as-is (production behavior to date).
+#   "era5_sd" — each pixel-day's exposure mass is spread over neighboring
+#       0.1 C bins with a Gaussian kernel whose sd comes from the measured
+#       ERA5 EDA-spread climatology at that (pixel, month), before zone-range
+#       truncation. Distribution-level equivalent of IHME era2melt.R's
+#       daily_temp + sd * N(0,1) draws, without a draw dimension.
+# Override: --temp_noise_mode=era5_sd
+TEMP_NOISE_MODE <- "none"
+# Per-pixel-month sd climatology on the CCKP 0.25-degree grid, built by
+# output/review-ssp245/{fetch_era5_spread.py,build_era5_sd.py}.
+TEMP_SD_FILE <- file.path(DATA_DIR, "era5_sd",
+                          "era5_t2m_spread_daily_clim_2022_cckp025.nc")
+# Which intra-day aggregation bound to use: "sd_corr" (mean 3-hourly spread;
+# errors fully correlated within the day) or "sd_indep" (spread of the daily
+# mean under independent errors). Truth lies between; see the sd-field build
+# script header.
+TEMP_SD_VAR <- "sd_corr"
+
 # Run descriptive/diagnostic plots (set FALSE to skip for production runs)
 RUN_DIAGNOSTICS <- TRUE
 

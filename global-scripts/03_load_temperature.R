@@ -102,6 +102,68 @@ temp[zone > TEMP_ZONE_MAX, zone := TEMP_ZONE_MAX]
 # --- Convert daily temp to integer * 10 (matching ERF encoding) ---
 temp[, daily_temp_10 := as.integer(round(daily_temp * 10))]
 
+# --- Exposure uncertainty: convolve with the measured ERA5 spread ---
+# Each pixel-day's population mass is spread over neighboring 0.1 C bins by a
+# Gaussian kernel with the measured EDA-spread sd at that (pixel, month),
+# BEFORE zone-range truncation (out-of-range mass then clamps to the grid
+# edge, as a noisy draw would). This is the distribution-level equivalent of
+# IHME era2melt.R's daily_temp + sd * N(0,1) exposure draws. The output is
+# aggregated to (subloc, year, zone, daily_temp_10); 05 and 06 only consume
+# that aggregation, so the pixel-day columns are not carried through.
+if (!TEMP_NOISE_MODE %in% c("none", "era5_sd")) {
+  stop("Unknown TEMP_NOISE_MODE '", TEMP_NOISE_MODE, "'")
+}
+if (TEMP_NOISE_MODE == "era5_sd") {
+  if (COLOMBIA_VERIFICATION)
+    stop("TEMP_NOISE_MODE = era5_sd is incompatible with COLOMBIA_VERIFICATION ",
+         "(the daily branch needs pixel-day rows)")
+  if (!file.exists(TEMP_SD_FILE))
+    stop("TEMP_NOISE_MODE = era5_sd but TEMP_SD_FILE not found: ", TEMP_SD_FILE)
+  suppressPackageStartupMessages(library(ncdf4))
+  nc_sd <- nc_open(TEMP_SD_FILE)
+  if (!TEMP_SD_VAR %in% names(nc_sd$var))
+    stop("TEMP_SD_VAR '", TEMP_SD_VAR, "' not in ", TEMP_SD_FILE)
+  dn <- sapply(nc_sd$var[[TEMP_SD_VAR]]$dim, function(d) d$name)
+  sd_arr <- aperm(ncvar_get(nc_sd, TEMP_SD_VAR),
+                  match(c("lon", "lat", "month"), dn))
+  nc_close(nc_sd)
+  # pixel_id = lat_idx * 1440 + lon_idx, 0-based (util_convert_cckp_temperature.R)
+  CCKP_N_LON <- 1440L
+  temp[, `:=`(lon_i = pixel_id %% CCKP_N_LON + 1L,
+              lat_i = pixel_id %/% CCKP_N_LON + 1L,
+              mon   = as.integer(format(date, "%m")))]
+  temp[, s10 := as.integer(round(10 * sd_arr[cbind(lon_i, lat_i, mon)]))]
+  n_na <- temp[is.na(s10), .N]
+  if (n_na > 0) {
+    log_msg("TEMP_NOISE era5_sd: ", n_na, " pixel-day rows have no sd value; ",
+            "treated as sd = 0")
+    temp[is.na(s10), s10 := 0L]
+  }
+  wq <- function(x, w, p) {
+    o <- order(x); cw <- cumsum(w[o]) / sum(w)
+    x[o][findInterval(p, cw) + 1L]
+  }
+  log_msg(sprintf(
+    "TEMP_NOISE era5_sd (%s): pop-weighted mean sd %.2f C (p10 %.2f, p90 %.2f)",
+    TEMP_SD_VAR, temp[, sum(pop * s10) / sum(pop) / 10],
+    temp[, wq(s10, pop, 0.10)] / 10, temp[, wq(s10, pop, 0.90)] / 10))
+  agg <- temp[, .(pop = sum(pop, na.rm = TRUE)),
+              by = .(subloc_id, year, zone, s10, daily_temp_10)]
+  conv <- rbindlist(lapply(split(agg, agg$s10), function(g) {
+    s10 <- g$s10[1]
+    if (s10 <= 0) return(g[, .(subloc_id, year, zone, daily_temp_10, pop)])
+    K  <- max(10L, as.integer(ceiling(4 * s10)))
+    ks <- seq(-K, K)
+    kw <- dnorm(ks / 10, sd = s10 / 10); kw <- kw / sum(kw)
+    g[, .(daily_temp_10 = daily_temp_10 + ks, pop = pop * kw),
+      by = .(subloc_id, year, zone, orig = daily_temp_10)][
+      , .(pop = sum(pop)), by = .(subloc_id, year, zone, daily_temp_10)]
+  }))
+  temp <- conv[, .(pop = sum(pop)), by = .(subloc_id, year, zone, daily_temp_10)]
+  log_msg("TEMP_NOISE era5_sd: exposure convolved and aggregated to ",
+          nrow(temp), " (subloc, year, zone, temp-bin) rows")
+}
+
 # --- Truncate daily temps to the modeled range within each zone ---
 temp_limits <- readRDS(file.path(INTERMEDIATE_DIR, "temp_limits.rds"))
 temp <- merge(temp, temp_limits, by = "zone", all.x = TRUE)
@@ -162,7 +224,8 @@ if (USE_DRAWS && "temp_sd" %in% names(temp)) {
 # Diagnostic plots (if enabled)
 # =============================================================================
 
-if (RUN_DIAGNOSTICS) {
+if (RUN_DIAGNOSTICS && TEMP_NOISE_MODE == "none") {
+  # (skipped in noise mode: the convolved output has no pixel-day rows)
   library(ggplot2)
   log_msg("Generating temperature diagnostic plots")
 
