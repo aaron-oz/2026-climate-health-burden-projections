@@ -20,8 +20,10 @@ if (!TMREL_MODE %in% c("released_recycled", "derived_per_draw")) {
        "' (expected released_recycled or derived_per_draw)")
 }
 if (TMREL_MODE == "derived_per_draw" && !USE_DRAWS) {
-  stop("TMREL_MODE = derived_per_draw requires USE_DRAWS = TRUE ",
-       "(summary mode keeps the released TMREL summaries)")
+  # Summary mode has no draw pairing to fix; it always uses the released
+  # TMREL summaries, so the (default) derived mode simply does not apply.
+  log_msg("Summary mode: TMREL_MODE = derived_per_draw applies to draw ",
+          "mode only; using released TMREL summaries")
 }
 
 if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
@@ -39,6 +41,12 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
     stop("derived_per_draw needs ", mort_file, " — run 04_load_mortality.R ",
          "first (run_location.R orders 04 ahead of 02)")
   mort <- setDT(readRDS(mort_file))
+  if (nrow(mort) == 0 || sum(mort$deaths, na.rm = TRUE) <= 0)
+    stop("derived_per_draw: the mortality input has no usable rows for ",
+         "study years ", YEAR_START, "-", YEAR_END, " (04_load_mortality.R ",
+         "filtered it to ", nrow(mort), " rows). The TMREL cause weights ",
+         "cannot be formed, and burden would be empty anyway. Point ",
+         "--mortality_file at data covering the study years.")
 
   has_mort_draws <- "draw" %in% names(mort)
   if (has_mort_draws) {

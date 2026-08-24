@@ -190,8 +190,13 @@ Committed on =uncertainty-draws-fix= (global-scripts changes):
   draw dimension and no RNG.
 - Both runners (=util_run_cckp_burden.R= and Caspar's driver
   =util_run_global.R=) forward all new flags to their child processes.
-- Safety: defaults verified byte-identical to the pre-change pipeline
-  (max row difference 0 on the Colombia 2010 draws-mode burden);
+- Safety: at implementation time the defaults reproduced the pre-change
+  pipeline byte-identically (max row difference 0 on the Colombia 2010
+  draws-mode burden, with =released_recycled= then the default). Since
+  Aaron's 2026-08-24 ruling, =derived_per_draw= IS the default, so a
+  default draws-mode run now intentionally differs from the old pipeline;
+  the byte-identical check remains reproducible via
+  =--tmrel_mode=released_recycled=.
   =util_verify_install.R= still passes 10 of 11 checks with the only FAIL
   the machine-expected missing CCKP mirror. Known limitation: noise mode
   outputs the exposure aggregated to temperature bins, so the diagnostic
@@ -294,15 +299,22 @@ flags with no further work.
    is known in sign and size, and readers of the review should see that
    attribution rather than an unexplained gap.
 
-3. *Production rerun config* — *RESOLVED (2026-08-21)*: fully determined
-   by the decisions above and the already-adopted pairing fix:
-   =TMREL_MODE=derived_per_draw= (per-draw mortality weights picked up
-   automatically from Caspar's 500-draw mortality files; shown immaterial
-   to levels, section [[*Step C: residual decomposition]], but faithful to
-   IHME's method and free), =TMREL_ROUND_WHOLE=FALSE=,
-   =TEMP_NOISE_MODE=none=, =N_DRAWS=500= unchanged. Temperature
-   conversions and the summarizer flow are unchanged; the burden step is
-   the only recompute. No further decisions block the rerun.
+3. *Production rerun config* — *RESOLVED (2026-08-21; amended
+   2026-08-24)*: Aaron's 2026-08-24 ruling makes the fix the DEFAULT, not
+   a flag: recycled released-TMREL pairing is a bug, so
+   =TMREL_MODE=derived_per_draw= is now the config default (per-draw
+   mortality weights picked up automatically from Caspar's 500-draw
+   mortality files; shown immaterial to levels, section
+   [[*Step C: residual decomposition]], but faithful to IHME's method and
+   free). =released_recycled= is retained ONLY as a documented legacy
+   escape hatch for reproducing the original ssp245 run and its review
+   comparisons, marked "do not use for new production runs" in config.R.
+   Summary mode (=USE_DRAWS=FALSE=) has no draw pairing to fix and keeps
+   the released TMREL summaries. =TMREL_ROUND_WHOLE=FALSE= and
+   =TEMP_NOISE_MODE=none= are likewise the defaults, so the rerun needs
+   NO new flags at all, only =--force=TRUE=. =N_DRAWS=500= unchanged;
+   temperature conversions and the summarizer flow unchanged; the burden
+   step is the only recompute. No further decisions block the rerun.
 
 * Compute cost and Caspar instructions (draft, pending sign-off)
 
@@ -318,16 +330,17 @@ no temperature work.
 
 The rerun goes in two stages so a defect surfaces after hours of pilot
 compute, not days of full-grid compute (Aaron, 2026-08-21: do not let
-Caspar waste days). All decisions are made, so the flags below are final:
-=--tmrel_mode=derived_per_draw --force=TRUE= and nothing else new
-(=TMREL_ROUND_WHOLE= and =TEMP_NOISE_MODE= stay at their defaults).
+Caspar waste days). All decisions are made and the fix is the DEFAULT
+(2026-08-24 ruling), so the rerun command is the original burden command
+plus =--force=TRUE= and nothing else.
 
 Stage 1, pilot (about 0.3 % of the full grid):
 
 1. =git pull= to the merged commit on the production machine.
 2. =df -h /data= sanity check (outputs are overwritten in place with
    =--force=, so the space requirement is not additive).
-3. Run the burden phase with the new flags for the PILOT SUBSET only:
+3. Run the burden phase (original command plus =--force=TRUE=; the fix
+   is the default after the merge) for the PILOT SUBSET only:
    the 10 validation locations (China 6, Indonesia 11, Malaysia 13,
    Haiti 114, Colombia 125, Nicaragua 131, Brazil 135, Kuwait 145, DRC
    171, Uganda 190) plus a hot-belt and temperate spread (India 163,

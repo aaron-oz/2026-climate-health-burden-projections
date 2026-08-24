@@ -114,20 +114,25 @@ N_DRAWS <- 500
 DRAW_CHUNK_SIZE <- 100L
 
 # TMREL source (draw mode only; uncertainty-draws fix, 2026-08-20 handoff).
-#   "released_recycled" — IHME's released 100 TMREL draws, recycled to N_DRAWS
-#       (draw N uses tmrel_(N %% 100)). Production behavior through the ssp245
-#       run. The released draws have no index linkage to the ERF draws, so a
-#       draw's reference is never its own curve minimum and the draw-mean PAF
-#       is biased down (one-signed; see ssp245 review section 6).
-#   "derived_per_draw" — TMREL draw d is derived as the argmin of ERF draw d's
-#       death-weighted RR curve over the tmrelCalculator search range
-#       (6.6-34.6 C), the definition in IHME's tmrelCalculator.R:126. Weights
-#       are the location's cause-death shares for the study year, per-draw
-#       when the mortality input carries draws (draw d's shares weight ERF
-#       draw d), point otherwise. Requires 04_load_mortality.R to have run
-#       (run_location.R orders 04 ahead of 02 for this).
-# Override: --tmrel_mode=derived_per_draw
-TMREL_MODE <- "released_recycled"
+#   "derived_per_draw" (DEFAULT since 2026-08-24, Aaron's ruling) — TMREL
+#       draw d is derived as the argmin of ERF draw d's death-weighted RR
+#       curve over the tmrelCalculator search range (6.6-34.6 C), the
+#       definition in IHME's tmrelCalculator.R:126. Weights are the
+#       location's cause-death shares for the study year, per-draw when the
+#       mortality input carries draws (draw d's shares weight ERF draw d),
+#       point otherwise. Requires 04_load_mortality.R to have run
+#       (run_location.R orders 04 ahead of 02 for this). Summary mode
+#       (USE_DRAWS = FALSE) has no draw pairing to fix and always uses the
+#       released TMREL summaries.
+#   "released_recycled" — LEGACY, kept only to reproduce the original ssp245
+#       run and its review comparisons: IHME's released 100 TMREL draws,
+#       recycled to N_DRAWS (draw N uses tmrel_(N %% 100)). The released
+#       draws have no index linkage to the ERF draws, so a draw's reference
+#       is never its own curve minimum and the draw-mean PAF is biased down
+#       (one-signed; see ssp245 review section 6). Do not use for new
+#       production runs.
+# Override: --tmrel_mode=released_recycled
+TMREL_MODE <- "derived_per_draw"
 
 # Round derived TMRELs to whole degrees C (IHME's pafCalc_sevFix.R:94 does;
 # we keep the ERF grid's 0.1 C resolution by default as more faithful to the
