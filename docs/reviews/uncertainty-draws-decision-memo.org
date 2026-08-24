@@ -249,6 +249,43 @@ China (a defector: production sat inside at 564,170 against an upper
 bound of 570,884 and B moves it just above), Haiti (overshoots), and
 Uganda (still below), all matching the replica's prediction exactly.
 
+* Confidence in the local prediction chain
+
+Added 2026-08-24 (Aaron: "how confident are we in the local run?"). Four
+links, each independently checked:
+
+1. The replica's exposure/PAF machinery reproduces the REAL production
+   run at scale: replica-A vs production, median ratio 1.00, global to
+   0.004 %, across the 184 pixel-bearing countries (ssp245 review).
+2. The flag implementation is faithful to the old pipeline: with
+   =released_recycled= the changed code is byte-identical to the
+   pre-change pipeline (max row difference 0).
+3. The derived-mode pipeline equals the replica's prediction exactly
+   (ratio 1.000) on all 10 validation locations in all 3 modes.
+4. The derived TMRELs themselves have an EXTERNAL anchor: IHME's released
+   TMREL summaries implement the same argmin definition. Compared across
+   all 204 locations x zones (=analysis18_tmrel_anchor.R=, 4,692 pairs,
+   point weights from production 2022 cause deaths, released values at
+   their year 2020): correlation of means 0.98, mean absolute difference
+   0.54 °C, p90 1.02 °C; draw spreads comparable (median sd 0.91 °C
+   derived vs 1.02 °C released, 500 vs 100 draws). We derive
+   systematically COOLER TMRELs (median -0.43 °C), consistent in sign
+   with the +7 % burden residual and plausibly attributable to the known
+   input differences (our IHME-forecast 2022 cause weights vs their
+   GBD 2019 CoD weights, and their subnational aggregation); this is a
+   legitimate input choice, not a defect, and is documented rather than
+   chased. Notable case: Haiti's derived TMRELs are about 2.5 °C cooler
+   than released in EVERY zone (the 8 largest gaps in the table are all
+   Haiti), which is the mechanical source of its burden overshoot; worth
+   a case-study look at its cause weights at some point, non-blocking.
+
+What the chain cannot cover: all links share the same upstream inputs
+(ERF curves, converted exposure, mortality), so input errors would pass
+every internal check; the GBD 2019 comparison remains the only outer
+anchor. And the one ingredient never exercised locally at scale is the
+real 17-cause draw-weighted TMREL derivation, which is exactly what the
+pilot gates below target.
+
 * Decisions requested
 
 Answer by number. Decision 2 was ruled on 2026-08-21 and is recorded
@@ -349,18 +386,34 @@ Stage 1, pilot (about 0.3 % of the full grid):
    ssp245, year 2022 only. Roughly 400 combos; at the production run's
    per-combo rate this is hours on his parallel setup, and it prices the
    full rerun precisely.
-4. Ship back the per-combo logs and the pilot =burden_2022.rds= values
-   (or just a national roll-up). Gates we check locally before stage 2:
+4. Ship back the per-combo logs, the pilot =burden_2022.rds= files
+   (draw-level), and the =data/tmrel/derived_cache/= files for the pilot
+   locations. Gates we check locally before stage 2:
    - Pilot access-cm2 2022 values match the replica-B predictions
      (=analysis17_2x2_sdfield_all204.csv= column B) within the known
      replica emulation residual, now WITH his real per-draw mortality
      weights in the TMREL derivation (the one ingredient the local
      validation could not exercise; expected immaterial per step C.2).
+   - TMREL level check on the shipped cache: his draw-weighted derived
+     TMRELs vs our local point-weight derivation, expected mean absolute
+     difference under about 0.2 °C per step C.2; and vs IHME's released
+     summaries, expected to sit inside the analysis18 anchor envelope
+     (correlation about 0.98, typical gap about 0.5 °C).
    - Derived-TMREL cache behavior in the logs: one derivation per
      location, cache hits for the other 26 models, no cache-validation
      re-derivation storms.
-   - Draw-level uncertainty intervals of the pilot burdens look sane
-     (non-degenerate, wider than or comparable to the old run's).
+   - Draw-level distribution checks on the pilot burdens against the old
+     run's draws for the same combos: uncertainty-interval widths
+     comparable (not collapsed, not exploded); the fraction of draws
+     with negative non-optimal burden drops (the recycled-pairing bug's
+     signature was draws whose mismatched reference pushed contributions
+     negative); and the count of GBD 2019 central estimates falling
+     inside OUR new 95 % draw intervals does not degrade relative to the
+     old run.
+   - Cross-model dispersion: between-model spread (coefficient of
+     variation across the 27 models per location) comparable to the old
+     run's for the same combos; the pairing fix moves levels, not model
+     disagreement.
    - Per-combo wall-clock and memory on his machine, extrapolated to a
      firm full-rerun estimate.
 5. Pilot combos overwrite the old per-combo RDS in place; nothing is
