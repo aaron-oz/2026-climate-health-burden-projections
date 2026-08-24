@@ -1,0 +1,85 @@
+#+TITLE: Draft email to Caspar: ssp245 burden rerun (pilot, then full grid)
+#+DATE: 2026-08-24
+
+Draft for Aaron's review; NOT sent. Attachment to include:
+=docs/reviews/ssp245-review-summary.pdf= (the updated review with
+addendum II). Replace <MERGE-COMMIT> with the short hash of the latest
+main merge before sending.
+
+-----
+
+Subject: ssp245 rerun: small pilot first, then the full burden pass
+
+Hi Caspar,
+
+Following up on the August 20 email: the uncertainty-draw pairing fix is
+implemented, validated, and merged to main, and the open methodological
+questions are settled (the updated review PDF is attached; addendum II
+has the details). The ssp245 burden step needs a rerun. The temperature
+conversions are untouched and fully reusable, so this is a burden-only
+pass, and to be careful with your compute we would like to run it in two
+stages: a small pilot (about 400 combos, roughly 0.3 percent of the
+grid) that we check against precomputed expectations, then the full grid
+once it passes.
+
+One new flag to know about: --force_burden=TRUE. It forces recomputation
+of the burden phase only; the conversion phase keeps its normal
+skip-if-exists behavior. Nothing else about your commands changes; the
+fix itself is the code default now, so there is nothing to configure.
+
+Stage 1, the pilot (steps in order):
+
+1. Update the repo: git pull on main. You should land on or past commit
+   <MERGE-COMMIT>.
+
+2. Quick disk check: df -h /data. Outputs are overwritten in place, so
+   no space is needed beyond what the original run used.
+
+3. Capture the OLD run's draw-level values for the pilot subset BEFORE
+   they are overwritten (about a minute; writes one small CSV):
+
+   Rscript output/review-ssp245/pilot_rollup.R pilot_draws_old.csv
+
+4. Run the pilot: 15 locations, ssp245 only, year 2022 only, all
+   models:
+
+   parallel -j 15 \
+     'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022 --force_burden=TRUE' \
+     ::: 6 11 13 81 102 114 125 131 135 145 163 171 190 213 214
+
+5. Capture the NEW values:
+
+   Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
+
+6. Send us back:
+   - pilot_draws_old.csv and pilot_draws_new.csv,
+   - a tarball of data/tmrel/derived_cache/ (small; it holds the newly
+     derived TMRELs),
+   - one or two run_2022.log files from
+     output/results/cckp/<loc>/<model-scenario>/ (any pilot location),
+   - a rough note of wall-clock for the pilot.
+
+We will check the pilot against precomputed expectations on our side
+(value-level predictions for the access-cm2 model, TMREL levels against
+IHME's released values, draw-distribution behavior, timing) and reply
+with a clear go / no-go.
+
+Stage 2, after our green light: the full grid, your original command
+shape plus the new flag:
+
+   parallel -j 125 \
+     'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022-2050 --force_burden=TRUE' \
+     ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
+
+then the summarizer and review-bundle export exactly as before. This
+pass also sweeps up the three stale combos from the August 14 check, and
+it recomputes the pilot combos' remaining years.
+
+Cost expectation: per-combo time should match your original burden pass
+to within a few percent. The one new computation, deriving TMRELs per
+draw, is cached per location and year (it does not depend on model or
+scenario), so it runs once per location-year rather than once per combo;
+measured on our side it adds about 1 percent overall.
+
+Thanks!
+Aaron

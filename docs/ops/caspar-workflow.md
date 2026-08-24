@@ -320,6 +320,13 @@ by all the runners — `util_run_cckp_pipeline.R`, `util_run_cckp_burden.R`,
 `util_apply_workflow_b_batch.R` — as well as the step-4 converter. With
 `--force=TRUE` a combo is recomputed even if its output RDS already exists.
 
+For a **burden-only recompute** (the temperature conversions are already done
+and reusable, e.g. the 2026-08 uncertainty-draws rerun), pass
+`--force_burden=TRUE` to `util_run_global.R` instead: it forces only the
+burden phase and leaves the conversion phase's skip-if-exists behavior in
+place. Plain `--force=TRUE` would re-convert every temperature file too,
+which wastes most of the wall-clock.
+
 ## 8. Spot check
 
 We'll spot-check a sample of outputs against expected ranges. The three target

@@ -595,3 +595,115 @@ weighting, and UAE-type estimation differences. The report and slides were
 updated accordingly (the earlier "consistent with ocean damping" framing is
 superseded). Mexico and Italy still drop out of the comparison silently;
 not chased (both are inside the GBD 2019 UIs).
+
+* Update 2026-08-21 to 2026-08-24: the uncertainty-draws fix, measured and shipped
+
+The 2026-08-20 handoff plan (steps A to F) was executed in full; the
+decision memo with all results and rulings is
+=docs/reviews/uncertainty-draws-decision-memo.org=. Condensed record:
+
+** The measured exposure-uncertainty field (step A)
+
+ERA5's EDA (ensemble of data assimilations) spread for 2 m temperature,
+all of 2022, 3-hourly at 0.5 degrees, fetched from the CDS and aggregated
+to a per-pixel monthly climatology of the daily-mean uncertainty under
+two intra-day bounds (fully correlated: mean 3-hourly spread; independent:
+sqrt(mean sd^2/8)); regridded to the CCKP 0.25-degree grid
+(=fetch_era5_spread.py=, =build_era5_sd.py=; field at =data/era5_sd/=).
+Pop-weighted per-country median 0.47 C (correlated) / 0.18 C
+(independent), range 0.23-0.77 / 0.10-0.29 C. The 1.0 C scalar tested on
+2026-08-19 was 2-5x too large.
+
+** Effect of measured noise, and the noise decision (step B; D1)
+
+Replica 2x2 with per-pixel-month convolution (=analysis17_2x2_sdfield.R=,
+access-cm2 2022, 500 draws, 184 countries): measured noise moves the
+global burden +0.4 % (correlated) / +0.1 % (independent); in-UI countries
+143 -> 140 (on top of the pairing fix), low cluster 14 -> 15 of 21,
+defectors 26 -> 30. DECISION (Aaron, 2026-08-21): document, do not
+include. Production runs with TEMP_NOISE_MODE=none; the measured bound is
+stated as a quantified omission. Grounds: sub-percent global effect, the
+intra-day correlation bound is an unresolvable 2.6x free choice, and
+ERA5's analysis uncertainty is an error model for ERA5's analysis of real
+days, not for CCKP's bias-adjusted CMIP6 simulation (whose own daily-scale
+error is unquantified; the tropical variance deficit it partially proxies
+was already tested directly via re-referencing on 2026-08-17/18 with mixed
+results). The pipeline nonetheless implements the term behind
+TEMP_NOISE_MODE=era5_sd, validated, if it is ever wanted.
+
+** Residual decomposition (step C)
+
+The pairing fix's +7 % global residual vs GBD 2019 is NOT explained by
+the two reconstructable approximations: IHME's whole-degree TMREL
+rounding accounts for -0.3 % globally (variant Br), draw-specific TMREL
+weights for -0.01 % (exact with real cvd_ihd forecast draws for 168
+countries; an all-cause seeded lognormal stress bound stays within
+-0.04 % at the median). Remainder documented external (their subnational
+aggregation, GBD-2019-round CoD draw weights, round internals).
+
+** TMREL rounding decision (D2), stated loudly
+
+DECISION (Aaron, 2026-08-24 exchange): keep 0.1 C TMREL resolution
+(TMREL_ROUND_WHOLE=FALSE), a deliberate, documented deviation from
+IHME's released whole-degree rounding. Quantified consequence, to be
+carried in every GBD comparison: rounding to whole degrees would put 4
+MORE countries inside the GBD 2019 UIs (147 vs 143 of 184) and sit 0.3 %
+lower globally. Those 4 countries are an EXPLAINED comparison
+discrepancy attributable to this choice, not an open anomaly.
+
+** Pipeline implementation (step D) and the default flip
+
+Per-draw derived TMRELs (tmrelCalculator.R:126 argmin over 6.6-34.6 C,
+per-draw mortality cause weights when the input carries draws) are
+implemented in =02_load_tmrel.R= and, by Aaron's 2026-08-24 ruling, are
+the DEFAULT: the recycled released-TMREL pairing is a bug, not an
+option, and survives only as a documented legacy escape hatch
+(--tmrel_mode=released_recycled) for reproducing the original run.
+Derived TMRELs are cached per (location, year) (model/scenario
+independent), so the rerun overhead is about +1 % wall-clock.
+=util_run_global.R= gained --force_burden (forces only the burden phase;
+conversions keep skip-if-exists), the flag for the rerun.
+
+** Validation of the implementation (step E)
+
+30 real-pipeline runs (10 locations x 3 modes, access-cm2 2022,
+validation mortality from production by_cause totals): the pipeline
+matches the replica's predictions to ratio 1.000 in every case
+(=stepE_validation_comparison.csv=). Defaults at implementation time were
+byte-identical to the pre-change pipeline; util_verify_install still
+10/11 (expected mirror FAIL).
+
+** External TMREL anchor (analysis18, 2026-08-24)
+
+Derived TMRELs vs IHME's RELEASED TMREL summaries (same argmin
+definition) across all 204 locations x zones, 4,692 pairs: correlation
+0.98, mean |diff| 0.54 C, p90 1.02 C; draw spreads comparable (median sd
+0.91 C derived/500 draws vs 1.02 C released/100 draws). We derive
+systematically COOLER TMRELs (median -0.43 C), right-signed for part of
+the +7 % residual and plausibly the weight source/year difference (our
+IHME-forecast 2022 weights vs their GBD 2019 CoD weights) plus their
+subnational aggregation; legitimate input choice, documented. Haiti is
+the outlier: derived TMRELs about 2.5 C cooler than released in every
+zone (the 8 largest gaps in the table), the mechanical source of its
+burden overshoot under the fix (684 vs UI [306, 562]); its cause weights
+deserve a case-study look, non-blocking.
+
+** What the tropical cluster looks like after the fix
+
+Low cluster (21 countries): median ours/GBD 0.68 -> 0.89, cluster total
+43,904 -> 54,904 vs GBD's 58,595, in-UI 5 -> 14 of 21. Still outside:
+Papua New Guinea, Georgia, Portugal, UAE, Uganda, Botswana (below) and
+Haiti (above). Global in-UI 145 -> 143 of 184 (the fix redistributes;
+26 previously-in countries leave, most enter or approach from below).
+
+** Rerun plan (two-stage, per Aaron 2026-08-24)
+
+Stage 1 pilot: 15 locations x 27 models x ssp245 2022 (about 400 combos,
+about 0.3 % of the grid), gates: value match to replica-B predictions on
+access-cm2 2022; shipped derived-TMREL cache within about 0.2 C of the
+local point-weight derivation and inside the analysis18 envelope; cache
+hits in logs; draw-interval widths comparable, negative-draw fraction
+down, GBD-2019-inside-our-UI count not degraded; between-model CV
+comparable; timing/memory extrapolation. Stage 2: full grid with
+--force_burden only after gates pass. Details and the email draft:
+decision memo, sections "Compute cost and Caspar instructions".
