@@ -251,8 +251,11 @@ below; 1 remains open and 3 is a confirmation. These only gate the
 wording of the Caspar rerun email; the code supports any combination via
 flags with no further work.
 
-1. *Daily-temperature noise: include in production, or document only?*
-   - Option (a), document only (*recommended*): the production rerun uses
+1. *Daily-temperature noise* — *DECIDED (Aaron, 2026-08-21): document
+   only.* The production rerun uses =TEMP_NOISE_MODE=none=; the report
+   documents the measured bound (option (a) below) instead of adding the
+   term. The options are kept for the record:
+   - Option (a), document only (*recommended*; ADOPTED): the production rerun uses
      =TEMP_NOISE_MODE=none=; the report documents that the measured ERA5
      EDA spread implies a bounded omitted effect of +0.1 % to +0.4 % on
      the global burden (independent / correlated intra-day bounds), with
@@ -291,12 +294,15 @@ flags with no further work.
    is known in sign and size, and readers of the review should see that
    attribution rather than an unexplained gap.
 
-3. *Confirm the production rerun config*: =TMREL_MODE=derived_per_draw=
-   with the per-draw mortality weights that mode picks up automatically
-   from Caspar's existing 500-draw mortality files (shown immaterial to
-   levels, section [[*Step C: residual decomposition]], but faithful to IHME's
-   method and free), =N_DRAWS=500= unchanged, temperature conversions and
-   summarizer flow unchanged. Burden step is the only recompute.
+3. *Production rerun config* — *RESOLVED (2026-08-21)*: fully determined
+   by the decisions above and the already-adopted pairing fix:
+   =TMREL_MODE=derived_per_draw= (per-draw mortality weights picked up
+   automatically from Caspar's 500-draw mortality files; shown immaterial
+   to levels, section [[*Step C: residual decomposition]], but faithful to
+   IHME's method and free), =TMREL_ROUND_WHOLE=FALSE=,
+   =TEMP_NOISE_MODE=none=, =N_DRAWS=500= unchanged. Temperature
+   conversions and the summarizer flow are unchanged; the burden step is
+   the only recompute. No further decisions block the rerun.
 
 * Compute cost and Caspar instructions (draft, pending sign-off)
 
@@ -310,20 +316,52 @@ burden-only rerun is therefore roughly the same compute as the original
 burden pass (the handoff's estimate stands); conversions are reusable, so
 no temperature work.
 
-Draft steps for the rerun email (to be sent after decisions 1 to 3):
+The rerun goes in two stages so a defect surfaces after hours of pilot
+compute, not days of full-grid compute (Aaron, 2026-08-21: do not let
+Caspar waste days). All decisions are made, so the flags below are final:
+=--tmrel_mode=derived_per_draw --force=TRUE= and nothing else new
+(=TMREL_ROUND_WHOLE= and =TEMP_NOISE_MODE= stay at their defaults).
+
+Stage 1, pilot (about 0.3 % of the full grid):
 
 1. =git pull= to the merged commit on the production machine.
-2. =df -h /data= and confirm at least the free space the first ssp245
-   burden pass needed (its outputs are overwritten in place with
-   =--force=, so the requirement is not additive).
-3. Rerun the burden phase exactly as before but with
-   =--tmrel_mode=derived_per_draw --force=TRUE= appended (plus
-   =--temp_noise_mode=era5_sd= and the sd file if decision 1 lands on
-   include; the sd netCDF is 65 MB and would ship alongside).
-4. Rerun the summarizer (=util_summarize_run.R=) as before.
-5. The three stale/missing ssp245 combos flagged on 2026-08-14 (125 and
-   172 access-cm2 2022 single-cause, 20 kace 2029 missing YLLs) get
-   recomputed by the same =--force= pass.
+2. =df -h /data= sanity check (outputs are overwritten in place with
+   =--force=, so the space requirement is not additive).
+3. Run the burden phase with the new flags for the PILOT SUBSET only:
+   the 10 validation locations (China 6, Indonesia 11, Malaysia 13,
+   Haiti 114, Colombia 125, Nicaragua 131, Brazil 135, Kuwait 145, DRC
+   171, Uganda 190) plus a hot-belt and temperate spread (India 163,
+   Nigeria 214, Niger 213, United States 102, Germany 81; ids verified
+   against =location_meta.csv= 2026-08-21), ALL 27 models,
+   ssp245, year 2022 only. Roughly 400 combos; at the production run's
+   per-combo rate this is hours on his parallel setup, and it prices the
+   full rerun precisely.
+4. Ship back the per-combo logs and the pilot =burden_2022.rds= values
+   (or just a national roll-up). Gates we check locally before stage 2:
+   - Pilot access-cm2 2022 values match the replica-B predictions
+     (=analysis17_2x2_sdfield_all204.csv= column B) within the known
+     replica emulation residual, now WITH his real per-draw mortality
+     weights in the TMREL derivation (the one ingredient the local
+     validation could not exercise; expected immaterial per step C.2).
+   - Derived-TMREL cache behavior in the logs: one derivation per
+     location, cache hits for the other 26 models, no cache-validation
+     re-derivation storms.
+   - Draw-level uncertainty intervals of the pilot burdens look sane
+     (non-degenerate, wider than or comparable to the old run's).
+   - Per-combo wall-clock and memory on his machine, extrapolated to a
+     firm full-rerun estimate.
+5. Pilot combos overwrite the old per-combo RDS in place; nothing is
+   lost for comparison because the old run's values live in the exported
+   review tables (=review/ssp245/= CSVs).
+
+Stage 2, full rerun (only after the stage-1 gates pass):
+
+6. Same command over all 204 locations x 27 models x all years
+   (=--force=TRUE= recomputes pilot combos' remaining years too, and
+   sweeps up the three stale combos flagged 2026-08-14: 125 and 172
+   access-cm2 2022 single-cause, 20 kace 2029 missing YLLs).
+7. Rerun the summarizer (=util_summarize_run.R=) and re-export the
+   review bundle as before.
 
 * Limitations and parked items
 
