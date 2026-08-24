@@ -3,7 +3,7 @@
 
 Draft for Aaron's review; NOT sent. Attachment to include:
 =docs/reviews/ssp245-review-summary.pdf= (the updated review with
-addendum II). The referenced main commit 8f660e7 is the 2026-08-24
+addendum II). The referenced main commit 0fd7922 is the 2026-08-24
 merge containing everything the rerun needs.
 
 -----
@@ -30,7 +30,7 @@ fix itself is the code default now, so there is nothing to configure.
 Stage 1, the pilot (steps in order):
 
 1. Update the repo: git pull on main. You should land on or past commit
-   8f660e7.
+   0fd7922.
 
 2. Capture the OLD run's draw-level values for the pilot subset BEFORE
    they are overwritten (about a minute; writes one small CSV):
