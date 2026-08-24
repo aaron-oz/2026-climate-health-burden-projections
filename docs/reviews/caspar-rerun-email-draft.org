@@ -86,10 +86,12 @@ ssp245 run in total, because the conversion phase is skipped entirely
 phase, per-combo compute is unchanged to within a few percent: the one
 new computation, deriving TMRELs per draw, is cached per location and
 year (it does not depend on model or scenario), so it runs once per
-location-year rather than once per combo, about 1 percent overall
-measured on our side. We do not know the conversion/burden wall-clock
-split on your machine, so your pilot timing is what we will use to
-estimate the full pass.
+location-year rather than once per combo. On our machine that is about
+27 seconds of derivation shared by the roughly 27 model combos of a
+location-year, so about a 1 percent increase in burden-phase wall-clock
+time. We do not know the conversion/burden wall-clock split on your
+machine, so your pilot timing is what we will use to estimate the full
+pass.
 
 Thanks!
 Aaron
