@@ -45,6 +45,11 @@ defaults <- list(
   CAUSES       = paste(GBD_CAUSES, collapse = ","),
   SHAPEFILE    = DEFAULT_SHAPEFILE,
   FORCE        = FALSE,  # --force=TRUE forwarded to both inner runners (recompute)
+  # --force_burden=TRUE forces ONLY the burden phase; the temperature-convert
+  # phase keeps its skip-if-exists behavior. This is the flag for a
+  # burden-only rerun (e.g. the 2026-08 uncertainty-draws fix): conversions
+  # are reusable and re-converting them wastes most of the wall-clock.
+  FORCE_BURDEN = FALSE,
   # Workers within this location. 0 (the default) means "size it automatically
   # from how big the location is"; any positive value is used as given.
   N_CORES      = 0L
@@ -176,7 +181,9 @@ run_one_location <- function() {
                              paste0("--use_draws_run=",
                                     if (isTRUE(USE_DRAWS_RUN)) "TRUE" else "FALSE"),
                              paste0("--n_draws_run=",     N_DRAWS_RUN),
-                             paste0("--force=",           FORCE),
+                             paste0("--force=",
+                                    if (isTRUE(FORCE) || isTRUE(FORCE_BURDEN))
+                                      "TRUE" else "FALSE"),
                              paste0("--n_cores=",         n_burden),
                              paste0("--mortality_file=",  mort_file_arg),
                              # uncertainty-fix flags (config defaults or CLI

@@ -6,7 +6,7 @@
 
 \title{Validation Review of the SSP2-4.5 Global\\ Temperature-Attributable Burden Run}
 \author{Aaron Osgood-Zimmerman \quad\textperiodcentered\quad OZ Labs LLC}
-\date{August 20, 2026}
+\date{August 24, 2026}
 
 \begin{document}
 \maketitle
@@ -30,7 +30,10 @@ principal cause), and a years-of-life-lost definition that differs from
 GBD's.
 A post-review addendum (Section~\ref{sec:addendum}) documents a defect in
 how uncertainty draws are paired, found after the main review; it warrants
-rerunning ssp245 before launching the remaining three scenarios.
+rerunning ssp245 before launching the remaining three scenarios. A second
+addendum (Section~\ref{sec:addendum2}) documents the fix, its validation,
+the measured daily-temperature-uncertainty bound, and two deliberate,
+documented methodological choices.
 Recommendations are at the end.
 \end{abstract}
 
@@ -386,15 +389,86 @@ and the temperature-uncertainty decision applied, before launching the
 remaining scenarios. The temperature-conversion outputs are unaffected
 and reusable.
 
+\section{Post-review addendum II (August 24, 2026): resolution}
+\label{sec:addendum2}
+
+The work left open by the first addendum is complete; full detail and
+provenance are in the repository decision memo
+(\texttt{docs/reviews/uncertainty-draws-decision-memo.org}). Four
+resolutions:
+
+\textbf{The pairing fix is implemented and is now the pipeline default.}
+TMREL draws are derived per risk-curve draw (the argmin of that draw's
+death-weighted curve over 6.6--34.6\,\textcelsius{}, IHME's released
+definition), with draw-matched mortality cause weights where the mortality
+input carries draws. The recycled pairing survives only as a documented
+legacy option for reproducing this report's original run. The
+implementation was validated three ways: with the legacy option selected it
+reproduces the pre-change pipeline byte for byte; in derived mode it
+reproduces the experimental replica's predictions exactly (ratio 1.000) on
+a ten-country validation set; and the derived TMRELs agree with IHME's
+released TMREL summaries across all 204 countries and temperature zones
+(correlation 0.98, mean absolute difference 0.54\,\textcelsius{},
+comparable draw spreads). The derived TMRELs run systematically cooler
+than IHME's by about 0.4\,\textcelsius{} at the median, consistent in
+sign with the $+7\%$ residual of the first addendum and plausibly
+attributable to legitimate input differences (our forecast-year cause
+weights versus their GBD 2019 cause-of-death weights, and their
+subnational aggregation).
+
+\textbf{The daily temperature uncertainty term is quantified and
+documented, not added.} We measured the field IHME used (ERA5's ensemble
+spread for 2\,m temperature, all of 2022) and propagated it through the
+full 184-country experiment. The population-weighted country-median
+uncertainty of the daily mean is 0.18--0.47\,\textcelsius{} (the range
+reflects an intra-day error-correlation assumption that published data
+cannot resolve), and its effect on the global burden is $+0.1\%$ to
+$+0.4\%$. Because the effect is far below the other uncertainties
+carried, and because ERA5's analysis uncertainty is an error model for
+ERA5's own analysis rather than for the bias-adjusted CMIP6 exposure this
+pipeline uses, the term is omitted and this paragraph is its
+documentation. The machinery to include it exists and is validated,
+should that judgment change.
+
+\textbf{TMREL resolution: a deliberate, documented deviation from IHME.}
+IHME's released code rounds TMRELs to whole degrees; we keep the risk
+curves' native 0.1\,\textcelsius{} resolution as more faithful to the
+minimum-risk definition. This choice has a known, quantified cost in the
+GBD 2019 comparison: whole-degree rounding would place 4 more countries
+inside the published uncertainty intervals (147 versus 143 of 184) and
+sit 0.3\% lower globally. Those countries are therefore an
+\emph{explained} comparison discrepancy, attributable to this documented
+choice, not an open anomaly.
+
+\textbf{The remaining residual is bounded and external.} Of the $+7\%$
+level shift, whole-degree rounding accounts for $-0.3\%$ and draw-specific
+TMREL weights for under $-0.1\%$ (tested exactly for ischemic heart
+disease, the dominant weight, and by a stress bound for the rest). The
+remainder is attributed to IHME-internal differences (subnational
+aggregation, their 2019-round cause-of-death draw weights) that released
+artifacts cannot reconstruct, and is carried as a documented limitation
+under the standing framing that GBD 2019 is a legitimacy check, not a
+calibration target.
+
+After the correction, the tropical low cluster's median ratio to GBD 2019
+moves from 0.68 to 0.89 and 14 of its 21 members sit inside the published
+intervals (from 5); globally 143 of 184 countries are inside (from 145),
+with the remaining movement a redistribution rather than a net
+degradation. The rerun proceeds in two stages: a roughly 400-combination
+pilot (15 countries, all 27 models, year 2022) checked against the
+replica's precomputed predictions before the full grid is committed.
+
 \section{Recommendations}\label{sec:rec}
 
 \begin{enumerate}
 \item \textbf{Apply the draw-pairing fix and rerun ssp245's burden step
   before launching the remaining scenarios} (SSP3-7.0, SSP5-8.5,
-  SSP1-2.6); see the addendum (Section~\ref{sec:addendum}). The
+  SSP1-2.6); see the addenda (Sections~\ref{sec:addendum}
+  and~\ref{sec:addendum2}). The fix is implemented, validated, and is now
+  the pipeline default, so the rerun needs no special configuration. The
   temperature conversions are reusable, and the run machinery itself is
   validated, reproducible, and complete, so the rerun is a burden-step
-  pass, not a restart.
+  pass, not a restart, staged as a pilot before the full grid.
 \item \textbf{State the alignment target explicitly in all outputs}: these
   are estimates under the Burkart 2021 (GBD 2019-era) methodology. If
   alignment with GBD 2023 is later desired, the clean path is
@@ -415,7 +489,7 @@ and reusable.
 \medskip
 {\raggedright
 \noindent\textit{Provenance: all numbers in this document come from the
-review analyses in the project repository, run August 14--20, 2026,
+review analyses in the project repository, run August 14--24, 2026,
 applied to the production summary tables of August 14, 2026, the GBD
 Results Tool exports of July 31, 2026, and the IHME GHDx dataset DOI
 10.6069/7QWW-PF74. Repository files:}
