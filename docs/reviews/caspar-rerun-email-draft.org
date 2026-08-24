@@ -3,8 +3,8 @@
 
 Draft for Aaron's review; NOT sent. Attachment to include:
 =docs/reviews/ssp245-review-summary.pdf= (the updated review with
-addendum II). Replace <MERGE-COMMIT> with the short hash of the latest
-main merge before sending.
+addendum II). The referenced main commit 8f660e7 is the 2026-08-24
+merge containing everything the rerun needs.
 
 -----
 
@@ -30,7 +30,7 @@ fix itself is the code default now, so there is nothing to configure.
 Stage 1, the pilot (steps in order):
 
 1. Update the repo: git pull on main. You should land on or past commit
-   <MERGE-COMMIT>.
+   8f660e7.
 
 2. Quick disk check: df -h /data. Outputs are overwritten in place, so
    no space is needed beyond what the original run used.
