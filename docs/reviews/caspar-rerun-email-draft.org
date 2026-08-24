@@ -72,11 +72,16 @@ then the summarizer and review-bundle export exactly as before. This
 pass also sweeps up the three stale combos from the August 14 check, and
 it recomputes the pilot combos' remaining years.
 
-Cost expectation: per-combo time should match your original burden pass
-to within a few percent. The one new computation, deriving TMRELs per
-draw, is cached per location and year (it does not depend on model or
-scenario), so it runs once per location-year rather than once per combo;
-measured on our side it adds about 1 percent overall.
+Cost expectation: this should be noticeably faster than the original
+ssp245 run in total, because the conversion phase is skipped entirely
+(temperatures are reused); only the burden phase runs. Within the burden
+phase, per-combo compute is unchanged to within a few percent: the one
+new computation, deriving TMRELs per draw, is cached per location and
+year (it does not depend on model or scenario), so it runs once per
+location-year rather than once per combo, about 1 percent overall
+measured on our side. We do not know the conversion/burden wall-clock
+split on your machine, so your pilot timing is what we will use to
+estimate the full pass.
 
 Thanks!
 Aaron
