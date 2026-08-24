@@ -111,3 +111,7 @@ output/logs/
 *.snm
 data/era5_sd
 output/review-ssp245/stepE/
+# The pilot self-check expectations must ship with the repo (Caspar gates
+# the rerun pilot against them; see pilot_check.R)
+!output/review-ssp245/pilot_expectations_burden.csv
+!output/review-ssp245/pilot_expectations_tmrel.csv

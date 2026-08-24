@@ -387,9 +387,17 @@ Stage 1, pilot (about 0.3 % of the full grid):
    ssp245, year 2022 only. Roughly 400 combos; at the production run's
    per-combo rate this is hours on his parallel setup, and it prices the
    full rerun precisely.
-3. Ship back the per-combo logs, the pilot =burden_2022.rds= files
-   (draw-level), and the =data/tmrel/derived_cache/= files for the pilot
-   locations. Gates we check locally before stage 2:
+3. Gate the pilot. The gates are AUTOMATED so Caspar self-serves rather
+   than waiting on us (Aaron, 2026-08-24): the expectations ship in the
+   repo (=pilot_expectations_burden.csv=, =pilot_expectations_tmrel.csv=)
+   and =pilot_check.R= evaluates every gate from his two roll-up CSVs
+   plus the derived-TMREL cache, printing PASS/WARN/FAIL per gate and an
+   explicit verdict (ALL PASS = start stage 2 immediately; WARN = start
+   stage 2 and flag us in parallel; FAIL = stop). The value gate is
+   self-normalizing, (new/replica-B) vs (old/replica-A) per country, so
+   the known per-country emulation residual cancels. He still emails the
+   CSVs, checker output, and cache tarball for the record; we re-verify
+   in parallel without blocking him. The gates:
    - Pilot access-cm2 2022 values match the replica-B predictions
      (=analysis17_2x2_sdfield_all204.csv= column B) within the known
      replica emulation residual, now WITH his real per-draw mortality

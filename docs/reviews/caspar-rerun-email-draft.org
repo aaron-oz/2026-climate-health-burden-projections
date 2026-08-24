@@ -48,21 +48,29 @@ Stage 1, the pilot (steps in order):
 
    Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
 
-5. Send us back:
-   - pilot_draws_old.csv and pilot_draws_new.csv,
-   - a tarball of data/tmrel/derived_cache/ (small; it holds the newly
-     derived TMRELs),
-   - one or two run_2022.log files from
-     output/results/cckp/<loc>/<model-scenario>/ (any pilot location),
-   - a rough note of wall-clock for the pilot.
+5. Check the pilot yourself against our precomputed expectations (they
+   ship with the repo, so there is no waiting on us):
 
-We will check the pilot against precomputed expectations on our side
-(value-level predictions for the access-cm2 model, TMREL levels against
-IHME's released values, draw-distribution behavior, timing) and reply
-with a clear go / no-go.
+   Rscript output/review-ssp245/pilot_check.R pilot_draws_old.csv pilot_draws_new.csv
 
-Stage 2, after our green light: the full grid, your original command
-shape plus the new flag:
+   It prints one PASS/WARN/FAIL line per gate (value match against our
+   predicted results for the access-cm2 model, the derived TMRELs
+   against expected levels, draw-distribution behavior) and ends with an
+   explicit verdict:
+   - ALL PASS: proceed DIRECTLY to stage 2 below, no need to wait for
+     us.
+   - WARN but no FAIL: proceed to stage 2, and email us the outputs and
+     the warning lines in parallel.
+   - Any FAIL: stop and email us before stage 2.
+
+6. Either way, please email us for the record: pilot_draws_old.csv,
+   pilot_draws_new.csv, the pilot_check.R output, a tarball of
+   data/tmrel/derived_cache/ (small), and a rough note of the pilot's
+   wall-clock. We will re-verify in parallel; a clean pass does not need
+   to wait on that.
+
+Stage 2 (immediately after a passing pilot): the full grid, your
+original command shape plus the new flag:
 
    parallel -j 125 \
      'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022-2050 --force_burden=TRUE' \
