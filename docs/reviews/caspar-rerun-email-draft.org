@@ -32,26 +32,23 @@ Stage 1, the pilot (steps in order):
 1. Update the repo: git pull on main. You should land on or past commit
    8f660e7.
 
-2. Quick disk check: df -h /data. Outputs are overwritten in place, so
-   no space is needed beyond what the original run used.
-
-3. Capture the OLD run's draw-level values for the pilot subset BEFORE
+2. Capture the OLD run's draw-level values for the pilot subset BEFORE
    they are overwritten (about a minute; writes one small CSV):
 
    Rscript output/review-ssp245/pilot_rollup.R pilot_draws_old.csv
 
-4. Run the pilot: 15 locations, ssp245 only, year 2022 only, all
+3. Run the pilot: 15 locations, ssp245 only, year 2022 only, all
    models:
 
    parallel -j 15 \
      'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022 --force_burden=TRUE' \
      ::: 6 11 13 81 102 114 125 131 135 145 163 171 190 213 214
 
-5. Capture the NEW values:
+4. Capture the NEW values:
 
    Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
 
-6. Send us back:
+5. Send us back:
    - pilot_draws_old.csv and pilot_draws_new.csv,
    - a tarball of data/tmrel/derived_cache/ (small; it holds the newly
      derived TMRELs),

@@ -368,16 +368,17 @@ no temperature work.
 The rerun goes in two stages so a defect surfaces after hours of pilot
 compute, not days of full-grid compute (Aaron, 2026-08-21: do not let
 Caspar waste days). All decisions are made and the fix is the DEFAULT
-(2026-08-24 ruling), so the rerun command is the original burden command
-plus =--force=TRUE= and nothing else.
+(2026-08-24 ruling), so the rerun command is the original
+=util_run_global.R= command plus =--force_burden=TRUE= and nothing else
+(=--force_burden= forces only the burden phase; plain =--force= would
+also re-convert every temperature file). No disk-space step: Caspar has
+about 100 TB and outputs are overwritten in place (Aaron, 2026-08-24).
 
 Stage 1, pilot (about 0.3 % of the full grid):
 
 1. =git pull= to the merged commit on the production machine.
-2. =df -h /data= sanity check (outputs are overwritten in place with
-   =--force=, so the space requirement is not additive).
-3. Run the burden phase (original command plus =--force=TRUE=; the fix
-   is the default after the merge) for the PILOT SUBSET only:
+2. Run the burden phase (original command plus =--force_burden=TRUE=;
+   the fix is the default after the merge) for the PILOT SUBSET only:
    the 10 validation locations (China 6, Indonesia 11, Malaysia 13,
    Haiti 114, Colombia 125, Nicaragua 131, Brazil 135, Kuwait 145, DRC
    171, Uganda 190) plus a hot-belt and temperate spread (India 163,
@@ -386,7 +387,7 @@ Stage 1, pilot (about 0.3 % of the full grid):
    ssp245, year 2022 only. Roughly 400 combos; at the production run's
    per-combo rate this is hours on his parallel setup, and it prices the
    full rerun precisely.
-4. Ship back the per-combo logs, the pilot =burden_2022.rds= files
+3. Ship back the per-combo logs, the pilot =burden_2022.rds= files
    (draw-level), and the =data/tmrel/derived_cache/= files for the pilot
    locations. Gates we check locally before stage 2:
    - Pilot access-cm2 2022 values match the replica-B predictions
@@ -416,17 +417,17 @@ Stage 1, pilot (about 0.3 % of the full grid):
      disagreement.
    - Per-combo wall-clock and memory on his machine, extrapolated to a
      firm full-rerun estimate.
-5. Pilot combos overwrite the old per-combo RDS in place; nothing is
+4. Pilot combos overwrite the old per-combo RDS in place; nothing is
    lost for comparison because the old run's values live in the exported
    review tables (=review/ssp245/= CSVs).
 
 Stage 2, full rerun (only after the stage-1 gates pass):
 
-6. Same command over all 204 locations x 27 models x all years
-   (=--force=TRUE= recomputes pilot combos' remaining years too, and
+5. Same command over all 204 locations x 27 models x all years
+   (=--force_burden=TRUE= recomputes pilot combos' remaining years too, and
    sweeps up the three stale combos flagged 2026-08-14: 125 and 172
    access-cm2 2022 single-cause, 20 kace 2029 missing YLLs).
-7. Rerun the summarizer (=util_summarize_run.R=) and re-export the
+6. Rerun the summarizer (=util_summarize_run.R=) and re-export the
    review bundle as before.
 
 * Limitations and parked items
