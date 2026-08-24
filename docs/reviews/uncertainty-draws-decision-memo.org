@@ -246,9 +246,10 @@ Uganda (still below), all matching the replica's prediction exactly.
 
 * Decisions requested
 
-Answer by number; 1 and 2 are the substantive rulings, 3 is a
-confirmation. All three only gate the wording of the Caspar rerun email;
-the code supports any combination via flags with no further work.
+Answer by number. Decision 2 was ruled on 2026-08-21 and is recorded
+below; 1 remains open and 3 is a confirmation. These only gate the
+wording of the Caspar rerun email; the code supports any combination via
+flags with no further work.
 
 1. *Daily-temperature noise: include in production, or document only?*
    - Option (a), document only (*recommended*): the production rerun uses
@@ -276,17 +277,19 @@ the code supports any combination via flags with no further work.
    - Deferring costs nothing: the flag can be flipped in any later run;
      temperature conversions are unaffected either way.
 
-2. *TMREL resolution: keep 0.1 °C, or round to whole degrees like IHME?*
-   - Option (a), keep 0.1 °C (*recommended*, and Aaron's stated lean):
-     faithful to the argmin definition on the ERF grid. Costs: global
-     burden sits 0.3 % higher than the whole-degree variant, and the
-     GBD-2019 in-UI count is 4 countries lower (143 vs 147). Under the
-     standing framing (GBD is a legitimacy check, not a target), matching
-     IHME's discretization artifact to gain in-UI count would be
-     calibration by the back door.
-   - Option (b), whole-degree (=TMREL_ROUND_WHOLE=TRUE=): replicates
-     IHME's released behavior exactly; the +4 in-UI countries and -0.3 %
-     global are the entire upside.
+2. *TMREL resolution* — *DECIDED (Aaron, 2026-08-21): keep 0.1 °C.*
+   =TMREL_ROUND_WHOLE= stays FALSE in production. State this decision
+   PROMINENTLY wherever the GBD comparison is discussed (report addendum,
+   findings.org): this is a deliberate, documented deviation from IHME's
+   released behavior (=pafCalc_sevFix.R:94= rounds TMRELs to whole
+   degrees; we keep the ERF grid's 0.1 °C as more faithful to the argmin
+   definition), and it has a known, quantified cost in the legitimacy
+   check: rounding to whole degrees would put 4 MORE countries inside the
+   GBD 2019 UIs (147 vs 143 of 184) and sit 0.3 % lower globally. Those 4
+   countries are therefore part of the EXPLAINED review discrepancy, not
+   an open anomaly: the comparison shortfall attributable to this choice
+   is known in sign and size, and readers of the review should see that
+   attribution rather than an unexplained gap.
 
 3. *Confirm the production rerun config*: =TMREL_MODE=derived_per_draw=
    with the per-draw mortality weights that mode picks up automatically
