@@ -353,54 +353,50 @@ flags with no further work.
    temperature conversions and the summarizer flow unchanged; the burden
    step is the only recompute. No further decisions block the rerun.
 
-4. *Shock causes in the TMREL weights*: *DECIDED (Aaron, 2026-09-14):
-   exclude =inj_disaster= from the derived-TMREL death weights,
-   everywhere, not per location.* Added after Caspar's first pilot
-   (2026-09-11) FAILED the gates; full account in
-   [[file:ssp245-pilot-review-2026-09-14.org]]. In short: the per-draw
+4. *Shock causes in the TMREL weights*: *DECIDED (team: Aaron, Caspar,
+   Charlie, 2026-09-14): keep all 17 causes in the derived-TMREL weights
+   everywhere, as Burkart et al. and IHME's tmrelCalculator.R do.* Haiti's
+   estimates carry an asterisk in the outputs; the team will either rerun
+   Haiti alone with inj_disaster out of its TMREL weights (16 causes) or
+   keep it as-is and footnote it. Full account in
+   [[file:ssp245-pilot-review-2026-09-14.org]]. In short: Caspar's first
+   pilot (2026-09-11) FAILED the gates on Haiti alone. The per-draw
    weights adopted under decision 3 inherit each cause's forecast draw
-   distribution, and for =inj_disaster= (deaths from exposure to forces of
-   nature) that distribution is a shock-recurrence tail. Haiti's 2022
-   draws hold 187,000-305,000 disaster deaths in 22 of 500 draws (the 2010
-   earthquake recurring), 81 % of those draws' cause mix; the
-   =inj_disaster= RR curve has no interior minimum, so the weighted curve
-   bottoms out at the 6.6 °C search floor and every cause in the draw
-   gets a heat PAF near 1 (Haiti mean 2,536 vs median 391). IHME's own
-   released 2010 Haiti TMRELs collapse the same way, so the derivation is
-   faithful; the forecast inputs are what make it recur every year. The
-   step-C.2 stress test (lognormal at =cvd_ihd='s relative spread) could
-   not represent a 4 % point mass at 5,000x the median. Exclusion is
-   implemented as =TMREL_WEIGHT_EXCLUDE= (config.R, default
-   =inj_disaster=, forwarded by both runners; the derived-cache file name
-   carries an =_ex-inj_disaster= tag so a pre-exclusion cache is never
-   reused). Measured cost on the 15 pilot locations: where the maximum
-   per-draw disaster share is at or below 1.3 % (12 of 15) the mean TMREL
-   moves 0.000-0.010 °C; Nicaragua (max share 38 %) moves 0.15 °C and its
-   access-cm2 burden returns to the replica prediction (ratio 1.0003 vs
-   +3.6 % before); Haiti's non-disaster burden becomes 391 (median 385,
-   95 % interval 271-548) against GBD 2019's 416 (306-562). The burden of
-   =inj_disaster= itself is still computed against the shared TMREL.
-   Alternatives considered and set aside: point weights (mean over
-   draws) keep a 17 % disaster share for Haiti and pull its TMRELs 1.7 °C
-   below IHME's released 2020 values; point median weights give the same
-   result as exclusion but abandon the per-draw weighting of decision 3;
-   a Haiti-only exception would need a screening rule for the other 189
-   locations, which we cannot run locally (only =cvd_ihd= draws are held
-   here).
+   distribution, and for =inj_disaster= (GBD "Exposure to forces of
+   nature", a shock cause) Haiti's 2022 draws hold 187,000-305,000
+   deaths in 22 of 500 (earthquake scale, roughly the 2010 event; GBD's
+   own estimate for the actual year is 9), 81 % of those draws' cause
+   mix; the =inj_disaster= RR curve has no interior minimum, so the
+   weighted curve bottoms out at the 6.6 °C search floor and every cause
+   in the draw gets a heat PAF near 1 (Haiti mean 2,536 vs median 391).
+   IHME's own released 2010 Haiti TMRELs collapse the same way, so the
+   derivation is faithful to their method; the forecast inputs are what
+   make it recur every year. The step-C.2 stress test (lognormal at
+   =cvd_ihd='s relative spread) could not represent a 4 % point mass at
+   5,000x the median. The other 14 pilot locations matched the replica
+   within 0.7 % (Nicaragua +3.6 %, the same mechanism in mild form: max
+   per-draw disaster share 38 %, 0.25 % of zone-draws at the floor).
+   Haiti is the only location where the effect is material: the next
+   largest mean disaster share is Honduras at 2.3 %, then under 2 %.
 
-   Pilot gates revised in the same change (=pilot_check.R=): the value
-   gate compares the new run's NON-disaster burden against the replica's
-   =repB_exdis= (Haiti's total is swung by thousands of deaths per draw by
-   the =inj_disaster= cause alone in the shock draws, old run and new); a
-   floor-share gate (zone-draws at 6.6 °C); the interval-width gate is
-   referenced to GBD 2019's relative width rather than the old run's
-   (which the pairing bug had inflated 3-5x in the tropics; the first
-   pilot's widths landed at 0.8-1.7x GBD's). Expectations are now built
-   by =pilot_expectations_build.R= (reproduces the 2026-08-24 values under
-   the old scheme to 1e-15). Summary tables keep the draw mean as the
-   point estimate and add =_median= and =_exdis= (non-excluded-cause)
-   columns plus a shock-tail QA flag, so the Haiti-type case is visible
-   in the bundle rather than hidden in the mean (same ruling, 2026-09-14).
+   Aaron had first ruled (earlier on 2026-09-14) to exclude =inj_disaster=
+   from the weights everywhere, and that was implemented and merged
+   (da35279) before the team meeting reversed it in favor of fidelity to
+   Burkart/IHME. What remains from that work: the =TMREL_WEIGHT_EXCLUDE=
+   flag (default now empty; =--location_id=114 --tmrel_weight_exclude=inj_disaster=
+   is the Haiti-only rerun, writing its cache under a distinct file name);
+   =pilot_expectations_build.R= (regenerates the expectation CSVs, which
+   under the default reproduce the 2026-08-24 values exactly);
+   =pilot_check.R= with a GBD-referenced width gate, a floor-share gate,
+   and =--exempt=114=; and the summarizer's =_median= columns and
+   shock-tail QA flag, which are what the Haiti asterisk rests on.
+   Measured on the local Haiti run, the 16-cause alternative gives a
+   non-disaster burden of 391 (median 385, 95 % interval 271-548) against
+   GBD 2019's 416 (306-562).
+
+   No re-pilot is needed: the 2026-09-11 pilot already ran the chosen
+   configuration. Re-checked with Haiti exempt, it gives WARN (Nicaragua
+   only) and clears stage 2.
 
 * Compute cost and Caspar instructions (draft, pending sign-off)
 

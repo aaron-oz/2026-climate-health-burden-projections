@@ -140,7 +140,7 @@ combo-years at =-j 125=) gives roughly 34 hours; this assumes the
 parallel efficiency at 125 slots matches 15, which is unverified, so it
 is an order-of-magnitude figure only.
 
-* Decision and fix (2026-09-14)
+* Aaron's first ruling and its implementation (2026-09-14, morning; SUPERSEDED below)
 
 Aaron's ruling: exclude =inj_disaster= from the derived-TMREL weights
 everywhere (not per location). Rationale, in order of weight: the
@@ -181,7 +181,7 @@ draws in the synthetic file, and which the local Nicaragua run shows
 disappears. The stale-cache branch (pre-exclusion cache files only)
 reports FAIL with a git-pull instruction.
 
-* Observation left open: the inj_disaster cause's own burden in shock draws
+* The inj_disaster cause's own burden in shock draws
 
 Independent of the TMREL, in Haiti's 22 earthquake-scale draws the
 =inj_disaster= cause's attributable burden is a PAF of about +/-1 to 2 %
@@ -218,3 +218,34 @@ The methodology walkthrough (=docs/methodology/methodology-walkthrough.tex=,
 nearest-year path as the production behavior; it predates the
 derived-per-draw default (decision 3) and this exclusion (decision 4).
 Not updated in this branch.
+
+* Team decision (2026-09-14 afternoon, Aaron, Caspar, Charlie): keep all 17 causes
+
+The team voted to stay as close to Burkart et al. and IHME as possible:
+all 17 causes weight the derived TMREL everywhere. Haiti's estimates get
+an asterisk; the team will either rerun Haiti alone with 16 causes
+(=--location_id=114 --tmrel_weight_exclude=inj_disaster=, which writes
+its derived cache under a distinct file name) or keep it as-is and
+footnote the earthquake-scale =inj_disaster= forecast draws.
+
+Consequences:
+- =TMREL_WEIGHT_EXCLUDE= default reverted to empty (branch
+  =tmrel-keep-17-causes=). The flag, the cache-name tagging, the
+  expectations builder, the revised checker (with =--exempt=), and the
+  summarizer's median columns and shock-tail flag are kept.
+- The expectation CSVs regenerated under the default reproduce the
+  2026-08-24 values (burden to 0, TMRELs to 4e-4 C).
+- Caspar's existing derived-cache files from the 2026-09-11 pilot are
+  valid under the reverted default (a cache written before the exclusion
+  field existed reads as "no exclusion"); verified locally: served from
+  cache, output identical to his pilot to 1e-10 per draw.
+- No re-pilot: the 2026-09-11 pilot IS the chosen configuration.
+  Re-checked with =--exempt=114= (output saved as
+  =pilot_check_output_aoz_2026-09-14_team-decision.txt= next to his
+  files): WARN, from Nicaragua only (value +3.6 %, 0.25 % of zone-draws
+  at the floor, the same mechanism in mild form, accepted), all other
+  gates PASS. Stage 2 is cleared.
+- Wording softened from "the 2010 earthquake recurring" to "earthquake
+  scale, roughly the 2010 event": the draw magnitudes and the 2010
+  collapse of IHME's released TMRELs are observed; that IHME's forecast
+  models a recurrence is a reading of them, not verified.

@@ -7,10 +7,10 @@
 #
 # Since 2026-09-14 the roll-up also carries deaths_nonopt_exdis, the
 # non-optimal-temperature deaths summed over the causes NOT in
-# TMREL_WEIGHT_EXCLUDE (config.R; default inj_disaster). The value gate uses
-# it: in Haiti the inj_disaster cause alone swings the total by thousands of
-# deaths per draw in the earthquake-scale forecast draws, so the total cannot
-# resolve an implementation difference there.
+# TMREL_WEIGHT_EXCLUDE (config.R; default none, so it equals deaths_nonopt).
+# With an exclusion set, the value gate uses it: in Haiti the inj_disaster
+# cause alone swings the total by thousands of deaths per draw in the
+# earthquake-scale forecast draws.
 #
 # Usage (repo root): Rscript output/review-ssp245/pilot_rollup.R out.csv
 suppressPackageStartupMessages(library(data.table))

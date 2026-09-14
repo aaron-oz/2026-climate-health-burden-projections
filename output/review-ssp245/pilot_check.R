@@ -3,7 +3,11 @@
 # Run from the repo root AFTER pilot_rollup.R has produced both CSVs:
 #   Rscript output/review-ssp245/pilot_check.R pilot_draws_old.csv pilot_draws_new.csv
 # Optional third argument: path to the derived-TMREL cache directory
-# (default data/tmrel/derived_cache).
+# (default data/tmrel/derived_cache). Optional --exempt=<ids>: comma-separated
+# location ids left out of the value, TMREL, floor and width gates and reported on
+# their own EXEMPT line; used for Haiti (114), whose inj_disaster shock tail
+# the team decided on 2026-09-14 to keep (all 17 causes in the TMREL weights,
+# as Burkart/IHME) and to asterisk in the outputs rather than gate on.
 #
 # Prints one PASS/WARN/FAIL line per gate and a final verdict:
 #   ALL PASS            -> proceed directly to stage 2 (the full grid)
@@ -14,11 +18,10 @@
 #
 # Revised 2026-09-14 after the first pilot (see
 # docs/reviews/ssp245-pilot-review-2026-09-14.org):
-#   - the value gate compares the NEW run's non-disaster burden
-#     (deaths_nonopt_exdis, written by the current pilot_rollup.R) against
-#     the replica prediction repB_exdis, without normalizing by the old run;
-#     the old run's total is dominated by the inj_disaster cause in
-#     shock-tail draws (Haiti) and cannot serve as a baseline there;
+#   - the value gate compares the NEW run's burden over the causes outside
+#     TMREL_WEIGHT_EXCLUDE (deaths_nonopt_exdis from pilot_rollup.R; equal to
+#     deaths_nonopt when nothing is excluded, the default) against the
+#     replica prediction repB_exdis, without normalizing by the old run;
 #   - a floor gate: share of derived TMREL zone-draws sitting at the 6.6 C
 #     search floor (the signature of a shock cause dominating the weights);
 #   - the width gate compares each combo's relative interval width against
@@ -28,7 +31,10 @@
 #     the pre-exclusion code is reported as a FAIL, not silently accepted.
 suppressPackageStartupMessages(library(data.table))
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 2) stop("usage: Rscript pilot_check.R old.csv new.csv [cache_dir]")
+exempt_arg <- grep("^--exempt=", args, value = TRUE)
+EXEMPT <- if (length(exempt_arg)) as.integer(strsplit(sub("^--exempt=", "", exempt_arg[1]), ",")[[1]]) else integer(0)
+args <- grep("^--", args, value = TRUE, invert = TRUE)
+if (length(args) < 2) stop("usage: Rscript pilot_check.R old.csv new.csv [cache_dir] [--exempt=114]")
 old <- fread(args[1]); new <- fread(args[2])
 cache_dir <- if (length(args) >= 3) args[3] else file.path("data", "tmrel", "derived_cache")
 EXP_B <- fread("output/review-ssp245/pilot_expectations_burden.csv")
@@ -40,9 +46,15 @@ EXCL <- sort(EXCL[nzchar(EXCL) & !tolower(EXCL) %in% c("none", "false")])
 cache_tag <- if (length(EXCL)) paste0("_ex-", paste(EXCL, collapse = "+")) else ""
 N_DRAWS <- cfg$N_DRAWS
 
-if (!"deaths_nonopt_exdis" %in% names(new))
-  stop("new CSV lacks deaths_nonopt_exdis: re-run pilot_rollup.R from the ",
-       "current main (git pull) to produce it")
+if (!"deaths_nonopt_exdis" %in% names(new)) {
+  if (length(EXCL) > 0)
+    stop("new CSV lacks deaths_nonopt_exdis but TMREL_WEIGHT_EXCLUDE is set: ",
+         "re-run pilot_rollup.R from the current main to produce it")
+  new[, deaths_nonopt_exdis := deaths_nonopt]   # nothing excluded: same total
+}
+if (length(EXEMPT) > 0)
+  cat(sprintf("[EXEMPT] %-28s location(s) %s left out of the value, TMREL, floor and width gates (known inj_disaster shock tail; asterisked in outputs)\n",
+              "shock-tail locations", paste(EXEMPT, collapse = ",")))
 if (!"repB_exdis" %in% names(EXP_B))
   stop("pilot_expectations_burden.csv is the pre-2026-09-14 version; git pull")
 
@@ -64,7 +76,7 @@ S <- merge(SO, SN, by = c("location_id", "combo"), suffixes = c("_old", "_new"))
 if (nrow(S) == 0) stop("no (location, combo) present in both CSVs")
 
 # --- Gate 1: value match on access-cm2, non-disaster burden vs replica -----
-a <- merge(SNx[combo == ACCESS], EXP_B, by = "location_id")
+a <- merge(SNx[combo == ACCESS & !location_id %in% EXEMPT], EXP_B, by = "location_id")
 a[, ratio := mean / repB_exdis]
 worst <- a[which.max(abs(ratio - 1))]
 g1 <- max(abs(a$ratio - 1))
@@ -74,6 +86,7 @@ gate("value match (access-cm2)", lvl(g1, 0.02, 0.04),
 
 # --- Gate 2: derived TMRELs vs expectations, and Gate 3: floor share --------
 cache_file <- function(loc) file.path(cache_dir, sprintf("%d_2022_N%d%s.rds", loc, N_DRAWS, cache_tag))
+EXP_T <- EXP_T[!location_id %in% EXEMPT]
 stale <- sapply(unique(EXP_T$location_id), function(loc)
   !file.exists(cache_file(loc)) && file.exists(file.path(cache_dir, sprintf("%d_2022_N%d.rds", loc, N_DRAWS))))
 if (any(stale)) {
@@ -114,7 +127,7 @@ gate("burden moves up", lvl(g4, 0.05, 0.10),
              100 * g4, nrow(S)))
 
 # --- Gate 5: interval widths vs GBD 2019 (non-disaster burden) -------------
-wx <- merge(SNx, EXP_B[, .(location_id, rw_gbd = (gbd_hi - gbd_lo) / gbd_val)], by = "location_id")
+wx <- merge(SNx[!location_id %in% EXEMPT], EXP_B[, .(location_id, rw_gbd = (gbd_hi - gbd_lo) / gbd_val)], by = "location_id")
 wx[, rw_ratio := (width / mean) / rw_gbd]
 g5 <- wx[, mean(rw_ratio < 0.4 | rw_ratio > 3.0)]
 gate("interval widths sane", lvl(g5, 0.05, 0.10),

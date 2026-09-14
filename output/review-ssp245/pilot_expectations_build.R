@@ -12,7 +12,7 @@
 #   B0 = per-draw argmin TMRELs, point weights over ALL causes (the scheme the
 #        2026-08-24 expectations used; kept only as the regression check)
 #   B  = per-draw argmin TMRELs, point weights EXCLUDING TMREL_WEIGHT_EXCLUDE
-#        (default inj_disaster; Aaron's 2026-09-14 ruling, see config.R)
+#        (default none since the 2026-09-14 team decision; see config.R)
 # Each burden is reported as a total over the 17 causes and as the sum over
 # the causes NOT in the exclusion list (suffix _exdis). The value gate uses
 # the _exdis quantity: in Haiti the inj_disaster cause alone swings the total
