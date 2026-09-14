@@ -35,8 +35,8 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
   # zone's modeled grid. Weights are the location's cause-death shares for
   # each study year: draw d's mortality shares weight ERF draw d when the
   # mortality input carries draws, else the year's point shares for all draws.
-  # Causes listed in TMREL_WEIGHT_EXCLUDE (default inj_disaster) are left out
-  # of the weights; see config.R for why.
+  # Causes listed in TMREL_WEIGHT_EXCLUDE (default none) are left out of the
+  # weights; see config.R for when that is used.
   # ===========================================================================
   mort_file <- file.path(INTERMEDIATE_DIR, "mortality.rds")
   if (!file.exists(mort_file))
@@ -94,9 +94,11 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
   # weight rows it was derived from (ALL causes, before the weight exclusion)
   # and the exclusion list; a cache hit requires both to match the current
   # input exactly, so a changed mortality file or exclusion re-derives rather
-  # than silently reusing stale TMRELs. The exclusion is also part of the
-  # file name, so a cache written before it existed (Caspar's 2026-09-11
-  # pilot) is never picked up by a run that has it. Written atomically
+  # than silently reusing stale TMRELs. A non-empty exclusion is also part
+  # of the file name, so a cache derived with all causes is never picked up
+  # by a run that excludes some, and vice versa (a cache written before the
+  # field existed reads as "no exclusion", which is what it was). Written
+  # atomically
   # (concurrent combos of one location may race here harmlessly).
   # ---------------------------------------------------------------------------
   cache_dir_tm <- file.path(TMREL_DIR, "derived_cache")

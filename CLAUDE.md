@@ -49,7 +49,7 @@ Key config flags in `config.R`:
 - `COLOMBIA_VERIFICATION` — Toggle Samuel's methodological choices for validation (see docs/validation/step2-comparison.md)
 - `COMPUTE_SEVS` — Whether to compute SEVs
 - `TMREL_MODE` — `derived_per_draw` (default since 2026-08-24: TMREL draw d is the argmin of ERF draw d's death-weighted RR curve) vs `released_recycled` (legacy, reproduces the original ssp245 run only)
-- `TMREL_WEIGHT_EXCLUDE` — causes left out of the derived-TMREL death weights (default `inj_disaster`, since 2026-09-14; see docs/reviews/ssp245-pilot-review-2026-09-14.org). Changing it changes the derived-cache file name, so old caches are never reused.
+- `TMREL_WEIGHT_EXCLUDE` — causes left out of the derived-TMREL death weights. Default none (team decision 2026-09-14: all 17 causes, as Burkart/IHME); the flag exists for a Haiti-only 16-cause rerun (see docs/reviews/ssp245-pilot-review-2026-09-14.org). A non-empty value changes the derived-cache file name, so caches from the two settings never mix.
 
 ### Samuel's Original Colombia Scripts (from-samuel/Scripts/Colombia/)
 

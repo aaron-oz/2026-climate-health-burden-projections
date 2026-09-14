@@ -1,119 +1,90 @@
-#+TITLE: Draft email to Caspar: pilot result and re-pilot (stage 1, second pass)
+#+TITLE: Draft email to Caspar: pilot accepted, go to stage 2
 #+DATE: 2026-09-14
 
-Draft for Aaron's review; NOT sent. Merge commit on main: da35279. No
-attachment needed; the review note is in the repo at
+Draft for Aaron's review; NOT sent. Fill in MERGE_HASH once the
+=tmrel-keep-17-causes= branch is merged to main. Supersedes the earlier
+re-pilot draft (the team decided on 2026-09-14 to keep all 17 causes, so
+there is no re-pilot). The review note is in the repo at
 =docs/reviews/ssp245-pilot-review-2026-09-14.org=.
 
 -----
 
-Subject: Re: ssp245 rerun: pilot result (FAIL was correct), short re-pilot, then the full grid
+Subject: Re: ssp245 rerun: pilot accepted (Haiti asterisked), please start the full grid
 
 Hi Caspar,
 
-Thanks for the pilot files and the timing note. Your checker's FAIL was
-right, and stopping before stage 2 was the correct call. What it caught:
+Following up on today's call. Your checker's FAIL was right and stopping
+was the correct call, but as we discussed the failure is confined to
+Haiti and we are keeping the method as it is, so the pilot you already
+ran is the configuration we go forward with. No re-pilot.
 
-- 14 of the 15 pilot locations match our predictions within 0.7 %, and
-  the draw distributions behave as expected (negative draws gone,
-  intervals comparable to GBD 2019's).
-- Haiti did not. In 22 of its 500 draws the IHME forecast for
-  inj_disaster (deaths from exposure to forces of nature) is
-  earthquake-scale (187,000 to 305,000 deaths, the 2010 event
-  recurring), which makes disaster 81 % of those draws' cause mix. The
-  death-weighted risk curve then has its minimum at the bottom of the
-  search range (6.6 C), and every cause in those draws gets a heat PAF
-  near 1. Nothing was wrong on your side: re-deriving Haiti's TMRELs
-  here from your cache reproduces your values exactly. The per-draw
-  weighting inherited an input tail our validation had not exercised.
+What the pilot showed, for the record:
 
-The fix, merged to main as commit da35279, excludes inj_disaster from
-the TMREL death weights everywhere; the cause still gets its
-attributable burden like every other cause. Where the disaster share is
-normal the change is below 0.01 C in the TMREL. It is the code default,
-so there is nothing to configure. Two tools also changed: the roll-up
-writes one extra column, and the checker now compares interval widths
-against GBD 2019's rather than the old run's and checks that no TMREL
-sits at the search floor. Both must be re-run from the updated main.
+- 14 of the 15 locations match our predictions within 0.7 % (Nicaragua
+  3.6 %), the negative draws are gone, and the interval widths sit at
+  0.8 to 1.7 times GBD 2019's.
+- Haiti: in 22 of its 500 draws the IHME forecast for inj_disaster
+  (exposure to forces of nature) is earthquake-scale, 187,000 to 305,000
+  deaths, roughly the 2010 event; GBD's own estimate for the actual year
+  is 9. Disaster is then 81 % of those draws' cause mix, the
+  death-weighted risk curve bottoms out at the floor of the TMREL search
+  range (6.6 C), and every cause in those draws gets a heat PAF near 1.
+  Nothing was wrong on your side: re-deriving Haiti's TMRELs here from
+  your cache reproduces your values exactly. IHME's own released TMRELs
+  for Haiti collapse the same way in 2010. The team's decision is to keep
+  all 17 causes in the TMREL weights everywhere, as Burkart and IHME do,
+  and to asterisk Haiti in the outputs.
 
-Please repeat stage 1, then go straight to stage 2 on a pass. Steps in
-order, all from the repo root:
+Re-running the checker here with Haiti set aside gives WARN (Nicaragua
+only) and clears stage 2. Two small things changed on main that you need
+before the summarizer: the summary tables gain a draw median beside every
+mean plus a shock-tail flag in the QA report (this is what the Haiti
+asterisk rests on), and the checker gained a --exempt option. The
+pipeline code you ran the pilot with is unchanged in effect; your
+derived-TMREL cache files stay valid and will be reused.
 
-STAGE 1 (pilot, about 45 min at -j 15 going by your last run)
+Steps in order, all from the repo root:
 
-1. Update the repo and confirm you have the fix:
+1. Update the repo and confirm you have the merge:
 
    git pull
-   git log --oneline -1 da35279
+   git log --oneline -1 MERGE_HASH
 
    The second command should print the merge commit. If it errors with
-   "unknown revision", the pull did not bring main up to date; stop and
-   email me.
+   "unknown revision", stop and email me.
 
-2. Keep your existing pilot_draws_old.csv. Do NOT re-run the roll-up to
-   re-create it: the old run's values are no longer on disk, and the
-   file you already have is the one we need.
-
-3. Re-run the pilot, same command as before:
-
-   parallel -j 15 \
-     'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022 --force_burden=TRUE' \
-     ::: 6 11 13 81 102 114 125 131 135 145 163 171 190 213 214
-
-   The TMRELs are re-derived once per location under a new cache file
-   name, data/tmrel/derived_cache/<loc>_2022_N500_ex-inj_disaster.rds.
-   The previous cache files (without the _ex- suffix) are left in place
-   and ignored; no need to delete them.
-
-4. Re-capture the new values with the updated roll-up:
-
-   Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
-
-   This overwrites your previous pilot_draws_new.csv, which is intended.
-
-5. Run the checker:
-
-   Rscript output/review-ssp245/pilot_check.R pilot_draws_old.csv pilot_draws_new.csv
-
-   Same verdict rules as before:
-   - ALL PASS: go directly to stage 2 below, no need to wait for us.
-   - WARN but no FAIL: go to stage 2, and email us the output in
-     parallel.
-   - Any FAIL: stop and email us. In particular, a FAIL that mentions a
-     "pre-exclusion cache file" means step 1 did not take.
-
-6. Either way, please email us for the record: pilot_draws_new.csv,
-   the checker output, and a tarball of data/tmrel/derived_cache/
-   (the new files end in _ex-inj_disaster.rds).
-
-STAGE 2 (full grid, only after a PASS or WARN in step 5)
-
-7. The full burden pass, your original command shape plus the flag:
+2. The full burden pass, your original command shape plus the flag:
 
    parallel -j 125 \
      'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022-2050 --force_burden=TRUE' \
      ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
 
    Temperature conversions are reused; only the burden phase runs. This
-   also recomputes the pilot combos' remaining years and sweeps up the
-   three stale combos from the August 14 check. Scaling your 45-minute
-   pilot linearly to the full grid gives on the order of a day and a
-   half at -j 125; we do not know how well the parallel efficiency
-   holds at that width, so please note the actual wall-clock.
+   recomputes the pilot combos' remaining years and sweeps up the three
+   stale combos from the August 14 check. Scaling your 45-minute pilot
+   linearly gives on the order of a day and a half at -j 125; we do not
+   know how well the parallel efficiency holds at that width, so please
+   note the actual wall-clock.
 
-8. The summarizer, with --force this time. The summary tables gained
-   columns (a draw median beside every mean, and non-optimal totals over
-   the causes other than inj_disaster), and the per-location summary
-   cache under output/summary/_cache/ will otherwise serve the old
-   columns:
+3. The summarizer, with --force this time (the per-location cache under
+   output/summary/_cache/ would otherwise serve the old columns):
 
    Rscript global-scripts/util_summarize_run.R --scenarios=ssp245 --jobs=16 --force
 
-9. The review-bundle export, exactly as before:
+4. The review-bundle export, exactly as before:
 
    Rscript global-scripts/util_export_review_bundle.R --scenarios=ssp245 --jobs=16
 
-10. Email us the bundle, plus the wall-clock for steps 7 and 8.
+5. Email us the bundle, plus the wall-clock for steps 2 and 3.
+
+Optional, only if we decide on the call follow-up to give Haiti a
+16-cause run rather than a footnote (do NOT run this unless we confirm;
+it overwrites Haiti's 17-cause output, and the summarizer would then mix
+the two configurations without saying so):
+
+   Rscript global-scripts/util_run_global.R --location_id=114 --scenarios=ssp245 --years=2022-2050 --force_burden=TRUE --tmrel_weight_exclude=inj_disaster
+
+   followed by steps 3 and 4 again.
 
 Thanks!
 Aaron

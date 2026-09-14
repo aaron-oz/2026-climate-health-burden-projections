@@ -25,9 +25,9 @@
 # Outputs, under --out:
 #   national_by_year.csv  (location, model, scenario, year) x draw mean, draw
 #                         median, and 95% interval for attributable deaths and
-#                         YLLs, plus deaths_nonopt_exdis / yll_nonopt_exdis
-#                         (the same totals over the causes NOT in
-#                         TMREL_WEIGHT_EXCLUDE, default inj_disaster). The
+#                         YLLs, plus (only when TMREL_WEIGHT_EXCLUDE is set)
+#                         deaths_nonopt_exdis / yll_nonopt_exdis, the same
+#                         totals over the causes not in that list. The
 #                         review table. The mean stays the point estimate
 #                         (it adds across causes and locations, and it is what
 #                         GBD centrals are compared against); the median is
@@ -365,7 +365,7 @@ if ("mean_median_gap" %in% names(qa)) {
   w("  disaster: a few draws hold an event-scale death toll, and the cause's")
   w("  small PAF on that toll swings the total by thousands of deaths of")
   w("  either sign). For such combos the mean is a poor summary; see the")
-  w("  _median and _exdis columns in national_by_year.csv.")
+  w("  _median columns in national_by_year.csv. Haiti is the known case.")
   sh <- qa[!is.na(mean_median_gap) & mean_median_gap > SHOCK_GAP]
   w(sprintf("  combos with |mean - median| / |median| > %.2f : %d of %d",
             SHOCK_GAP, nrow(sh), sum(!is.na(qa$mean_median_gap))))
