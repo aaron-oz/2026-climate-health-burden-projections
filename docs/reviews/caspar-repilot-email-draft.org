@@ -1,7 +1,7 @@
 #+TITLE: Draft email to Caspar: pilot accepted, go to stage 2
 #+DATE: 2026-09-14
 
-Draft for Aaron's review; NOT sent. Fill in MERGE_HASH once the
+Draft for Aaron's review; NOT sent. Fill in f48cea9 once the
 =tmrel-keep-17-causes= branch is merged to main. Supersedes the earlier
 re-pilot draft (the team decided on 2026-09-14 to keep all 17 causes, so
 there is no re-pilot). The review note is in the repo at
@@ -48,7 +48,7 @@ Steps in order, all from the repo root:
 1. Update the repo and confirm you have the merge:
 
    git pull
-   git log --oneline -1 MERGE_HASH
+   git log --oneline -1 f48cea9
 
    The second command should print the merge commit. If it errors with
    "unknown revision", stop and email me.
