@@ -1,25 +1,23 @@
 #+TITLE: Draft email to Caspar: pilot result and re-pilot (stage 1, second pass)
 #+DATE: 2026-09-14
 
-Draft for Aaron's review; NOT sent. Fill in the merge commit hash
-(da35279 below) once the =tmrel-exclude-disaster= branch is merged to
-main. No attachment needed; the review note is in the repo at
+Draft for Aaron's review; NOT sent. Merge commit on main: da35279. No
+attachment needed; the review note is in the repo at
 =docs/reviews/ssp245-pilot-review-2026-09-14.org=.
 
 -----
 
-Subject: Re: ssp245 rerun: pilot result (FAIL was correct) and a short re-pilot
+Subject: Re: ssp245 rerun: pilot result (FAIL was correct), short re-pilot, then the full grid
 
 Hi Caspar,
 
 Thanks for the pilot files and the timing note. Your checker's FAIL was
-right, and stopping before stage 2 was the correct call. The short
-version of what it caught:
+right, and stopping before stage 2 was the correct call. What it caught:
 
-- 14 of the 15 pilot locations match our predictions within 0.7 %,
-  and the draw distributions behave as expected (negative draws gone,
+- 14 of the 15 pilot locations match our predictions within 0.7 %, and
+  the draw distributions behave as expected (negative draws gone,
   intervals comparable to GBD 2019's).
-- Haiti did not. In 22 of its 500 draws, the IHME forecast for
+- Haiti did not. In 22 of its 500 draws the IHME forecast for
   inj_disaster (deaths from exposure to forces of nature) is
   earthquake-scale (187,000 to 305,000 deaths, the 2010 event
   recurring), which makes disaster 81 % of those draws' cause mix. The
@@ -27,27 +25,34 @@ version of what it caught:
   search range (6.6 C), and every cause in those draws gets a heat PAF
   near 1. Nothing was wrong on your side: re-deriving Haiti's TMRELs
   here from your cache reproduces your values exactly. The per-draw
-  weighting simply inherited an input tail our validation had not
-  exercised.
+  weighting inherited an input tail our validation had not exercised.
 
-The fix (merged to main as da35279) excludes inj_disaster from the
-TMREL death weights everywhere; the cause still gets its attributable
-burden like every other cause. Where the disaster share is normal, the
-change is below 0.01 C in the TMREL. It is the code default, so again
-nothing to configure. The pilot checker was also revised (it now
-compares against GBD 2019's interval widths rather than the old run's,
-and checks that no TMREL sits at the search floor), and the roll-up
-writes one extra column the checker needs, so both need to be re-run
-from the updated main.
+The fix, merged to main as commit da35279, excludes inj_disaster from
+the TMREL death weights everywhere; the cause still gets its
+attributable burden like every other cause. Where the disaster share is
+normal the change is below 0.01 C in the TMREL. It is the code default,
+so there is nothing to configure. Two tools also changed: the roll-up
+writes one extra column, and the checker now compares interval widths
+against GBD 2019's rather than the old run's and checks that no TMREL
+sits at the search floor. Both must be re-run from the updated main.
 
-Please repeat stage 1, same shape as before (steps in order):
+Please repeat stage 1, then go straight to stage 2 on a pass. Steps in
+order, all from the repo root:
 
-1. Update the repo: git pull on main. You should land on or past
-   da35279.
+STAGE 1 (pilot, about 45 min at -j 15 going by your last run)
 
-2. Keep your existing pilot_draws_old.csv; do NOT re-capture it (the
-   old run's values are gone from disk, and the file you have is the
-   one we need).
+1. Update the repo and confirm you have the fix:
+
+   git pull
+   git log --oneline -1 da35279
+
+   The second command should print the merge commit. If it errors with
+   "unknown revision", the pull did not bring main up to date; stop and
+   email me.
+
+2. Keep your existing pilot_draws_old.csv. Do NOT re-run the roll-up to
+   re-create it: the old run's values are no longer on disk, and the
+   file you already have is the one we need.
 
 3. Re-run the pilot, same command as before:
 
@@ -55,34 +60,60 @@ Please repeat stage 1, same shape as before (steps in order):
      'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022 --force_burden=TRUE' \
      ::: 6 11 13 81 102 114 125 131 135 145 163 171 190 213 214
 
-   The derived TMRELs are re-derived once per location under a new cache
-   file name (data/tmrel/derived_cache/<loc>_2022_N500_ex-inj_disaster.rds);
-   the previous cache files are left in place and ignored.
+   The TMRELs are re-derived once per location under a new cache file
+   name, data/tmrel/derived_cache/<loc>_2022_N500_ex-inj_disaster.rds.
+   The previous cache files (without the _ex- suffix) are left in place
+   and ignored; no need to delete them.
 
-4. Re-capture the new values with the updated roll-up (it adds a
-   column):
+4. Re-capture the new values with the updated roll-up:
 
    Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
 
-5. Run the checker, same command:
+   This overwrites your previous pilot_draws_new.csv, which is intended.
+
+5. Run the checker:
 
    Rscript output/review-ssp245/pilot_check.R pilot_draws_old.csv pilot_draws_new.csv
 
-   Same verdict rules as before: ALL PASS means go straight to stage 2;
-   WARN means go to stage 2 and email us the warnings in parallel; any
-   FAIL means stop and email us. If the checker reports a "pre-exclusion
-   cache file" FAIL, the pull did not take; check git log for
-   da35279.
+   Same verdict rules as before:
+   - ALL PASS: go directly to stage 2 below, no need to wait for us.
+   - WARN but no FAIL: go to stage 2, and email us the output in
+     parallel.
+   - Any FAIL: stop and email us. In particular, a FAIL that mentions a
+     "pre-exclusion cache file" means step 1 did not take.
 
-6. Either way, please email us pilot_draws_new.csv, the checker output,
-   and a tarball of data/tmrel/derived_cache/ (the new files are the
-   ones ending in _ex-inj_disaster.rds) for the record.
+6. Either way, please email us for the record: pilot_draws_new.csv,
+   the checker output, and a tarball of data/tmrel/derived_cache/
+   (the new files end in _ex-inj_disaster.rds).
 
-Stage 2 is unchanged from the August 24 email (the full grid with
---force_burden=TRUE, then the summarizer and review-bundle export).
-Your 45-minute pilot timing suggests the full grid is on the order of a
-day and a half at -j 125 if parallel efficiency holds, which we will
-not know until it runs.
+STAGE 2 (full grid, only after a PASS or WARN in step 5)
+
+7. The full burden pass, your original command shape plus the flag:
+
+   parallel -j 125 \
+     'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022-2050 --force_burden=TRUE' \
+     ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
+
+   Temperature conversions are reused; only the burden phase runs. This
+   also recomputes the pilot combos' remaining years and sweeps up the
+   three stale combos from the August 14 check. Scaling your 45-minute
+   pilot linearly to the full grid gives on the order of a day and a
+   half at -j 125; we do not know how well the parallel efficiency
+   holds at that width, so please note the actual wall-clock.
+
+8. The summarizer, with --force this time. The summary tables gained
+   columns (a draw median beside every mean, and non-optimal totals over
+   the causes other than inj_disaster), and the per-location summary
+   cache under output/summary/_cache/ will otherwise serve the old
+   columns:
+
+   Rscript global-scripts/util_summarize_run.R --scenarios=ssp245 --jobs=16 --force
+
+9. The review-bundle export, exactly as before:
+
+   Rscript global-scripts/util_export_review_bundle.R --scenarios=ssp245 --jobs=16
+
+10. Email us the bundle, plus the wall-clock for steps 7 and 8.
 
 Thanks!
 Aaron
