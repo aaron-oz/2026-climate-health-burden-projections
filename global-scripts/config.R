@@ -148,7 +148,8 @@ TMREL_ROUND_WHOLE <- FALSE
 # Why the flag exists: inj_disaster (GBD "Exposure to forces of nature") is
 # a shock cause, and its IHME forecast draws carry a shock tail. For Haiti,
 # 22 of 500 draws in 2022 hold 187,000-305,000 disaster deaths (earthquake
-# scale, roughly the 2010 event; GBD's own estimate for the actual year is 9),
+# scale, roughly the 2010 event; GBD 2023's retrospective estimate for 2022
+# itself is 9 deaths, so the tail is a forecast feature, not the year's),
 # which makes disaster 81 % of those draws' cause mix. The inj_disaster RR
 # curve has no interior minimum, so the death-weighted curve then bottoms
 # out at the 6.6 C search floor and every cause in that draw gets a heat PAF

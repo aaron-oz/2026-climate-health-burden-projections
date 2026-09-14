@@ -364,8 +364,9 @@ flags with no further work.
    weights adopted under decision 3 inherit each cause's forecast draw
    distribution, and for =inj_disaster= (GBD "Exposure to forces of
    nature", a shock cause) Haiti's 2022 draws hold 187,000-305,000
-   deaths in 22 of 500 (earthquake scale, roughly the 2010 event; GBD's
-   own estimate for the actual year is 9), 81 % of those draws' cause
+   deaths in 22 of 500 (earthquake scale, roughly the 2010 event; GBD
+   2023's retrospective estimate for 2022 itself is 9 deaths, so the
+   tail is a forecast feature), 81 % of those draws' cause
    mix; the =inj_disaster= RR curve has no interior minimum, so the
    weighted curve bottoms out at the 6.6 °C search floor and every cause
    in the draw gets a heat PAF near 1 (Haiti mean 2,536 vs median 391).

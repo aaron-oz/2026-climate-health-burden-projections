@@ -25,8 +25,10 @@ What the pilot showed, for the record:
   0.8 to 1.7 times GBD 2019's.
 - Haiti: in 22 of its 500 draws the IHME forecast for inj_disaster
   (exposure to forces of nature) is earthquake-scale, 187,000 to 305,000
-  deaths, roughly the 2010 event; GBD's own estimate for the actual year
-  is 9. Disaster is then 81 % of those draws' cause mix, the
+  deaths, roughly the 2010 event (for comparison, GBD 2023's
+  retrospective estimate of Haiti's forces-of-nature deaths in 2022
+  itself is 9, so the tail is a feature of the forecast, not of the
+  year). Disaster is then 81 % of those draws' cause mix, the
   death-weighted risk curve bottoms out at the floor of the TMREL search
   range (6.6 C), and every cause in those draws gets a heat PAF near 1.
   Nothing was wrong on your side: re-deriving Haiti's TMRELs here from
