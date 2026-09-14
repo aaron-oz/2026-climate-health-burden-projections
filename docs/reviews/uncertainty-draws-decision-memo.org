@@ -397,7 +397,10 @@ flags with no further work.
    (which the pairing bug had inflated 3-5x in the tropics; the first
    pilot's widths landed at 0.8-1.7x GBD's). Expectations are now built
    by =pilot_expectations_build.R= (reproduces the 2026-08-24 values under
-   the old scheme to 1e-15).
+   the old scheme to 1e-15). Summary tables keep the draw mean as the
+   point estimate and add =_median= and =_exdis= (non-excluded-cause)
+   columns plus a shock-tail QA flag, so the Haiti-type case is visible
+   in the bundle rather than hidden in the mean (same ruling, 2026-09-14).
 
 * Compute cost and Caspar instructions (draft, pending sign-off)
 

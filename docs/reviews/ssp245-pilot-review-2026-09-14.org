@@ -193,10 +193,23 @@ the other 16 causes combined (total mean 286, median 381, 95 % interval
 range -13,771 to 6,803). It is IHME's forecast uncertainty propagating
 through a small PAF, not a pipeline defect, and it is unchanged by this
 branch. It does mean that for Haiti (and any location with a comparable
-shock tail) the draw MEAN is a poor summary of the total, and the
-published summary tables should be read with that in mind. Whether to
-report medians alongside means, or to present the non-disaster sum, is a
-reporting decision not taken here.
+shock tail) the draw MEAN is a poor summary of the total.
+
+Aaron's ruling (2026-09-14): keep the mean as the point estimate (it adds
+across causes and locations, and it is what the GBD 2019 centrals are
+compared against; for the 14 non-Haiti pilot locations median/mean is
+0.968 to 1.004, so the choice only bites where a shock tail exists), and
+make the alternative summaries available rather than switch estimator.
+=util_summarize_run.R= now writes, in =national_by_year.csv=, a =_median=
+next to every =_mean=, and =deaths_nonopt_exdis= / =yll_nonopt_exdis=
+(mean and median over the causes outside =TMREL_WEIGHT_EXCLUDE=); its
+=qa_report.txt= gains a shock-tail section listing combos whose
+|mean - median| / |median| exceeds =--shock_gap= (default 0.10). On the
+local runs: Haiti flagged (gap 0.25; total mean 286, median 381,
+non-disaster mean 391), Nicaragua not (0.01). How the report presents
+the flagged locations is still a write-up decision, but the numbers it
+needs are in the bundle. The summarizer's per-location cache must be
+rebuilt (=--force=) for the new columns to appear.
 
 * Also noted
 
