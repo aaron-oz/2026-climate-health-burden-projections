@@ -2,7 +2,7 @@
 #+DATE: 2026-09-14
 
 Draft for Aaron's review; NOT sent. Fill in the merge commit hash
-(MERGE_HASH below) once the =tmrel-exclude-disaster= branch is merged to
+(da35279 below) once the =tmrel-exclude-disaster= branch is merged to
 main. No attachment needed; the review note is in the repo at
 =docs/reviews/ssp245-pilot-review-2026-09-14.org=.
 
@@ -30,7 +30,7 @@ version of what it caught:
   weighting simply inherited an input tail our validation had not
   exercised.
 
-The fix (merged to main as MERGE_HASH) excludes inj_disaster from the
+The fix (merged to main as da35279) excludes inj_disaster from the
 TMREL death weights everywhere; the cause still gets its attributable
 burden like every other cause. Where the disaster share is normal, the
 change is below 0.01 C in the TMREL. It is the code default, so again
@@ -43,7 +43,7 @@ from the updated main.
 Please repeat stage 1, same shape as before (steps in order):
 
 1. Update the repo: git pull on main. You should land on or past
-   MERGE_HASH.
+   da35279.
 
 2. Keep your existing pilot_draws_old.csv; do NOT re-capture it (the
    old run's values are gone from disk, and the file you have is the
@@ -72,7 +72,7 @@ Please repeat stage 1, same shape as before (steps in order):
    WARN means go to stage 2 and email us the warnings in parallel; any
    FAIL means stop and email us. If the checker reports a "pre-exclusion
    cache file" FAIL, the pull did not take; check git log for
-   MERGE_HASH.
+   da35279.
 
 6. Either way, please email us pilot_draws_new.csv, the checker output,
    and a tarball of data/tmrel/derived_cache/ (the new files are the
