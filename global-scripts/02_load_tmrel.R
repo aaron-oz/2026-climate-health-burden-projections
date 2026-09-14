@@ -35,6 +35,8 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
   # zone's modeled grid. Weights are the location's cause-death shares for
   # each study year: draw d's mortality shares weight ERF draw d when the
   # mortality input carries draws, else the year's point shares for all draws.
+  # Causes listed in TMREL_WEIGHT_EXCLUDE (default inj_disaster) are left out
+  # of the weights; see config.R for why.
   # ===========================================================================
   mort_file <- file.path(INTERMEDIATE_DIR, "mortality.rds")
   if (!file.exists(mort_file))
@@ -58,6 +60,25 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
     cod <- mort[, .(deaths = sum(deaths, na.rm = TRUE)), by = .(year_id, acause)]
     log_msg("Derived-TMREL weights: point mortality shares (no mortality draws)")
   }
+  # Causes dropped from the WEIGHTS only (config TMREL_WEIGHT_EXCLUDE; see
+  # the rationale there). They keep their ERF curves and their attributable
+  # burden; they just do not vote on where the location's risk minimum is.
+  excl_raw <- if (exists("TMREL_WEIGHT_EXCLUDE")) as.character(TMREL_WEIGHT_EXCLUDE) else ""
+  weight_exclude <- sort(unique(trimws(unlist(strsplit(excl_raw, ",")))))
+  weight_exclude <- weight_exclude[nzchar(weight_exclude) &
+                                   !tolower(weight_exclude) %in% c("none", "false")]
+  excl_present <- intersect(weight_exclude, unique(cod$acause))
+  if (length(weight_exclude) > 0) {
+    log_msg("Derived-TMREL weights exclude: ", paste(weight_exclude, collapse = ","),
+            if (length(excl_present) < length(weight_exclude))
+              paste0(" (not in this mortality input: ",
+                     paste(setdiff(weight_exclude, excl_present), collapse = ","), ")")
+            else "")
+    if (all(unique(cod$acause) %in% weight_exclude))
+      stop("Derived-TMREL: TMREL_WEIGHT_EXCLUDE removes every cause in the ",
+           "mortality input; no weights remain")
+  }
+
   years <- sort(unique(cod$year_id))
   missing_years <- setdiff(YEAR_START:YEAR_END, years)
   if (length(missing_years) > 0)
@@ -70,16 +91,21 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
   # the mortality weights, N_DRAWS, and the rounding flag — NOT on model or
   # scenario — so a production grid would otherwise re-derive the identical
   # TMRELs once per (model, scenario) combo. Each cache file stores the cod
-  # weight rows it was derived from; a cache hit requires them to match the
-  # current mortality input exactly, so a changed mortality file re-derives
-  # rather than silently reusing stale TMRELs. Written atomically (concurrent
-  # combos of one location may race here harmlessly).
+  # weight rows it was derived from (ALL causes, before the weight exclusion)
+  # and the exclusion list; a cache hit requires both to match the current
+  # input exactly, so a changed mortality file or exclusion re-derives rather
+  # than silently reusing stale TMRELs. The exclusion is also part of the
+  # file name, so a cache written before it existed (Caspar's 2026-09-11
+  # pilot) is never picked up by a run that has it. Written atomically
+  # (concurrent combos of one location may race here harmlessly).
   # ---------------------------------------------------------------------------
   cache_dir_tm <- file.path(TMREL_DIR, "derived_cache")
   dir.create(cache_dir_tm, showWarnings = FALSE, recursive = TRUE)
   cache_path <- function(yr) file.path(cache_dir_tm,
-    sprintf("%d_%d_N%d%s.rds", LOCATION_ID, yr, N_DRAWS,
-            if (isTRUE(TMREL_ROUND_WHOLE)) "_wholedeg" else ""))
+    sprintf("%d_%d_N%d%s%s.rds", LOCATION_ID, yr, N_DRAWS,
+            if (isTRUE(TMREL_ROUND_WHOLE)) "_wholedeg" else "",
+            if (length(weight_exclude) > 0)
+              paste0("_ex-", paste(weight_exclude, collapse = "+")) else ""))
   cod_for_year <- function(yr) {
     src_yr <- years[which.min(abs(years - yr))]
     setorderv(cod[year_id == src_yr], intersect(c("acause", "draw"), names(cod)))
@@ -88,8 +114,9 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
     f <- cache_path(yr)
     if (!file.exists(f)) return(FALSE)
     stored <- tryCatch(readRDS(f), error = function(e) NULL)
-    !is.null(stored) && isTRUE(all.equal(stored$cod, cod_for_year(yr),
-                                         check.attributes = FALSE))
+    !is.null(stored) &&
+      identical(as.character(stored$weight_exclude), weight_exclude) &&
+      isTRUE(all.equal(stored$cod, cod_for_year(yr), check.attributes = FALSE))
   }
   need_years <- Filter(function(yr) !cache_ok(yr), YEAR_START:YEAR_END)
 
@@ -120,7 +147,7 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
         b
       })
       for (yr in need_years) {
-        wyr <- cod_for_year(yr)
+        wyr <- cod_for_year(yr)[!acause %in% weight_exclude]
         wpt <- wyr[, .(deaths = mean(deaths, na.rm = TRUE)), by = acause]
         wpt_v <- setNames(wpt$deaths, wpt$acause)[zcauses]
         wpt_v[is.na(wpt_v)] <- 0
@@ -149,7 +176,8 @@ if (USE_DRAWS && TMREL_MODE == "derived_per_draw") {
     }
     derived <- rbindlist(out)
     for (yr in need_years) {
-      obj <- list(tmrel = derived[year_id == yr], cod = cod_for_year(yr))
+      obj <- list(tmrel = derived[year_id == yr], cod = cod_for_year(yr),
+                  weight_exclude = weight_exclude)
       save_rds_atomic(obj, cache_path(yr))
     }
     log_msg("Derived-TMREL: derived ", length(need_years), " year(s), cached in ",

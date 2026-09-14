@@ -19,11 +19,23 @@
 #   --jobs=       parallel workers over locations; default half the cores
 #   --out=        output directory; default output/summary
 #   --force       recompute locations already in the cache
+#   --shock_gap=  |mean - median| / |median| above which a combo is listed in
+#                 the QA report's shock-tail section; default 0.10
 #
 # Outputs, under --out:
-#   national_by_year.csv  (location, model, scenario, year) x draw mean and 95%
-#                         interval for attributable deaths and YLLs. The review
-#                         table.
+#   national_by_year.csv  (location, model, scenario, year) x draw mean, draw
+#                         median, and 95% interval for attributable deaths and
+#                         YLLs, plus deaths_nonopt_exdis / yll_nonopt_exdis
+#                         (the same totals over the causes NOT in
+#                         TMREL_WEIGHT_EXCLUDE, default inj_disaster). The
+#                         review table. The mean stays the point estimate
+#                         (it adds across causes and locations, and it is what
+#                         GBD centrals are compared against); the median is
+#                         there because a shock-tail cause can pull the mean
+#                         away from the bulk of the draws (Haiti: 22 of 500
+#                         draws hold an earthquake-scale inj_disaster toll, and
+#                         the cause's small PAF on those tolls swings the total
+#                         by thousands of deaths per draw of either sign).
 #   by_cause.csv          the same keys plus acause, draw means only.
 #   coverage.csv          one row per (location, model, scenario): years found,
 #                         years missing, whether YLLs were present.
@@ -43,7 +55,8 @@ defaults <- list(SCENARIOS = "ssp245", LOCATIONS = "", YEARS = "2022-2050",
                  # Age and sex detail for a few years only. At every year it
                  # would be 204 x 27 x 29 x 17 x 2 rows, which is 5.4 million
                  # for a pattern that four years show just as well.
-                 AGE_YEARS = "2022,2030,2040,2050")
+                 AGE_YEARS = "2022,2030,2040,2050",
+                 SHOCK_GAP = 0.10)
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -109,6 +122,13 @@ read_combo <- function(dir, year) {
 
 VALUE_COLS <- c("deaths", "deaths_heat", "deaths_cold", "deaths_nonopt",
                 "yll_heat", "yll_cold", "yll_nonopt")
+# Causes left out of the derived-TMREL weights (config.R); the *_exdis totals
+# below are the burden over every other cause.
+EXDIS_CAUSES <- local({
+  x <- if (exists("TMREL_WEIGHT_EXCLUDE")) as.character(TMREL_WEIGHT_EXCLUDE) else ""
+  x <- trimws(unlist(strsplit(x, ",", fixed = TRUE)))
+  x[nzchar(x) & !tolower(x) %in% c("none", "false")]
+})
 
 summarize_combo <- function(dir, year, loc, model, scen) {
   got <- read_combo(dir, year)
@@ -150,9 +170,35 @@ summarize_combo <- function(dir, year, loc, model, scen) {
   for (v in vals) {
     x <- by_draw[[v]]
     q <- unname(quantile(x, c(0.025, 0.975), na.rm = TRUE, names = FALSE))
-    nat[[paste0(v, "_mean")]]  <- mean(x, na.rm = TRUE)
-    nat[[paste0(v, "_lower")]] <- q[1]
-    nat[[paste0(v, "_upper")]] <- q[2]
+    nat[[paste0(v, "_mean")]]   <- mean(x, na.rm = TRUE)
+    nat[[paste0(v, "_median")]] <- median(x, na.rm = TRUE)
+    nat[[paste0(v, "_lower")]]  <- q[1]
+    nat[[paste0(v, "_upper")]]  <- q[2]
+  }
+  # Non-optimal totals over the causes outside the TMREL weight exclusion
+  # (2026-09-14): where a shock cause's forecast tail dominates a draw, this
+  # is the number that still describes the temperature effect.
+  exdis_vals <- intersect(c("deaths_nonopt", "yll_nonopt"), vals)
+  if (length(EXDIS_CAUSES) > 0 && "acause" %in% names(d) && length(exdis_vals) > 0) {
+    dx <- d[!acause %in% EXDIS_CAUSES]
+    bx <- if ("draw" %in% names(dx)) {
+      dx[, lapply(.SD, sum, na.rm = TRUE), by = draw, .SDcols = exdis_vals]
+    } else {
+      dx[, lapply(.SD, sum, na.rm = TRUE), .SDcols = exdis_vals]
+    }
+    for (v in exdis_vals) {
+      x <- bx[[v]]
+      nat[[paste0(v, "_exdis_mean")]]   <- mean(x, na.rm = TRUE)
+      nat[[paste0(v, "_exdis_median")]] <- median(x, na.rm = TRUE)
+    }
+  }
+  # Mean-vs-median gap of the national non-optimal total, for the QA report's
+  # shock-tail section. Relative to the median so a small country is not
+  # flagged for a few deaths; |median| floored at 1 to avoid dividing by ~0.
+  if ("deaths_nonopt" %in% vals) {
+    x <- by_draw[["deaths_nonopt"]]
+    qa[, mean_median_gap := abs(mean(x, na.rm = TRUE) - median(x, na.rm = TRUE)) /
+                             max(abs(median(x, na.rm = TRUE)), 1)]
   }
 
   # --- per-cause means (draw mean of the cause total) ------------------------
@@ -312,6 +358,25 @@ if (n_zero > 0) {
                                  collapse = ", "))
 }
 w("")
+if ("mean_median_gap" %in% names(qa)) {
+  w("--- Shock tail: draw mean vs draw median of national deaths_nonopt ---")
+  w("  A gap here is not an arithmetic failure. It is the signature of a cause")
+  w("  whose forecast draws carry a shock tail (inj_disaster after a major")
+  w("  disaster: a few draws hold an event-scale death toll, and the cause's")
+  w("  small PAF on that toll swings the total by thousands of deaths of")
+  w("  either sign). For such combos the mean is a poor summary; see the")
+  w("  _median and _exdis columns in national_by_year.csv.")
+  sh <- qa[!is.na(mean_median_gap) & mean_median_gap > SHOCK_GAP]
+  w(sprintf("  combos with |mean - median| / |median| > %.2f : %d of %d",
+            SHOCK_GAP, nrow(sh), sum(!is.na(qa$mean_median_gap))))
+  if (nrow(sh) > 0) {
+    z <- sh[, .(combos = .N, worst_gap = max(mean_median_gap)), by = location_id][order(-worst_gap)]
+    for (i in seq_len(min(30L, nrow(z))))
+      w(sprintf("      loc %d  %d combos, worst gap %.2f", z$location_id[i], z$combos[i], z$worst_gap[i]))
+    if (nrow(z) > 30) w("      ... and ", nrow(z) - 30, " more locations")
+  }
+  w("")
+}
 if (!is.null(cov)) {
   w("--- Coverage ---")
   w("  expected years per (location, model): ", length(want_years),

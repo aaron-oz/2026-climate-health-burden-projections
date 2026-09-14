@@ -192,6 +192,7 @@ run_one_location <- function() {
                              paste0("--tmrel_mode=",        TMREL_MODE),
                              paste0("--tmrel_round_whole=",
                                     if (isTRUE(TMREL_ROUND_WHOLE)) "TRUE" else "FALSE"),
+                             paste0("--tmrel_weight_exclude=", TMREL_WEIGHT_EXCLUDE),
                              paste0("--temp_noise_mode=",   TEMP_NOISE_MODE),
                              paste0("--temp_sd_file=",      TEMP_SD_FILE),
                              paste0("--temp_sd_var=",       TEMP_SD_VAR)))
