@@ -5,9 +5,19 @@
 # gates (interval widths, negative-draw fraction) without shipping the full
 # RDS files.
 #
+# Since 2026-09-14 the roll-up also carries deaths_nonopt_exdis, the
+# non-optimal-temperature deaths summed over the causes NOT in
+# TMREL_WEIGHT_EXCLUDE (config.R; default inj_disaster). The value gate uses
+# it: in Haiti the inj_disaster cause alone swings the total by thousands of
+# deaths per draw in the earthquake-scale forecast draws, so the total cannot
+# resolve an implementation difference there.
+#
 # Usage (repo root): Rscript output/review-ssp245/pilot_rollup.R out.csv
 suppressPackageStartupMessages(library(data.table))
 LOCS <- c(6, 11, 13, 81, 102, 114, 125, 131, 135, 145, 163, 171, 190, 213, 214)
+cfg <- new.env(); sys.source(file.path("global-scripts", "config.R"), envir = cfg)
+EXCL <- trimws(unlist(strsplit(as.character(cfg$TMREL_WEIGHT_EXCLUDE), ",")))
+EXCL <- EXCL[nzchar(EXCL) & !tolower(EXCL) %in% c("none", "false")]
 out_csv <- commandArgs(trailingOnly = TRUE)[1]
 if (is.na(out_csv)) stop("usage: Rscript pilot_rollup.R <out.csv>")
 res <- list()
@@ -21,7 +31,8 @@ for (loc in LOCS) {
     grp <- intersect("draw", names(b))
     s <- b[, .(deaths_nonopt = sum(deaths_nonopt, na.rm = TRUE),
                deaths_heat   = sum(deaths_heat,   na.rm = TRUE),
-               deaths_cold   = sum(deaths_cold,   na.rm = TRUE)),
+               deaths_cold   = sum(deaths_cold,   na.rm = TRUE),
+               deaths_nonopt_exdis = sum(deaths_nonopt[!acause %in% EXCL], na.rm = TRUE)),
            by = grp]
     s[, `:=`(location_id = loc, combo = basename(d))]
     res[[length(res) + 1]] <- s

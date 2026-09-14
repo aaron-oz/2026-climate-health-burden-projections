@@ -139,6 +139,25 @@ TMREL_MODE <- "derived_per_draw"
 # argmin definition). Only consulted when TMREL_MODE = "derived_per_draw".
 TMREL_ROUND_WHOLE <- FALSE
 
+# Causes EXCLUDED from the derived-TMREL death weights (they still receive
+# attributable burden against the shared TMREL like every other cause).
+# Default: inj_disaster (deaths from exposure to forces of nature). Its IHME
+# forecast draws carry the location's historical shock tail: for Haiti, 22 of
+# 500 draws in 2022 hold 187,000-305,000 disaster deaths (the 2010 earthquake
+# recurring), which makes disaster 81 % of those draws' cause mix. The
+# inj_disaster RR curve has no interior minimum, so the death-weighted curve
+# then bottoms out at the 6.6 C search floor and every cause in that draw
+# gets a heat PAF near 1 (Caspar's 2026-09-11 pilot: Haiti mean 2,536 vs
+# median 391 attributable deaths). IHME's own released TMRELs show the same
+# collapse for Haiti in 2010. Where the disaster share is normal (max
+# per-draw share at or below about 1 %, 12 of the 15 pilot locations) the
+# exclusion shifts the mean TMREL by 0.000-0.010 C. Aaron's ruling
+# 2026-09-14: exclude everywhere rather than per location. See
+# docs/reviews/ssp245-pilot-review-2026-09-14.org.
+# Comma-separated cause names; "none" (or empty) disables the exclusion.
+# Override: --tmrel_weight_exclude=none
+TMREL_WEIGHT_EXCLUDE <- "inj_disaster"
+
 # Daily-temperature exposure uncertainty (2026-08-20 handoff step B).
 #   "none"    — exposure used as-is (production behavior to date).
 #   "era5_sd" — each pixel-day's exposure mass is spread over neighboring

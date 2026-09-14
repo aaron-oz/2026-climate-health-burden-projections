@@ -1,0 +1,88 @@
+#+TITLE: Draft email to Caspar: pilot result and re-pilot (stage 1, second pass)
+#+DATE: 2026-09-14
+
+Draft for Aaron's review; NOT sent. Fill in the merge commit hash
+(MERGE_HASH below) once the =tmrel-exclude-disaster= branch is merged to
+main. No attachment needed; the review note is in the repo at
+=docs/reviews/ssp245-pilot-review-2026-09-14.org=.
+
+-----
+
+Subject: Re: ssp245 rerun: pilot result (FAIL was correct) and a short re-pilot
+
+Hi Caspar,
+
+Thanks for the pilot files and the timing note. Your checker's FAIL was
+right, and stopping before stage 2 was the correct call. The short
+version of what it caught:
+
+- 14 of the 15 pilot locations match our predictions within 0.7 %,
+  and the draw distributions behave as expected (negative draws gone,
+  intervals comparable to GBD 2019's).
+- Haiti did not. In 22 of its 500 draws, the IHME forecast for
+  inj_disaster (deaths from exposure to forces of nature) is
+  earthquake-scale (187,000 to 305,000 deaths, the 2010 event
+  recurring), which makes disaster 81 % of those draws' cause mix. The
+  death-weighted risk curve then has its minimum at the bottom of the
+  search range (6.6 C), and every cause in those draws gets a heat PAF
+  near 1. Nothing was wrong on your side: re-deriving Haiti's TMRELs
+  here from your cache reproduces your values exactly. The per-draw
+  weighting simply inherited an input tail our validation had not
+  exercised.
+
+The fix (merged to main as MERGE_HASH) excludes inj_disaster from the
+TMREL death weights everywhere; the cause still gets its attributable
+burden like every other cause. Where the disaster share is normal, the
+change is below 0.01 C in the TMREL. It is the code default, so again
+nothing to configure. The pilot checker was also revised (it now
+compares against GBD 2019's interval widths rather than the old run's,
+and checks that no TMREL sits at the search floor), and the roll-up
+writes one extra column the checker needs, so both need to be re-run
+from the updated main.
+
+Please repeat stage 1, same shape as before (steps in order):
+
+1. Update the repo: git pull on main. You should land on or past
+   MERGE_HASH.
+
+2. Keep your existing pilot_draws_old.csv; do NOT re-capture it (the
+   old run's values are gone from disk, and the file you have is the
+   one we need).
+
+3. Re-run the pilot, same command as before:
+
+   parallel -j 15 \
+     'Rscript global-scripts/util_run_global.R --location_id={} --scenarios=ssp245 --years=2022 --force_burden=TRUE' \
+     ::: 6 11 13 81 102 114 125 131 135 145 163 171 190 213 214
+
+   The derived TMRELs are re-derived once per location under a new cache
+   file name (data/tmrel/derived_cache/<loc>_2022_N500_ex-inj_disaster.rds);
+   the previous cache files are left in place and ignored.
+
+4. Re-capture the new values with the updated roll-up (it adds a
+   column):
+
+   Rscript output/review-ssp245/pilot_rollup.R pilot_draws_new.csv
+
+5. Run the checker, same command:
+
+   Rscript output/review-ssp245/pilot_check.R pilot_draws_old.csv pilot_draws_new.csv
+
+   Same verdict rules as before: ALL PASS means go straight to stage 2;
+   WARN means go to stage 2 and email us the warnings in parallel; any
+   FAIL means stop and email us. If the checker reports a "pre-exclusion
+   cache file" FAIL, the pull did not take; check git log for
+   MERGE_HASH.
+
+6. Either way, please email us pilot_draws_new.csv, the checker output,
+   and a tarball of data/tmrel/derived_cache/ (the new files are the
+   ones ending in _ex-inj_disaster.rds) for the record.
+
+Stage 2 is unchanged from the August 24 email (the full grid with
+--force_burden=TRUE, then the summarizer and review-bundle export).
+Your 45-minute pilot timing suggests the full grid is on the order of a
+day and a half at -j 125 if parallel efficiency holds, which we will
+not know until it runs.
+
+Thanks!
+Aaron

@@ -1,0 +1,207 @@
+#+TITLE: ssp245 rerun pilot (stage 1): review of Caspar's 2026-09-11 run
+#+DATE: 2026-09-14
+
+* What arrived
+
+Caspar ran the stage-1 pilot on 2026-09-11 (15 locations, ssp245, year
+2022, all models, =--force_burden=TRUE=, 500 draws, derived per-draw
+TMRELs, no temperature noise; flags verified in his run logs against the
+repo defaults) and sent, per step 6 of the 2026-08-24 email:
+=pilot_draws_old.csv=, =pilot_draws_new.csv=, =derived_cache.tar= (15
+files, one per pilot location, 2022 only), two run logs
+(=6_noresm2-ssp245_run_2022.log=, =102_ukesm-ssp245_run_2022.log=), and
+a wall-clock note of about 45 minutes for the pilot. Files live at
+=/var/home/aoz/data/wb-temp-attr-projections/review/ssp245-pilot-2026-09/=
+(outside git), with the cache extracted to =caspar_derived_cache/= and
+the diagnostic scripts under =diagnostics/=.
+
+Both run logs are clean: no errors, 1.5 min per combo-year, peak RSS
+4.6 to 4.8 GB, derived TMRELs served from cache.
+
+* Checker verdict
+
+=pilot_check.R= on his two CSVs and his cache (output saved as
+=pilot_check_output_aoz_2026-09-14.txt= next to the files):
+
+| gate                         | level | detail                                                    |
+|------------------------------+-------+-----------------------------------------------------------|
+| value match (access-cm2)     | FAIL  | max abs(factor-1) = 3.809 (Haiti); 14 of 15 within 0.7 %  |
+| TMREL vs expectations        | FAIL  | max per-location mean abs diff = 0.69 C (Haiti)           |
+| burden moves up              | PASS  | 3.3 % of 419 combos did not increase                      |
+| interval widths sane         | FAIL  | 26 % of combos outside width ratio [0.5, 2.0]             |
+| negative draws shrink        | PASS  | mean negative-draw fraction 0.033 to 0.001                |
+| GBD-in-our-interval count    | PASS  | 14 old to 13 new (of 15)                                  |
+
+Verdict: FAIL, stage 2 not started (correctly).
+
+* Finding 1: Haiti, derived TMRELs collapse to the search floor in 22 of 500 draws
+
+Per-location value gate (access-cm2, deaths from non-optimal temperature,
+2022, mean over 500 draws): Caspar's new run matches our replica-B
+prediction within 0.7 % for 14 of 15 locations (China, Indonesia,
+Malaysia, Germany, United States, Colombia, Brazil, Kuwait, India, DR
+Congo, Uganda, Niger, Nigeria; Nicaragua at +3.6 %). Haiti: 2,536 vs
+predicted 684.
+
+Haiti's draws: median 391, but 22 of 500 draws (indices 28, 36, 40, 101,
+111, 142, 184, 205, 213, 227, 298, 344, 348, 359, 368, 397, 423, 425,
+438, 447, 460, 495) give 56,000 to 90,000 deaths, heat-dominated. The
+same 22 indices blow up in all 27 ssp245 models, so the cause is a
+per-draw input shared across models.
+
+His cache shows it: in those 22 draws the derived TMREL is 6.6 C (the
+floor of the 6.6 to 34.6 C search range) in nearly every zone, against
+17 to 27 C in the other 478 draws. The cache's stored cause-of-death
+weights (=cod= table) show why: Haiti's IHME forecast draws for
+=inj_disaster= (deaths from exposure to forces of nature) have median 35
+deaths in 2022 but 187,000 to 305,000 deaths in those 22 draws
+(earthquake-scale; 4.4 % of draws). In those draws disaster deaths are
+81 % of the 17-cause mix, so the death-weighted RR curve is essentially
+the =inj_disaster= curve, whose argmin is at the floor. The floored
+TMREL then applies to all 17 causes in that draw, so IHD, stroke, LRI,
+etc. get heat PAFs near 1 on top of the disaster deaths themselves.
+
+Cross-checks:
+- Re-deriving Haiti's TMRELs locally from his =cod= table and our
+  500-draw ERF cache reproduces his cache exactly (all 11,500 values).
+  His machine and ours agree on the code; the disagreement with our
+  expectations is entirely the input tail.
+- IHME's released TMREL draws for Haiti show the same collapse in 2010,
+  the earthquake year: mean TMREL 6.7 to 9.6 C across most zones, 74 % of
+  draws below 10 C, vs about 17 to 25 C in 1990 and 2020. The derivation
+  is faithful to IHME's method including this artifact. The difference
+  is that IHME used realized deaths for one year, while our inputs are
+  forecast draws in which a 2010-scale event recurs in about 4 % of
+  draws in every projection year.
+- The memo's step C.2 stress test (lognormal perturbation of all causes
+  at cvd_ihd's relative draw spread) could not represent a 4 % point
+  mass at 5,000 times the median, so this mode was outside what we
+  tested.
+- Nicaragua is a milder case: max =inj_disaster= share 38 % in some
+  draws, no floored draws, TMREL mean abs diff 0.07 C, burden +3.6 %.
+  Indonesia's max share is 17 %, no visible effect.
+
+Excluding the 22 floored draws, Haiti's access-cm2 mean is 396 (median
+391, 95 % interval 271 to 575), against GBD 2019's 416 (306 to 562);
+across the 27 models the range is 320 to 456. The old run's mean of 159
+was pulled down by negative draws (min -13,771) from the pairing bug.
+
+Alternative TMREL weight schemes for Haiti 2022, re-derived locally from
+his weights (mean over zones of the draw-mean TMREL; sd is the mean
+across zones of the across-draw sd; floor_frac is the share of
+zone-draws at 6.6 C; MAD = mean absolute difference across the 23 zones):
+
+| scheme                                    | mean C | sd C | floor_frac | MAD vs shipped expectation | MAD vs IHME released 2020 |
+|-------------------------------------------+--------+------+------------+----------------------------+---------------------------|
+| A: per-draw weights (current code)        |  21.89 | 2.80 |      0.028 |                       0.69 |                      1.07 |
+| B: point weights, mean over draws         |  21.24 | 1.52 |      0.003 |                       0.00 |                      1.68 |
+| C: point weights, median over draws       |  22.46 | 0.84 |      0.000 |                       1.24 |                      0.61 |
+| D: per-draw, inj_disaster at its median   |  22.46 | 0.84 |      0.000 |                       1.24 |                      0.61 |
+| E: per-draw, inj_disaster excluded        |  22.47 | 0.84 |      0.000 |                       1.24 |                      0.61 |
+
+The shipped expectations were built with scheme B (production's 2022
+cause totals, which are means over draws and so carry a 17 % disaster
+share for Haiti); that is why B matches them and why the schemes that
+neutralize the tail sit 1.2 C above them and closer to IHME's released
+2020 values (0.61 C, in line with the 0.54 C all-204 typical gap from
+analysis18).
+
+* Finding 2: interval widths narrowed in the tropics; old widths are a poor baseline
+
+The width gate compares new to old 95 % interval width per combo. The
+failures are Indonesia, Malaysia, Uganda, and 2 of 27 DR Congo combos
+(ratios 0.27 to 0.53, uniform across each location's 27 models) plus all
+Haiti combos (ratios up to 27, finding 1). Relative widths (95 %
+interval width divided by the mean), access-cm2:
+
+| location  | old  | new  | GBD 2019 |
+|-----------+------+------+----------|
+| Indonesia | 2.95 | 0.92 |     0.60 |
+| Malaysia  | 4.57 | 1.15 |     0.82 |
+| Uganda    | 2.81 | 0.61 |     0.51 |
+| DR Congo  | 1.80 | 0.93 |     0.56 |
+| Brazil    | 0.64 | 0.37 |     0.22 |
+| China     | 0.35 | 0.34 |     0.30 |
+
+The narrowing moves the tropical locations toward, not below, GBD 2019's
+relative widths, and the old widths there were several times GBD's. This
+is consistent with the pairing bug having inflated the old widths (the
+same mechanism that produced the negative draws), which the fix removes;
+we have no independent prediction of the new widths (step E kept only
+means), so this reading is plausible rather than verified. The gate's
+baseline should be changed rather than the result.
+
+* Timing
+
+45 min wall-clock for 419 combo-years at =-j 15=; the two logs show 1.5
+min per combo-year single-threaded and 4.6 to 4.8 GB peak RSS. A linear
+scaling to the full grid (204 locations x 27 models x 29 years = 159,732
+combo-years at =-j 125=) gives roughly 34 hours; this assumes the
+parallel efficiency at 125 slots matches 15, which is unverified, so it
+is an order-of-magnitude figure only.
+
+* Decision and fix (2026-09-14)
+
+Aaron's ruling: exclude =inj_disaster= from the derived-TMREL weights
+everywhere (not per location). Rationale, in order of weight: the
+exclusion is measurably free where the disaster share is normal (12 of
+15 pilot locations: mean TMREL shift 0.000 to 0.010 C, re-derived from
+Caspar's own weights); the tail is not Haiti-only (Nicaragua max
+per-draw share 38 %, Indonesia 17 %) and the other 189 locations cannot
+be screened locally; the =inj_disaster= curve has no interior minimum, so
+its weight can only drag the TMREL toward the floor; and a global rule
+is one sentence of methodology where a per-location exception is a
+judgment call per location and year. Recorded as decision 4 in
+[[file:uncertainty-draws-decision-memo.org]].
+
+Implementation (branch =tmrel-exclude-disaster=): =TMREL_WEIGHT_EXCLUDE=
+in config.R (default =inj_disaster=; =--tmrel_weight_exclude=none=
+disables), applied to both the per-draw and the point-weight paths in
+=02_load_tmrel.R=; the exclusion is stored in the cache object and in the
+cache file name (=<loc>_<year>_N500_ex-inj_disaster.rds=), so Caspar's
+existing pre-exclusion cache files are never reused; both runners forward
+the flag.
+
+Local verification, Haiti and Nicaragua, access-cm2 2022, mortality
+input built from Caspar's own per-draw cause weights (his cache's =cod=
+table, single age-sex bin):
+- exclusion OFF reproduces Caspar's pilot draw-for-draw (max
+  difference 1e-10 deaths) and the derived cache exactly;
+- legacy =released_recycled= reproduces his OLD run draw-for-draw
+  (4e-11), so nothing outside the derived path moved;
+- exclusion ON: Haiti non-disaster burden mean 391, median 385, 95 %
+  interval 271 to 548 (GBD 2019: 416, 306 to 562), no zone-draw at the
+  floor; Nicaragua 279.4 vs replica 279.3 (ratio 1.0003).
+
+Checker revised (=pilot_check.R=; see the memo's decision 4 for the gate
+list) and exercised on a synthetic post-fix pilot (Caspar's 14 non-Haiti
+locations plus the local Haiti run): all gates pass except a WARN on
+Nicaragua that is an artifact of reusing his pre-exclusion Nicaragua
+draws in the synthetic file, and which the local Nicaragua run shows
+disappears. The stale-cache branch (pre-exclusion cache files only)
+reports FAIL with a git-pull instruction.
+
+* Observation left open: the inj_disaster cause's own burden in shock draws
+
+Independent of the TMREL, in Haiti's 22 earthquake-scale draws the
+=inj_disaster= cause's attributable burden is a PAF of about +/-1 to 2 %
+(heat +0.019, cold -0.024 at the point estimate) applied to 190,000 to
+305,000 deaths, i.e. +/-2,000 to 11,000 deaths per draw, of either sign.
+This swings Haiti's TOTAL non-optimal-temperature burden far more than
+the other 16 causes combined (total mean 286, median 381, 95 % interval
+-1,649 to 574 under the exclusion; the old run had the same feature,
+range -13,771 to 6,803). It is IHME's forecast uncertainty propagating
+through a small PAF, not a pipeline defect, and it is unchanged by this
+branch. It does mean that for Haiti (and any location with a comparable
+shock tail) the draw MEAN is a poor summary of the total, and the
+published summary tables should be read with that in mind. Whether to
+report medians alongside means, or to present the non-disaster sum, is a
+reporting decision not taken here.
+
+* Also noted
+
+The methodology walkthrough (=docs/methodology/methodology-walkthrough.tex=,
+"Climate zones and TMREL") still describes the released-TMREL
+nearest-year path as the production behavior; it predates the
+derived-per-draw default (decision 3) and this exclusion (decision 4).
+Not updated in this branch.
