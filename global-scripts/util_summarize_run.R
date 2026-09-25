@@ -21,6 +21,11 @@
 #   --force       recompute locations already in the cache
 #   --shock_gap=  |mean - median| / |median| above which a combo is listed in
 #                 the QA report's shock-tail section; default 0.10
+#   --since=      date or timestamp the run under review started, e.g.
+#                 2026-09-16; a combo with no "ok" manifest row at or after it
+#                 is reported as not recomputed. Default: no such check.
+#   --manifest=   burden manifest to check against; default
+#                 output/cckp_burden_manifest.csv
 #
 # Outputs, under --out:
 #   national_by_year.csv  (location, model, scenario, year) x draw mean, draw
@@ -39,7 +44,13 @@
 #   by_cause.csv          the same keys plus acause, draw means only.
 #   coverage.csv          one row per (location, model, scenario): years found,
 #                         years missing, whether YLLs were present.
-#   qa_report.txt         the arithmetic checks, worst deviations first.
+#   qa_report.txt         the arithmetic checks, worst deviations first, and
+#                         a provenance check of every file against the burden
+#                         manifest (see util_run_provenance.R).
+#   provenance.csv        the combos that provenance check flagged, if any.
+#   fix_run.sh            if anything was flagged or is missing: the commands
+#                         that rerun it and re-summarize, also printed in the
+#                         QA report. Read before running.
 #
 # Restartable: each location's summary is cached under <out>/_cache/, so an
 # interrupted run picks up where it stopped. Delete the cache or pass --force to
@@ -47,6 +58,7 @@
 
 if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
 source(file.path(SCRIPTS_DIR, "config.R"))
+source(file.path(SCRIPTS_DIR, "util_run_provenance.R"))
 suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(SCENARIOS = "ssp245", LOCATIONS = "", YEARS = "2022-2050",
@@ -56,7 +68,8 @@ defaults <- list(SCENARIOS = "ssp245", LOCATIONS = "", YEARS = "2022-2050",
                  # would be 204 x 27 x 29 x 17 x 2 rows, which is 5.4 million
                  # for a pattern that four years show just as well.
                  AGE_YEARS = "2022,2030,2040,2050",
-                 SHOCK_GAP = 0.10)
+                 SHOCK_GAP = 0.10, SINCE = "",
+                 MANIFEST = file.path(OUTPUT_DIR, "cckp_burden_manifest.csv"))
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -235,9 +248,14 @@ summarize_combo <- function(dir, year, loc, model, scen) {
 # -----------------------------------------------------------------------------
 summarize_location <- function(loc) {
   cache <- file.path(cache_dir, paste0(loc, ".rds"))
+  # The cache is per location, not per scenario set, so a cache written by
+  # --scenarios=ssp245 must not answer --scenarios=ssp370,... (it would return
+  # the ssp245 rows with no error). Reuse it only when it covers exactly the
+  # scenarios asked for; otherwise recompute and overwrite.
   if (!isTRUE(FORCE) && file.exists(cache)) {
     r <- tryCatch(readRDS(cache), error = function(e) NULL)
-    if (!is.null(r)) return(r)
+    have_scen <- if (!is.null(r$cov)) sort(unique(r$cov$scenario)) else character(0)
+    if (!is.null(r) && identical(have_scen, sort(scenarios))) return(r)
   }
   ldir <- file.path(cckp_root, loc)
   dirs <- list.dirs(ldir, recursive = FALSE)
@@ -317,6 +335,29 @@ if (!is.null(agesex)) {
 }
 
 # -----------------------------------------------------------------------------
+# Provenance: is every file we just read from the run under review?
+# -----------------------------------------------------------------------------
+SINCE <- as.character(SINCE)
+prov <- NULL
+if (file.exists(MANIFEST)) {
+  prov <- provenance_check(qa, manifest_latest(MANIFEST, scenarios), SINCE)
+  flagged <- prov[!is.na(issue)]
+  setorder(flagged, issue, location_id, scenario, model, year)
+  fwrite(flagged, file.path(OUT, "provenance.csv"))
+}
+missing_combos <- if (!is.null(cov) && any(cov$years_missing > 0))
+  cov[years_missing > 0, .(year = as.integer(strsplit(missing_years, " ", fixed = TRUE)[[1]])),
+      by = .(location_id, model, scenario)] else
+  data.table(location_id = integer(0), model = character(0), scenario = character(0), year = integer(0))
+rerun_combos <- if (is.null(prov)) missing_combos[0] else
+  prov[issue %in% c("stale", "not_since"), .(location_id, model, scenario, year)]
+summ_args <- grep("^--force$|^--force=", commandArgs(trailingOnly = TRUE), value = TRUE, invert = TRUE)
+fix <- fix_script(rerun_combos, missing_combos, cache_dir,
+                  paste(c("Rscript global-scripts/util_summarize_run.R", summ_args), collapse = " "))
+fix_path <- file.path(OUT, "fix_run.sh")
+if (length(fix)) writeLines(fix, fix_path) else if (file.exists(fix_path)) file.remove(fix_path)
+
+# -----------------------------------------------------------------------------
 # QA report
 # -----------------------------------------------------------------------------
 qa_path <- file.path(OUT, "qa_report.txt")
@@ -343,6 +384,31 @@ w(sprintf("  |paf_nonopt| <= 1                        : %s  (max %.4f)",
           max(qa$max_abs_paf, na.rm = TRUE)))
 w(sprintf("  all values finite                        : %s",
           if (n_bad_finite == 0) "PASS" else sprintf("**FAIL** in %d combos", n_bad_finite)))
+w("")
+w("--- Provenance (every file read vs the burden manifest) ---")
+if (is.null(prov)) {
+  w("  SKIPPED: no manifest at ", MANIFEST)
+} else {
+  n_stale <- sum(prov$issue == "stale", na.rm = TRUE)
+  n_since <- sum(prov$issue == "not_since", na.rm = TRUE)
+  n_norec <- sum(prov$issue == "no_record", na.rm = TRUE)
+  w(sprintf("  latest attempt ok (no failed attempt after the file) : %s",
+            if (n_stale == 0) "PASS" else sprintf("**FAIL** in %d combos (old file kept after a failed rerun)", n_stale)))
+  w(sprintf("  recomputed since --since                             : %s",
+            if (!nzchar(SINCE)) "not checked (pass --since=<run start date>)"
+            else if (n_since == 0) sprintf("PASS  (all ok at or after %s)", SINCE)
+            else sprintf("**FAIL** in %d combos (no ok attempt at or after %s)", n_since, SINCE)))
+  w(sprintf("  combos with no manifest row                          : %d", n_norec))
+  f <- prov[issue %in% c("stale", "not_since")]
+  if (nrow(f) > 0) {
+    setorder(f, location_id, scenario, model, year)
+    for (i in seq_len(min(20L, nrow(f))))
+      w(sprintf("      %-9s loc %d  %s %s %d  last attempt %s %s%s", f$issue[i], f$location_id[i],
+                f$model[i], f$scenario[i], f$year[i], f$status[i], f$run_ts[i],
+                if (!is.na(f$message[i]) && nzchar(f$message[i])) paste0(" (", f$message[i], ")") else ""))
+    if (nrow(f) > 20) w("      ... and ", nrow(f) - 20, " more (see provenance.csv)")
+  }
+}
 w("")
 w("--- Shape ---")
 w("  draws per combo   : ", paste(sort(unique(qa$draws)), collapse = ", "))
@@ -398,6 +464,11 @@ if (!is.null(cov)) {
   w("  (location, model) pairs with no YLL output: ", nrow(no_yll))
   if (nrow(no_yll) > 0)
     w("      locations: ", paste(sort(unique(no_yll$location_id)), collapse = ", "))
+}
+if (length(fix)) {
+  w("")
+  w("--- Fix: commands to rerun what is flagged above (also in ", fix_path, ") ---")
+  for (l in fix) w("  ", l)
 }
 close(con)
 

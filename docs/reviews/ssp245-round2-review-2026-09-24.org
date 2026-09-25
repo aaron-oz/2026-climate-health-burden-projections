@@ -1,0 +1,312 @@
+#+TITLE: ssp245 full rerun (round 2): review of Caspar's 2026-09-16/17 run
+#+DATE: 2026-09-24
+
+* What arrived
+
+One tarball, =review_bundle.tar.gz= (465 MB), exported by
+=util_export_review_bundle.R= on 2026-09-18, stored with its extracted
+contents at
+=/var/home/aoz/data/wb-temp-attr-projections/review/ssp245-round2/=
+(outside git). It holds the summary tables (=national_by_year.csv=, now
+with a draw median beside every mean; =by_cause.csv=, =by_age_sex.csv=,
+=coverage.csv=, =qa_report.txt=), the PAF and SEV surfaces, the run
+manifests, a normalized per-draw sample for Colombia (location 125), and
+Colombia's inputs.
+
+This is stage 2 of the plan in =docs/reviews/caspar-repilot-email-draft.org=:
+the full ssp245 burden pass (204 locations x 27 models x 29 years
+2022--2050 = 159,732 combos, 500 draws each) with derived per-draw TMRELs
+(TMREL draw d = argmin of ERF draw d's death-weighted RR curve) and all 17
+causes in the TMREL weights (merge f48cea9).
+
+The round-1 tables it is compared against are Caspar's 2026-08-17
+re-issue at =review/ssp245/= (released TMRELs recycled across ERF
+draws, the pairing the fix removes).
+
+Scripts: =output/review-ssp245/round2/r2_a.R= to =r2_j.R= (run from the
+repo root in that order); their full output is
+=output/review-ssp245/round2/round2_vet_output.txt=.
+
+* Verdict
+
+Usable after a four-combo fix. 159,728 of 159,732 combos were recomputed
+with the new method and check out against every prediction we have. Four
+combos (model access-cm2, year 2022, in Montenegro, Netherlands, Canada
+and Costa Rica) were killed during the run and the tables carry their
+round-1 (old-method) values. Separately, Honduras shows the same
+shock-tail signature as Haiti in milder form; that is a reporting
+decision, not a defect.
+
+* Finding 1: four combos failed and the tables silently kept their old values
+
+The burden manifest (=manifests/cckp_burden_manifest.csv=, an append log
+of every combo attempt) records the stage-2 run between 2026-09-16 12:36
+and 2026-09-17 15:07 on Caspar's machine clock (time zone not recorded),
+about 26.5 hours. In that window, 159,728 combos have status =ok=. Four
+have status =fail= with message "Rscript exit 137" and no later retry:
+
+| location        | id  | model      | year | killed at (manifest clock) |
+|-----------------+-----+------------+------+----------------------------|
+| Netherlands     | 89  | access-cm2 | 2022 | 2026-09-16 14:08           |
+| Costa Rica      | 126 | access-cm2 | 2022 | 2026-09-16 20:09           |
+| Montenegro      | 50  | access-cm2 | 2022 | 2026-09-16 21:32           |
+| Canada          | 101 | access-cm2 | 2022 | 2026-09-17 00:15           |
+
+Exit 137 is a SIGKILL, typically the kernel's out-of-memory killer; the
+bundle has no stage-2 log to confirm that (see finding 7). That all four
+are the first combo of their location (access-cm2, 2022) is consistent
+with a memory peak at location start-up, but this is a reading of the
+pattern, not verified.
+
+Because the old output files were still on disk, the summarizer read
+them. Verified: these four are exactly the combos whose
+=deaths_nonopt_mean= is identical to round 1 (difference below 1e-6
+deaths), and exactly the four combos (of 159,732) whose burden did not
+rise. They also match the old-method replica (replica A, from the
+2026-08-20 all-204 test) to within 0.03 %, while the new-method replica
+(replica B) predicts 3.6 % to 15.9 % more:
+
+| location    | table value (= round 1) | replica A | replica B | B / table |
+|-------------+------------------------+-----------+-----------+-----------|
+| Montenegro  |                  337.2 |     337.3 |     356.9 |     1.058 |
+| Netherlands |                5,340.7 |   5,342.4 |   5,658.8 |     1.059 |
+| Canada      |                8,535.8 |   8,535.8 |   8,855.2 |     1.037 |
+| Costa Rica  |                  251.5 |     251.4 |     291.3 |     1.159 |
+
+(Deaths attributable to non-optimal temperature, mean over 500 draws.)
+
+Effect on the 27-model ensemble mean for 2022: +0.14 % (Canada) to
++0.47 % (Costa Rica) once fixed, estimated as (B/table - 1) x table / 27
+/ ensemble mean. Small, but access-cm2 2022 is the combo every
+validation comparison uses, so the fix is worth the few minutes it costs.
+A draft email with the fix-up steps is in
+=docs/reviews/caspar-round2-fixup-email-draft.org=.
+
+Why nothing flagged it: the summarizer's QA checks arithmetic, shape,
+and coverage of the files on disk; it does not compare against the
+manifest, so a stale file from an earlier run passes. A check that the
+latest manifest status of every summarized combo is =ok= (and newer than
+a given date) would have caught this. Implemented 2026-09-25 on this
+branch: =util_summarize_run.R= now reads the burden manifest
+(=global-scripts/util_run_provenance.R=), reports a Provenance section in
+=qa_report.txt= (FAIL when a combo's latest non-skip attempt is not =ok=,
+or, with =--since=<date>=, when it has no =ok= attempt since that date),
+writes the flagged combos to =provenance.csv=, and writes =fix_run.sh=
+with the rerun, cache-clearing and re-summarize commands. On this
+bundle's manifest it flags exactly the four combos above (with
+=--since=2026-09-16=, nothing else); tested end to end on a synthetic
+run with a stale, a not-recomputed and a missing combo.
+
+* Finding 2: the other 159,728 combos ran the new method
+
+Evidence, strongest first:
+
+- Pilot reproduction. All 405 combos of the 2026-09-11 pilot (15
+  locations x 27 models, year 2022) reproduce exactly: largest
+  relative difference in the draw mean 5.6e-15, in the draw median
+  7.2e-15.
+- Replica-B match on the 180 locations scored in the 2026-08-20 all-204
+  test (access-cm2, 2022, the four stale combos left out): ratio
+  table / replica B has median 1.0003, 169 of 180 within 1 %, 177 within
+  5 %. The three outside 5 % are Haiti (3.71), Honduras (1.28) and
+  Greenland (0.94, 10.7 vs 11.4 deaths, a location too small for the
+  replica's approximations to matter). Every one of the other eight
+  between 1 % and 5 % (Sri Lanka 1.044, Nicaragua 1.036, Samoa 1.035,
+  Venezuela 1.031, Myanmar 1.020, Antigua and Barbuda 1.017, Indonesia
+  1.015, Vanuatu 1.011) ranks 24th or higher of 204 locations by
+  =inj_disaster= share of cause-mix deaths (see finding 6), which is
+  where the replica's mean-over-draws weights are expected to differ from
+  per-draw weights.
+- Direction. Burden rose in every combo except the four stale ones.
+- Every combo recomputed in September has exactly one =ok= row in that
+  window (no duplicates, no partial reruns).
+
+The replica test covers access-cm2 2022 only; the other 26 models and 28
+years are checked only through the pilot (2022, 15 locations) and the
+uniform direction and size of the change.
+
+* Finding 3: size of the change
+
+Global totals, deaths attributable to non-optimal temperature (sum over
+204 locations per model, then mean over 27 models):
+
+| year | round 1   | round 2   | ratio | heat ratio | cold ratio | YLL ratio |
+|------+-----------+-----------+-------+------------+------------+-----------|
+| 2022 | 1,683,772 | 1,799,845 | 1.069 |      1.123 |      1.055 |     1.088 |
+| 2030 | 1,921,607 | 2,050,078 | 1.067 |      1.122 |      1.052 |     1.075 |
+| 2040 | 2,356,064 | 2,514,562 | 1.067 |      1.122 |      1.050 |     1.067 |
+| 2050 | 2,716,864 | 2,908,133 | 1.070 |      1.125 |      1.050 |     1.065 |
+
+(Round-2 totals include the four stale combos at their old values.)
+
+The +6.9 % in 2022 is in line with the 2026-08-20 prediction that the
+fix "sits ~7 % high overall" relative to round 1. The ratio is nearly
+flat across years, so the fix shifts the level more than the trend: per
+location, the ratio of 2050/2022 growth (round 2 over round 1) has
+median 0.997 and correlation 0.974 across locations with more than 100
+deaths in 2022. Exceptions with larger shifts: Haiti 0.30 (its 2022 base
+is shock-inflated), Honduras 0.78, Indonesia 0.84, Malaysia 0.88,
+Central African Republic 1.42, El Salvador 1.41, DR Congo 1.29. The last
+three were not investigated.
+
+Global YLLs per attributable death, 2022: 13.90 to 14.15.
+
+Per-location ratio of round 2 to round 1 (median over the 783 combos of
+each location): median 1.11, 5th percentile 1.03, 95th percentile 1.76.
+Largest: Haiti 6.0, Equatorial Guinea 3.4, Cook Islands 3.3, Fiji 2.4,
+Solomon Islands 2.3. Singapore's old mean was negative (-23 in 2022); the
+new one is +60.
+
+* Finding 4: agreement with GBD
+
+Ensemble mean over 27 models, year 2022, against (a) the GBD 2019
+paper-era estimates (the dataset verified against Burkart et al. 2021
+Table 1) and (b) GBD 2023-round estimates for 2022. "In UI" counts
+locations whose point value is inside the reference's 95 % uncertainty
+interval.
+
+| comparison                 | global ratio | median ratio | Spearman | in UI (of 204) | sign agrees |
+|----------------------------+--------------+--------------+----------+----------------+-------------|
+| paper era, round 1         |        0.999 |        0.899 |    0.993 |            159 |         203 |
+| paper era, round 2         |        1.067 |        1.029 |    0.993 |            182 |         204 |
+| paper era, round 2 median  |        1.062 |        1.013 |    0.996 |            185 |         204 |
+| GBD 2023 round, round 1    |        0.874 |        0.922 |    0.991 |            104 |         203 |
+| GBD 2023 round, round 2    |        0.934 |        1.045 |    0.991 |            113 |         204 |
+
+Against GBD 2023 by component: heat 0.683 to 0.766, cold 0.931 to 0.981.
+
+Against the paper era, locations below the UI fell from 41 to 8 and
+locations above rose from 4 to 14. Entered the UI (31): Indonesia,
+Malaysia, Maldives, Fiji, Kiribati, Micronesia, Samoa, Solomon Islands,
+Vanuatu, Georgia, Singapore, Portugal, Dominica, Nicaragua, Brazil, DR
+Congo, Equatorial Guinea, Comoros, Ethiopia, Malawi, Mauritius,
+Mozambique, Seychelles, Tanzania, Zambia, Namibia, Zimbabwe, Cook
+Islands, Northern Mariana Islands, Tokelau, Tuvalu. Left the UI (8):
+China (1.17), Sri Lanka, Cuba, Türkiye, Guinea-Bissau, American Samoa,
+Bermuda, Sudan. Every location's round-2 95 % draw interval overlaps the
+paper UI (204 of 204).
+
+The round-1 comparison compares our 2022 against the paper's 2019, as in
+the August review; the year mismatch is the same in both rows. Agreement
+with GBD was a legitimacy check, not the target (project framing,
+2026-08-19); the tropical cluster below the UI that motivated the fix is
+largely gone, at the cost of more locations above.
+
+* Finding 5: interval widths and negative draws
+
+- Combos whose 95 % interval for non-optimal deaths has a negative lower
+  bound: 45,781 in round 1, 0 in round 2.
+- Relative width (interval width / mean), all combos: median 0.86 to
+  0.65, 95th percentile 8.3 to 1.6, 99th percentile 34.6 to 2.5.
+- Against the paper-era relative widths (locations with more than 10
+  deaths): ratio median 1.13, interquartile range 0.97 to 1.28.
+
+* Finding 6: shock tails and other mean-median gaps
+
+The summarizer's QA lists 29 locations with at least one combo where
+|mean - median| / |median| of national non-optimal deaths exceeds 0.10
+(4,827 of 159,732 combos). Separating heat and cold gaps, and the gap in
+the 17-cause mortality itself (=deaths_mean= vs =deaths_median=), sorts
+them into four groups. Values below are 27-model means for 2022 unless
+stated.
+
+1. Haiti (the known case). Mean 2,405, median 370, 95 % interval 251 to
+   41,691; paper era 416 (306 to 562). Heat mean/median 2,126/234. The
+   =inj_disaster= share of mean 17-cause mortality is 17.0 %, against a
+   median of 0.02 % across the 204 locations; the next highest is 2.3 %.
+   All 783 combos flagged. As decided 2026-09-14: asterisk.
+
+2. Honduras (new, same signature, milder). Mean 525, median 431,
+   interval 335 to 1,803; paper era 422 (346 to 524), so the mean sits
+   just above the paper UI and the median inside it. 555 of 783 combos
+   flagged; the gap shrinks over time (heat mean/median - 1 is 0.80 in
+   2022, 0.25 in 2050).
+
+   Hypothesis: the Haiti mechanism, from a smaller disaster tail in
+   IHME's =inj_disaster= forecast. Evidence, all from summaries
+   (access-cm2, 2022 unless stated):
+   - The skew is on the heat side only (heat mean/median 258/165, cold
+     unskewed), which is what a TMREL pulled down in some draws produces;
+     a death-count tail would skew heat and cold alike (as in Venezuela).
+   - The 17-cause mortality mean exceeds its median by 773 deaths, and
+     the =inj_disaster= mean is 726 deaths. So nearly all of the
+     mortality skew is the disaster cause, with a median near zero and
+     the mean carried by a tail. Haiti shows the same identity (excess
+     9,906 vs disaster mean 10,428), Nicaragua a smaller one (165 vs
+     228).
+   - =inj_disaster= is 2.3 % of Honduras's mean cause-mix deaths, second
+     only to Haiti (17.0 %) of 204 locations (median 0.02 %).
+   - The 97.5th percentile of heat deaths is 1,691, ten times the median,
+     so at least 13 of 500 draws are strongly affected.
+
+   What is missing compared with Haiti: (a) no anchor event of Haiti's
+   scale. Hurricane Mitch (1998) is the obvious candidate in IHME's
+   history, and Eta and Iota (2020) a recent one; their death tolls are
+   not checked here, and we have not seen what history IHME's disaster
+   forecast draws on. (b) No IHME-side confirmation: the released TMRELs
+   for Honduras (1990, 2010, 2020) show no collapse (0 of 100 draws below
+   10 C in any year; mean 22.7 to 23.2 C), but none of those years
+   follows a major Honduran disaster, so this neither supports nor
+   refutes. (c) No direct view of the draws: the bundle has no Honduras
+   derived-TMREL cache, so floored or lowered TMREL draws are not
+   confirmed. Open puzzle: Nicaragua has a similar disaster share (1.7 %)
+   but a far smaller effect (heat 97.5th percentile 1.6 x median vs 10 x);
+   the per-draw shares would say whether Honduras's tail is concentrated
+   in fewer, larger draws.
+
+   Test: Honduras's derived-TMREL cache files (=data/tmrel/derived_cache/129_*=
+   on Caspar's machine, which store the per-draw cause weights and
+   TMRELs) allow the same diagnostics as for Haiti: count draws at or
+   near the 6.6 C floor, their disaster share, and the burden with
+   =inj_disaster= left out of the weights. Requested in the fix-up email.
+
+3. Venezuela (a different mechanism: the mortality forecast itself). In
+   2022 the gap is 4 %; from 2024 on it is 13 % to 20 %, in all 27
+   models. The 17-cause mortality has the same gap (mean 16 % to 18 %
+   above median from 2024, upper bound about 2.0 x median), so a subset
+   of IHME's forecast draws carries much higher all-cause mortality and
+   the burden scales with it. Mean IHD deaths in the access-cm2 inputs
+   rise from 42,828 in 2022 to 62,251 in 2026. Not a TMREL effect and
+   not a pipeline defect, but the same caveat applies to the mean.
+
+4. Small-number locations. Singapore (mean 60, median 50, interval 23
+   to 160; paper era 85 inside) has near-constant temperatures, so its
+   net burden is sensitive to where each TMREL draw falls; both heat and
+   cold are right-skewed, the mortality gap is under 0.5 %. The remaining 25
+   locations in the QA list have small counts: 21 have under 12
+   attributable deaths a year (Cook Islands 1.0, Samoa 2.5, Grenada
+   2.3, ...), where a gap of 5 % to 10 % crosses the 0.10 threshold in
+   some years; the four larger ones are Suriname (30 deaths, 1 flagged
+   combo), Liberia (61, 14), Mauritius (109, 4) and Puerto Rico (111,
+   14). (The QA floors the median at 1 death, so locations under 1 death
+   a year, such as Tokelau, are not listed.)
+
+Cold-country heat skews (Iceland, Ireland, UK, Nordic countries, heat
+mean several times its median) reflect tiny heat counts and do not move
+the totals (national mean-median gaps: median over combos under 2 %,
+at most 4.4 %, in Moldova); none is flagged.
+
+* Finding 7: bundle hygiene
+
+- =manifests/joblog.tsv=, =verify.log= and =loc_172.log= are from the
+  2026-08-14 run (timestamps inside them), not from stage 2. The export
+  copies the newest directory under =output/logs/=, and the stage-2
+  command wrote no logs there. So the bundle has no stage-2 run log; the
+  manifest timings stand in for the wall-clock.
+- No =deaths_nonopt_exdis= columns: correct, since the summarizer writes
+  them only when =TMREL_WEIGHT_EXCLUDE= is set, and it is empty by team
+  decision. (The 2026-09-14 pilot review describes them without that
+  condition.)
+- Hard QA checks all pass (PAF and death sums, |PAF| <= 1 with max
+  0.686, all finite); coverage complete (27 models x 29 years for all
+  204 locations); the Colombia normalized sample reconstructs exactly in
+  all 324 sampled combos. The two CCKP models without converted
+  temperatures (hadgem3-gc31-mm, taiesm1) are recorded as
+  =missing-temp= for all 204 locations, as in round 1; they are not among
+  the 27.
+
+* Timing
+
+Manifest span about 26.5 hours for 159,732 combo-years at =-j 125=;
+per-combo elapsed time median 100 s, 95th percentile 175 s. The pilot
+extrapolation was about 34 hours.

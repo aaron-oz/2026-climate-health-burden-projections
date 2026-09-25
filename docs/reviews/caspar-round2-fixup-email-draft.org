@@ -1,0 +1,72 @@
+#+TITLE: Draft email to Caspar: ssp245 round 2 received, four combos to rerun
+#+DATE: 2026-09-25
+
+SENT by Aaron 2026-09-25 (he edited it before sending, likely adding the
+launch of ssp370/ssp585/ssp126; the sent text is not recorded here). Review note:
+=docs/reviews/ssp245-round2-review-2026-09-24.org=. Send only after the
+=ssp245-round2-review= branch is merged to main and pushed: step 2 relies
+on the summarizer's new provenance check being on main.
+
+-----
+
+Subject: Re: ssp245 full run: looks good, four combos to rerun
+
+Hi Caspar,
+
+Thanks for the full ssp245 run. We have been through the bundle and it
+looks good: the 405 pilot combos reproduce your pilot exactly, access-cm2
+2022 matches our predictions within 1 % for 169 of the 180 locations we
+can score, the negative draws are gone, and every QA check passes.
+
+One problem: four combos were killed during the run ("Rscript exit 137"
+in the burden manifest, which is usually the out-of-memory killer) and
+never retried, so the summary tables picked up their old output files
+from August. All four are access-cm2, 2022: Montenegro (50), Netherlands
+(89), Canada (101), Costa Rica (126). Nothing on your side could have
+flagged it, because the summarizer only checked the files that exist. It
+now also checks every file against the burden manifest and writes out
+the commands to fix whatever it finds.
+
+Steps, from the repo root:
+
+1. Update the repo:
+
+   git pull
+
+2. Re-run the summarizer with the date your run started. It reuses its
+   cache, so it should take a few minutes:
+
+   Rscript global-scripts/util_summarize_run.R --scenarios=ssp245 --jobs=16 --since=2026-09-16
+
+   The QA report printed at the end now has a "Provenance" section. It
+   should say FAIL for exactly those four combos, and the report ends
+   with the commands to fix them, also saved as output/summary/fix_run.sh.
+   Look at that file: it should rerun only locations 50, 89, 101 and 126
+   (access-cm2, 2022). If it lists anything else, stop and send us
+   output/summary/qa_report.txt.
+
+3. Run it:
+
+   bash output/summary/fix_run.sh
+
+   It reruns the four combos one at a time (roughly two minutes each),
+   clears those four locations from the summarizer's cache, and runs the
+   summarizer again. The new QA report's Provenance section should say
+   PASS on both lines, and fix_run.sh should no longer exist.
+
+4. Re-export and send the bundle as before:
+
+   Rscript global-scripts/util_export_review_bundle.R --scenarios=ssp245 --jobs=16
+
+5. One extra request. Honduras (129) shows a milder version of Haiti's
+   pattern, and we would like to check it the same way we checked Haiti,
+   from your derived-TMREL cache. Please send these files too (about 30
+   small files, a few MB in total):
+
+   tar czf honduras_tmrel_cache.tgz data/tmrel/derived_cache/129_*
+
+If you still have a log from the September run with the kills in it,
+that would help us confirm the cause; if not, no need to dig.
+
+Thanks!
+Aaron
