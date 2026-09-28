@@ -1,0 +1,174 @@
+#+TITLE: ssp245 round 2 follow-up: fixed bundle and Honduras TMREL cache
+#+DATE: 2026-09-28
+
+Follow-up to =docs/reviews/ssp245-round2-review-2026-09-24.org=, which
+found four combos (model access-cm2, year 2022, in Montenegro 50,
+Netherlands 89, Canada 101, Costa Rica 126) whose run had been killed, so
+the tables carried their round-1 values. Aaron's email of 2026-09-25 asked
+Caspar to rerun them with the summarizer's new provenance check, re-export
+the bundle, and send Honduras's derived-TMREL cache. Scripts:
+=output/review-ssp245/round2/r2f_*.R=.
+
+* What arrived
+
+Folder
+=/var/home/aoz/data/wb-temp-attr-projections/review/ssp245-round2/followup-review-bundle/=
+(outside git), downloaded 2026-09-28:
+
+- =review_bundle.tar.gz= (465 MB), exported 2026-09-27; extracted to
+  =review_bundle/= in the same folder.
+- =honduras_tmrel_cache.tgz= (2.3 MB): 29 files
+  =data/tmrel/derived_cache/129_<year>_N500.rds=, 2022 to 2050, dated
+  2026-09-15 (the derivation step just before the stage-2 run);
+  extracted to =honduras_cache/=. Each holds the per-draw TMRELs (23
+  temperature zones x 500 draws) and the per-draw 17-cause death weights
+  (=cod= table) they were derived from; =weight_exclude= is empty (all 17
+  causes, as decided 2026-09-14).
+- =old_Sept18_review_bundle.tar.gz=: byte-identical (=cmp=) to the
+  =review_bundle.tar.gz= already stored one level up from 2026-09-24, so
+  a duplicate.
+
+* Finding 1: the fixed bundle changes exactly the four combos, as predicted
+
+- QA report: the new Provenance section passes on both lines ("latest
+  attempt ok", "recomputed since 2026-09-16"), 0 combos without a
+  manifest row. The other sections are unchanged from 2026-09-18,
+  including the shock-tail list.
+- Row-by-row comparison against the 2026-09-18 tables
+  (=r2f_a_diff_tables.R=; a row counts as changed if any numeric column
+  differs by relative 1e-9): same row counts and columns in all four
+  tables; changed rows are exactly the four combos (4 of 159,732 in
+  =national_by_year.csv=, 68 = 4 x 17 causes in =by_cause.csv=, 136 =
+  4 x 34 age-sex groups in =by_age_sex.csv=, 0 in =coverage.csv=).
+- The 17-cause mortality of the four combos is unchanged (same inputs);
+  only the attributable burden moved. New values against the replica-B
+  predictions from the 2026-09-24 review (replica B = our local re-run of
+  the new method; deaths attributable to non-optimal temperature, mean
+  over 500 draws):
+
+| location    | old table (= round 1) | new table | replica B | new / replica B |
+|-------------+-----------------------+-----------+-----------+-----------------|
+| Montenegro  |                 337.2 |     356.9 |     356.9 |           1.000 |
+| Netherlands |               5,340.7 |   5,657.4 |   5,658.8 |           1.000 |
+| Canada      |               8,535.8 |   8,854.9 |   8,855.2 |           1.000 |
+| Costa Rica  |                 251.5 |     291.3 |     291.3 |           1.000 |
+
+  (All four within 0.03 %.)
+- Other bundle parts: the PAF and SEV surfaces differ (expected, they
+  include the four combos; not compared cell by cell); the per-draw
+  Colombia sample, its reconstruction check, the Colombia inputs,
+  =joblog.tsv=, =verify.log= and =loc_172.log= are byte-identical to
+  2026-09-18.
+
+Consequence: the 2026-09-27 bundle supersedes the 2026-09-18 one. The
+round-2 findings of 2026-09-24 otherwise stand; the ensemble-level effect
+of the fix was estimated there at +0.14 % to +0.47 % of the 2022 national
+ensemble mean for these four locations.
+
+* Finding 2: Honduras's shock tail is the Haiti mechanism, milder
+
+The 2026-09-24 review hypothesized, from summaries only, that Honduras's
+heat-side mean-median gap comes from a disaster tail in IHME's
+=inj_disaster= forecast pulling the derived TMREL down in a few draws.
+The cache allows the direct check.
+
+** The code reproduces the cache
+
+Re-deriving Honduras's 2022 TMRELs locally from the cached =cod= weights
+and our 500-draw ERF cache reproduces Caspar's cache exactly (all 11,500
+zone-draw values; =r2f_d_rederive.R=). As for Haiti, any surprise is in
+the input, not in a code or machine difference.
+
+** A few draws carry an event-scale disaster toll, and those draws lower the TMREL
+
+2022, per draw (=r2f_c_shock_draws.R=). "Share" = =inj_disaster= deaths /
+17-cause deaths in that draw; "floored" = TMREL at 6.6 C, the bottom of the
+6.6 to 34.6 C search range.
+
+| location  | draws with share > 30 % | their disaster deaths | median disaster deaths (all draws) | their mean TMREL (C) | other draws' mean TMREL (C) | floored zones per shock draw (of 23) |
+|-----------+-------------------------+-----------------------+------------------------------------+----------------------+-----------------------------+--------------------------------------|
+| Haiti     | 22 (shares 50 % to 87 %) | 179,105 to 304,955   | 35                                 | 10.8                 | 22.4                        | 14.7                                 |
+| Honduras  | 17 (30 % to 46 %)        | 14,909 to 26,361     | 10                                 | 15.9                 | 22.7                        | 5.5                                  |
+| Nicaragua | 8 (30 % to 38 %), plus 9 at 10 % to 30 % | 4,319 to 7,571 | 12                              | 18.4                 | 22.9                        | 2.4                                  |
+
+(Haiti and Nicaragua from Caspar's pilot cache of 2026-09-11, 2022.)
+
+For Honduras there is no middle ground: 483 draws have share under 2.4 %
+and 17 have share 30 % to 46 %; none lie between. Across the 500 draws the
+correlation between share and the draw's zone-mean TMREL is -0.97 in 2022,
+-0.90 to -0.98 in every year 2022 to 2050 (=r2f_b_honduras_years.R=).
+
+Which zones collapse matters. In Honduras's 17 shock draws the TMREL
+falls most in zones 17 to 21 (zone = the pixel's annual mean temperature
+in C): mean 8.4 to 13.3 C against 23.0 to 23.9 C over all draws, and 9 to
+15 of the 17 draws floored in each of those zones. Zones 22 and 23 also
+fall to about 12.4 C but with no draw floored, zones 24 and 25 fall to
+20.2 to 21.2 C, and zones 26 to 28 barely move (23.3 to 27.2 C). Haiti's shock draws collapse across most zones. We
+have not checked locally which zones Honduras's population lives in (the
+local data have no Honduras temperature grid), so the link from "zones 17
+to 21 collapse" to "a milder burden effect than Haiti" is plausible but
+not verified.
+
+Dropping =inj_disaster= from the weights (the rule rejected globally on
+2026-09-14, used here only as a diagnostic) removes all 93 floored
+zone-draws and lifts the 17 shock draws to 17.7 to 26.6 C by zone, in
+line with the other draws. It also shifts TMRELs in 1,005 zone-draws
+outside the shock draws (up to 3.2 C, zone-mean effect over all draws
++0.25 C), so the rule is not free even for normal draws.
+
+** The year-to-year size of the burden gap tracks the number of shock draws
+
+If the shock draws cause the gap, years with fewer of them should show a
+smaller gap. The number of Honduras draws with share over 30 % varies by
+year (9 in 2034, 10 to 23 elsewhere). Against the 27-model mean of
+(heat deaths mean - heat deaths median) from =national_by_year.csv=, per
+year 2022 to 2050 (=r2f_e_gap_vs_shocks.R=):
+
+- correlation with the number of shock draws: 0.83 (29 years);
+- correlation with the number of floored zone-draws: 0.76;
+- 2034, the year with the fewest shock draws (9), has the smallest gap
+  (37 deaths, against 57 to 108 in other years);
+- the cold side shows no gap (cold mean / median - 1 within +/-0.01 in
+  every year).
+
+29 annual points with a trend in both series; the correlations are
+suggestive, not a formal test.
+
+** What this settles and what it does not
+
+Settled, from the cache: Honduras's heat-side skew comes from a
+2 % to 5 % subset of IHME's forecast draws (9 to 23 of 500 depending on
+year) in which =inj_disaster= carries an event-scale toll (2022: 14,909
+to 26,361 deaths; the largest draw in any year is 30,804), enough to
+drag the death-weighted TMREL toward the floor in the mid-temperature
+zones. Same mechanism as Haiti; smaller tail (about a tenth of Haiti's
+toll per shock draw) and partial rather than near-total zone collapse.
+
+Also answers the Nicaragua puzzle from 2026-09-24 in part: Nicaragua's
+shock draws are smaller in both deaths (4,000 to 7,600) and share (at
+most 38 %, 9 of its 17 shock-type draws below 30 %), so fewer zones reach
+the floor (2.4 per draw against Honduras's 5.5).
+
+Not settled:
+- The exact burden effect of the shock draws. The bundle has no Honduras
+  per-draw burden, and we have no Honduras temperature locally, so we
+  cannot recompute Honduras without the shock draws as we did for Haiti.
+  The summary gap bounds the size: the 2022 27-model means are 525
+  (mean) vs 431 (median) non-optimal deaths, heat 241 vs 142.
+- Whether the same draw indices are affected across the 27 models
+  (true for Haiti). This is expected, since mortality draws are shared
+  across models, but it is not visible without per-draw burden. Across
+  years the shock draws are mostly different indices (331 distinct
+  draws have share > 10 % in some year, most in only 1 or 2 years).
+- The historical anchor for IHME's Honduran disaster tail (Hurricane
+  Mitch, 1998, is the obvious candidate) remains unchecked.
+
+* Decisions (Aaron, 2026-09-28)
+
+1. Whether Honduras gets Haiti's asterisk (options were: asterisk with
+   Haiti's wording; footnote only; or first ask Caspar for one combo of
+   Honduras per-draw burden): deferred. To be decided together with how
+   all shock-tail locations are presented publicly, once all scenario
+   results are final. Back of the TODO list.
+2. The 2026-09-27 bundle is the canonical ssp245 round-2 output; the
+   2026-09-18 bundle is superseded.
