@@ -35,7 +35,7 @@
 \title{Methodology walkthrough \\
 \large World Bank climate-health burden projections, 2022--2050}
 \author{Aaron Osgood-Zimmerman, World Bank \\ \texttt{aaron.oz@worldbank.org}}
-\date{June 2026}
+\date{September 2026}
 
 \begin{document}
 \maketitle
@@ -132,8 +132,10 @@ $\tilde\rho_c(z, T, t)$ & Rescaled RR: $\rho_c(z, T) /
 $\PAF^{\text{heat}}_{c,l,t}$ & Heat-attributable PAF for cause $c$,
 location $l$, year $t$ \\
 $\PAF^{\text{cold}}_{c,l,t}$ & Cold-attributable PAF, same indexing \\
-$\tilde S_{c,X,l,t}$ & Pipeline's pop-weighted PAF aggregate under
-scenario $X$ ($= \PAF^{\text{heat}} + \PAF^{\text{cold}}$) \\
+$\PAF^{\text{non-opt}}_{c,X,l,t}$ & Net non-optimal PAF under scenario
+$X$ ($= \PAF^{\text{heat}} + \PAF^{\text{cold}}$) \\
+$\tilde S_{c,X,l,t}$ & Pipeline's temperature scalar under scenario $X$,
+$1 / (1 - \PAF^{\text{non-opt}}_{c,X,l,t})$ \\
 \midrule
 $\mIHME_{c,l,a,s,t,d}$ & IHME's forecast count of cause-$c$ deaths under
 their reference \\
@@ -172,7 +174,7 @@ dimension is absent and every formula reads as written with $d$ dropped.
 In epidemiology, an \emph{attributable fraction} answers the question
 ``what share of deaths from cause $c$ would not have occurred if exposure
 were at some counterfactual level?'' For non-optimal temperature, the
-counterfactual is the TMREL --- the daily temperature at which mortality
+counterfactual is the TMREL: the daily temperature at which mortality
 risk is minimized for that climate zone. A pixel-day where actual
 temperature equals the TMREL contributes zero attributable burden; a
 pixel-day at the cold or heat tail contributes positive attributable
@@ -247,9 +249,10 @@ described above.
 
 IHME's GBD 2021 forecast publishes cause-specific mortality rates under
 their reference scenario, which roughly corresponds to $\SSPtwo$. For 12
-of our 17 causes, IHME applied a temperature-scalar adjustment to the
-forecast (so the published count already reflects $\SSPtwo$ temperature
-effects). For the other 5, no temperature adjustment was applied.
+of IHME's forecast causes, which map to 13 of our 17 cause codes, IHME
+applied a temperature-scalar adjustment to the forecast (so the published
+count already reflects $\SSPtwo$ temperature effects). For the other 4, no
+temperature adjustment was applied.
 
 We want to project mortality \emph{under other climate scenarios}
 (SSP3-RCP7.0, SSP5-RCP8.5, SSP1-RCP2.6).\footnote{The low-emissions
@@ -327,13 +330,21 @@ $\pi_{l,t,p,\text{day}} = \text{pop}_{l,t,p} \,/\, \sum_{p,\text{day}}
 \text{pop}$, summing to 1 over (pixel $\times$ day) within $(l, t)$. So
 the PAF is a pixel-day-weighted average attributable fraction.
 
-The pop-weighted aggregate non-optimal PAF that drives Workflow~B's ratio
-is:
+Workflow~B's ratio is built from the net non-optimal PAF,
+$\PAF^{\text{non-opt}}_{c,X,l,t} = \PAF^{\text{heat}}_{c,l,t} +
+\PAF^{\text{cold}}_{c,l,t}$ computed using scenario-$X$ temperature data,
+through the temperature scalar
 \begin{equation}
-\tilde S_{c,X,l,t} = \PAF^{\text{heat}}_{c,l,t} + \PAF^{\text{cold}}_{c,l,t}
-\quad \text{computed using scenario-}X\text{ temperature data}
+\tilde S_{c,X,l,t} = \frac{1}{1 - \PAF^{\text{non-opt}}_{c,X,l,t}}
 \label{eq:S}
 \end{equation}
+This is the scalar definition GBD's forecasting model uses for a risk's
+effect on cause-specific mortality ($S_c = 1/(1 - \PAF_c)$, GBD 2021
+forecast appendix, Eq.~41): mortality with the risk present is
+$\tilde S$ times mortality with it removed. In the code the net PAF is
+aggregated over age and sex as attributable deaths over deaths, per draw.
+(Before 2026-09-28 the code used $\tilde S = \PAF^{\text{non-opt}}$
+itself; that version was never used in a production run.)
 
 \subsection{Attributable deaths}
 
@@ -356,7 +367,7 @@ then $\mAttr \times \text{ex}$.
 
 We have:
 \begin{itemize}[itemsep=2pt]
-  \item IHME's published mortality forecast $\mIHME_{c,l,a,s,t}$ ---
+  \item IHME's published mortality forecast $\mIHME_{c,l,a,s,t}$:
     counts derived from rate $\times$ population, at the country level,
     annual, 500 draws each.
   \item Our pipeline applied to the bias-corrected CMIP6 temperature for
@@ -370,42 +381,43 @@ We want $\mAttr_{c,X,l,a,s,t}$, the temperature-attributable deaths from
 cause $c$ under scenario $X$.
 
 The challenge: IHME's $\mIHME_{c,l,a,s,t}$ already has $\SSPtwo$-climate
-effects baked in (for 12 of the 17 causes). If we just multiply by
+effects baked in (for 13 of our 17 cause codes). If we just multiply by
 $\PAF_X$, we're double-counting some of the temperature signal. We need
 to first \emph{unscale} IHME's count to remove the $\SSPtwo$ temperature
 contribution, then \emph{rescale} to add scenario-$X$'s contribution.
 
 \subsection{The ratio formula}
 
-The ratio of pipeline-computed pop-weighted PAFs between scenarios is
+The ratio of the pipeline's temperature scalars between scenarios is
 the scale factor, formed within a draw:
 \begin{equation}
 r_{c,X,l,t,d} = \frac{\tilde S_{c,X,l,t,d}}{\tilde S_{c,\SSPtwo,l,t,d}}
+= \frac{1 - \PAF^{\text{non-opt}}_{c,\SSPtwo,l,t,d}}{1 - \PAF^{\text{non-opt}}_{c,X,l,t,d}}
 \label{eq:ratio}
 \end{equation}
-Then for the 12 temp-scaled causes:
+For PAFs of a few percent, $r$ is close to 1: $r - 1 \approx
+\PAF^{\text{non-opt}}_X - \PAF^{\text{non-opt}}_{\SSPtwo}$. Then for the
+13 temp-scaled cause codes:
 \begin{equation}
 \mAttr[heat]_{c,X,l,a,s,t,d} = \mIHME_{c,l,a,s,t,d} \cdot r_{c,X,l,t,d} \cdot \PAF^{\text{heat}}_{c,X,l,t,d}
 \label{eq:wb-12}
 \end{equation}
 and analogously for cold. The product $\mIHME \cdot r$ is the
-scenario-$X$ ``total mortality envelope'' --- IHME's reference total
+scenario-$X$ ``total mortality envelope'', IHME's reference total
 adjusted upward (if scenario $X$ has more temperature exposure than
 $\SSPtwo$) or downward. Multiplying by scenario-$X$'s heat PAF gives the
 heat-attributable share of that adjusted total.
 
-\subsection{Why the ratio cancels calibration drift}
+\subsection{What the ratio does and does not cancel}
 
 A skeptical reader might object: ``You're using your own pipeline's PAFs
 in both numerator and denominator. Don't they need to match IHME's
 absolute calibration?'' (This subsection suppresses the draw index $d$;
 the argument holds within each draw separately.)
 
-The answer is no, and it's the key advantage of the ratio formulation.
-Suppose our pipeline and IHME's compute PAFs that differ by some
-unknown multiplicative factor $k_{c,l,t}$ (because we use Burkart's ERFs
-and they use a slightly different fit, or because our bias-corrected
-CMIP6 differs subtly from theirs):
+Partly. The ratio removes any error that multiplies both scenarios'
+scalars by the same factor. Suppose our pipeline's scalar and IHME's
+differ by some unknown factor $k_{c,l,t}$ common to both scenarios:
 \begin{equation*}
 \tilde S^{\text{ours}}_{c,X,l,t} = k_{c,l,t} \cdot \tilde S^{\text{true}}_{c,X,l,t}
 \quad\text{and}\quad
@@ -416,13 +428,19 @@ Then in the ratio, $k$ cancels:
 \frac{\tilde S^{\text{ours}}_{c,X,l,t}}{\tilde S^{\text{ours}}_{c,\SSPtwo,l,t}}
 = \frac{\tilde S^{\text{true}}_{c,X,l,t}}{\tilde S^{\text{true}}_{c,\SSPtwo,l,t}}
 \end{equation*}
-The ratio carries pure cross-scenario information: how much more (or
-less) temperature-attributable burden there is under $X$ than under
-$\SSPtwo$, in proportional terms. The absolute level is anchored by
-IHME's $\mIHME$. This is a stronger position than trying to match IHME's
-absolute calibration.
+What the ratio does not remove is an error proportional to the PAFs
+themselves (for example, if our PAFs were uniformly 20\% higher than
+IHME's because of a different ERF fit). Since $r - 1 \approx
+\PAF^{\text{non-opt}}_X - \PAF^{\text{non-opt}}_{\SSPtwo}$, such an error
+scales the size of the adjustment $r - 1$ by the same proportion. Because
+$r - 1$ is itself small (a few percent for scenario differences of a few
+PAF points), the effect on $\mIHME \cdot r$ is small in absolute terms,
+but it is not zero. The absolute level of mortality is anchored by
+IHME's $\mIHME$; the attributable fraction applied to it,
+$\PAF^{\text{heat/cold}}_X$, is our pipeline's and carries any PAF error
+in full, as it would in any attributable-fraction calculation.
 
-\subsection{The 12 temp-scaled vs 5 non-temp-scaled causes}
+\subsection{The 13 temp-scaled vs 4 non-temp-scaled cause codes}
 
 The GBD 2021 forecast appendix (Section~2.1.6.7) lists 12 causes for
 which IHME applied a temperature-scalar adjustment internally:
@@ -432,14 +450,14 @@ chronic kidney disease, lower respiratory infection, chronic obstructive
 pulmonary disease, homicide, suicide, mechanical injuries,
 transport-related injuries, and drowning.''
 \end{quote}
-For these 12, Eq.~\eqref{eq:wb-12} applies as stated.
+We split IHME's ``transport-related injuries'' into road injuries and
+other transport injuries and treat both as temp-scaled, so these 12 IHME
+causes are 13 of our cause codes. For these 13, Eq.~\eqref{eq:wb-12}
+applies as stated.
 
-The other 5 causes IHME forecasts (cardiomyopathy and myocarditis,
-animal-related injuries, disaster-related injuries, other unintentional
-injuries, other transport injuries\footnote{We split IHME's
-``transport-related injuries'' umbrella into road and other; both are
-treated as temp-scaled.}) are forecast \emph{without} a temperature
-adjustment. For these, IHME's $\mIHME$ has no temperature signal to
+The other 4 cause codes (cardiomyopathy and myocarditis, animal-related
+injuries, disaster-related injuries, other unintentional injuries) are
+forecast by IHME \emph{without} a temperature adjustment. For these, IHME's $\mIHME$ has no temperature signal to
 ``unscale,'' so the ratio collapses to identity:
 \begin{equation}
 \mAttr[heat]_{c \in \text{non-temp}, X, l, a, s, t, d}
@@ -447,7 +465,7 @@ adjustment. For these, IHME's $\mIHME$ has no temperature signal to
 \label{eq:wb-5}
 \end{equation}
 This is Approach~1 (the simpler textbook attributable-fraction formula)
-applied to those 5 causes. From a code perspective it is the same
+applied to those 4 causes. From a code perspective it is the same
 pipeline; only the post-processing step in
 \texttt{util\_workflow\_b\_ratio.R} differs by branching on whether
 $c$ is in the temp-scaled set.
@@ -539,10 +557,13 @@ The examples below use real values from the pipeline's trace tool applied
 to Colombia 2010 with Samuel's validated input data (the dataset where
 the pipeline matches Samuel's published numbers on 18 of 19 headline
 metrics, $\pm 5\%$). The cross-scenario example in
-Section~\ref{sec:wb-example} uses synthesized numbers because we don't
-yet have CCKP-driven production runs; the synthesized values are clearly
-flagged and will be updated with real production output when Caspar's
-runs complete.
+Section~\ref{sec:wb-example} uses synthesized numbers: the \texttt{ssp245}
+reference production run is complete (rerun with derived per-draw TMRELs
+and reviewed in September 2026), but the ratio also needs a
+target-scenario run. A 12-location \texttt{ssp585} test was set up in late
+September 2026. The synthesized values are clearly flagged and will be
+replaced with real output once target-scenario results have been
+reviewed.
 
 % =====================================================================
 \section{Within-pipeline trace: one pixel}
@@ -648,7 +669,7 @@ What this shows:
   \item \textbf{Pixel 28 (Caribbean coast, hot tropical):} $T = 27.2\,^{\circ}$C
     is just 2 degrees above TMREL = $25.1\,^{\circ}$C; heat but on the
     flat shoulder of the cvd\_ihd ERF. Rescaled RR is 0.978 ($<1$), so
-    the AF is \emph{negative} --- this pixel-day would actually have
+    the AF is \emph{negative}: this pixel-day would actually have
     been associated with slightly lower mortality than the TMREL
     reference for cvd\_ihd. The pipeline sums these signed contributions
     in Eqs.~\eqref{eq:paf-cold}--\eqref{eq:paf-heat}, so negative
@@ -685,7 +706,7 @@ $\mAttr$ for cvd\_ihd = $\mIHME \cdot \PAF$ & $-65$ & $+1{,}316$ & $+1{,}251$ \\
 \end{center}
 
 Out of 29{,}364 total cvd\_ihd deaths in Colombia 2010, the pipeline
-attributes 4.3\% (1{,}251 deaths) to non-optimal temperature exposure ---
+attributes 4.3\% (1{,}251 deaths) to non-optimal temperature exposure,
 nearly all on the cold side. The negative heat number reflects the flat
 shoulder of the cvd\_ihd ERF on the heat side combined with Colombia's
 modest heat-exposure in 2010.
@@ -704,8 +725,10 @@ per-subloc cvd\_ihd death counts and summing yields the country total of
 % =====================================================================
 
 \textit{Caveat: this section uses \textbf{synthesized illustrative
-values} for the cross-scenario numbers. Real production values will
-substitute these once Caspar's runs complete; the math is unchanged.}
+values} for the cross-scenario numbers. The \texttt{ssp245} reference run
+is complete, and a 12-location \texttt{ssp585} test run was set up in late
+September 2026; real values will substitute these once target-scenario
+results have been reviewed. The math is unchanged.}
 
 \subsection{Setup}
 
@@ -729,7 +752,8 @@ Colombia 2030. Suppose the pipeline outputs:
 \midrule
 $\PAF^{\text{heat}}_{\text{cvd\_ihd, Colombia, 2030}}$ & $+0.5\%$ & $+1.8\%$ \\
 $\PAF^{\text{cold}}_{\text{cvd\_ihd, Colombia, 2030}}$ & $+4.2\%$ & $+3.2\%$ \\
-$\tilde S$ (heat + cold)                           & $+4.7\%$ & $+5.0\%$ \\
+$\PAF^{\text{non-opt}}$ (heat + cold)              & $+4.7\%$ & $+5.0\%$ \\
+$\tilde S = 1/(1 - \PAF^{\text{non-opt}})$         & $1.0493$ & $1.0526$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -737,7 +761,7 @@ $\tilde S$ (heat + cold)                           & $+4.7\%$ & $+5.0\%$ \\
 In this hypothetical: SSP5-RCP8.5 in 2030 has more heat-attributable
 burden (more hot days above TMREL) and slightly less cold-attributable
 burden (fewer cold days below TMREL). The non-optimal total is just
-slightly higher under SSP5 than $\SSPtwo$ --- the heat increase mostly
+slightly higher under SSP5 than $\SSPtwo$, because the heat increase mostly
 cancels with the cold decrease.
 
 \subsection{Apply the ratio}
@@ -746,23 +770,23 @@ From Eq.~\eqref{eq:ratio}:
 \[
 r_{\text{cvd\_ihd, SSP5, Colombia, 2030}}
 = \frac{\tilde S_{\text{SSP5}}}{\tilde S_{\SSPtwo}}
-= \frac{0.050}{0.047}
-= 1.0638
+= \frac{1 - 0.047}{1 - 0.050}
+= 1.0032
 \]
-The total mortality envelope grows ~6.4\% under SSP5 vs $\SSPtwo$
-because the temperature signal is slightly stronger overall. cvd\_ihd
-is one of the 12 temp-scaled causes, so Eq.~\eqref{eq:wb-12} applies:
+The total mortality envelope grows about 0.3\% under SSP5 vs $\SSPtwo$
+because the net temperature signal is slightly stronger. cvd\_ihd
+is one of the 13 temp-scaled cause codes, so Eq.~\eqref{eq:wb-12} applies:
 \begin{align*}
 \mAttr[heat]_{\text{cvd\_ihd, SSP5, 2030}}
 &= \mIHME \cdot r \cdot \PAF^{\text{heat}}_{\text{SSP5}} \\
-&= 38{,}000 \cdot 1.0638 \cdot 0.018 \\
-&= 727 \text{ heat-attributable deaths} \\[2pt]
+&= 38{,}000 \cdot 1.0032 \cdot 0.018 \\
+&= 686 \text{ heat-attributable deaths} \\[2pt]
 \mAttr[cold]_{\text{cvd\_ihd, SSP5, 2030}}
 &= \mIHME \cdot r \cdot \PAF^{\text{cold}}_{\text{SSP5}} \\
-&= 38{,}000 \cdot 1.0638 \cdot 0.032 \\
-&= 1{,}294 \text{ cold-attributable deaths} \\[2pt]
+&= 38{,}000 \cdot 1.0032 \cdot 0.032 \\
+&= 1{,}220 \text{ cold-attributable deaths} \\[2pt]
 \mAttr[non-opt]_{\text{cvd\_ihd, SSP5, 2030}}
-&= 727 + 1{,}294 = 2{,}021 \text{ non-optimal-temperature deaths}
+&= 686 + 1{,}220 = 1{,}906 \text{ non-optimal-temperature deaths}
 \end{align*}
 
 \subsection{Compare to $\SSPtwo$ baseline}
@@ -775,15 +799,17 @@ Under $\SSPtwo$ at the same location-year, applying the same formula
 = 1{,}786 \text{ deaths}
 \end{align*}
 
-So SSP5-RCP8.5 produces ~235 more cvd\_ihd deaths attributable to
+So SSP5-RCP8.5 produces about 120 more cvd\_ihd deaths attributable to
 non-optimal temperature in Colombia 2030 than $\SSPtwo$ does, with the
-\emph{composition} shifting toward heat (heat goes from ~$190$ to ~$727$,
-cold goes from ~$1{,}596$ to ~$1{,}294$).
+\emph{composition} shifting toward heat (heat goes from about $190$ to
+$686$, cold from about $1{,}596$ to $1{,}220$). Almost all of the change
+comes from the scenario-$X$ PAFs; the envelope adjustment $r$ contributes
+about 6 of the 120 deaths ($1{,}900 \times 0.0032$).
 
 \subsection{The same exercise for a non-temp-scaled cause}
 
-For cardiomyopathy (cvd\_cmp), which is one of the 5 non-temp-scaled
-causes, IHME's forecast has no implicit temperature signal. The ratio
+For cardiomyopathy (cvd\_cmp), which is one of the 4 non-temp-scaled
+cause codes, IHME's forecast has no implicit temperature signal. The ratio
 collapses to identity per Eq.~\eqref{eq:wb-5}. Suppose
 $\mIHME_{\text{cvd\_cmp, Colombia, 2030}} = 5{,}000$ and our pipeline
 gives $\PAF^{\text{heat}}_{\text{cvd\_cmp, SSP5}} = 0.4\%$,
@@ -833,9 +859,17 @@ interval of $[978,\ 2{,}417]$ across 500 draws, matching the burden, and
 
 This exercises the draw pairing and the join, but \emph{not} the ratio
 itself: a self-ratio holds $r = 1$ by construction. The case $r \neq 1$
-has not yet been run on real data, because no target-scenario production
-run exists at the time of writing. Section~\ref{sec:wb-example} remains
-synthesized for that reason.
+was checked on 2026-09-28 in two ways, both local, neither a production
+run. (i) Synthetic: a target built by raising one location's heat and cold
+PAFs by 20\% gives scale factors equal to Eq.~\eqref{eq:ratio} to within
+$10^{-15}$. (ii) Real data for one combination: Colombia,
+\texttt{access-cm2-r1i1p1f1}, 2022, \texttt{ssp585} against
+\texttt{ssp245}, with IHME's 17-cause forecast mortality. Scale factors
+range from 0.972 to 1.020 across cause-draws, and the scaled
+\texttt{ssp585} non-optimal burden is 1.004 times the unscaled one (draw
+means 5{,}331.5 and 5{,}310.4 deaths). That is one location and one model;
+Section~\ref{sec:wb-example} remains synthesized until the
+target-scenario test results have been reviewed.
 
 % =====================================================================
 \section{Reproducing}
