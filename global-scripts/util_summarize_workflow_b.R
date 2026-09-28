@@ -37,7 +37,19 @@
 #                         Workflow B output, years with a target burden file but
 #                         no Workflow B output, and whether the reference
 #                         scenario exists for that model at all.
-#   qa_report.txt         the checks, worst first.
+#   qa_report.txt         two kinds of check. Hard checks: arithmetic that must
+#                         hold (a failure is a bug). Plausibility checks: does
+#                         the target scenario behave like the climate it
+#                         represents, relative to the reference (warmer where
+#                         it should be, heat burden up and cold down as it
+#                         warms, models that warm more showing more heat
+#                         burden, scaling small)? These are flagged CHECK for a
+#                         person to look at, not failed, since a real result can
+#                         break a rule of thumb.
+#
+# The plausibility section needs the reference scenario's unscaled burden and
+# both scenarios' converted temperature files (data/temperature/cckp/...),
+# which a production machine keeps. Where they are missing it says so.
 
 if (!exists("SCRIPTS_DIR")) SCRIPTS_DIR <- dirname(c(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)), ".")[1])
 source(file.path(SCRIPTS_DIR, "config.R"))
@@ -46,7 +58,11 @@ suppressPackageStartupMessages(library(data.table))
 defaults <- list(SCENARIOS = "ssp245,ssp585", REF_SCENARIO = "ssp245",
                  LOCATIONS = "", YEARS = "2022-2050",
                  JOBS = max(1L, floor(parallel::detectCores() / 2)),
-                 OUT = file.path(OUTPUT_DIR, "summary_workflow_b"))
+                 OUT = file.path(OUTPUT_DIR, "summary_workflow_b"),
+                 # Years at which the plausibility section compares population-
+                 # weighted temperature between the scenarios (reading every
+                 # daily temperature file would dominate the run time).
+                 TEMP_YEARS = "2022,2030,2040,2050")
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -68,6 +84,7 @@ parse_years <- function(s) {
 }
 
 scenarios  <- split_csv(SCENARIOS)
+temp_years <- parse_years(TEMP_YEARS)
 ref_scen   <- as.character(REF_SCENARIO)
 want_years <- parse_years(YEARS)
 wb_root    <- file.path(RESULTS_ROOT, "workflow_b")
@@ -93,6 +110,16 @@ load_lifetable <- function(loc) {
   if (!"ex" %in% names(lt) && "ev" %in% names(lt)) setnames(lt, "ev", "ex")
   unique(lt[, .(year = as.integer(year_id), age_group_id = as.integer(age_group_id),
                 sex_id = as.integer(sex_id), ex)])
+}
+
+# Population-weighted annual mean of daily temperature (C) for one combo, from
+# the converted pixel-day file the burden pipeline read. NA if absent.
+popw_temp <- function(loc, model, scen, year) {
+  f <- file.path(TEMP_DIR, "cckp", loc, paste0(model, "-", scen), sprintf("daily_temp_%d.rds", year))
+  t <- tryCatch(readRDS(f), error = function(e) NULL)
+  if (is.null(t)) return(NA_real_)
+  setDT(t)
+  t[is.finite(daily_temp) & is.finite(pop), sum(daily_temp * pop) / sum(pop)]
 }
 
 summ <- function(x) {
@@ -161,6 +188,23 @@ summarize_combo <- function(loc, model, scen, year, lt) {
       m <- merge(by_draw[, .(draw, w = deaths_nonopt_attrib)], bd[, .(draw, p = p_nonopt)], by = "draw")
       qa[, ref_identity_rel_dev := max(abs(m$w - m$p) / pmax(abs(m$p), 1))]
       qa[, ref_identity_scale_dev := max(abs(sf$scale_factor - 1), na.rm = TRUE)]
+    }
+  }
+
+  # --- plausibility inputs: reference burden and both scenarios' temperature -
+  if (scen != ref_scen) {
+    rf <- file.path(cckp_root, loc, paste0(model, "-", ref_scen), sprintf("burden_%d.rds", year))
+    rb <- tryCatch(setDT(readRDS(rf)), error = function(e) NULL)
+    if (!is.null(rb)) {
+      if (!"draw" %in% names(rb)) rb[, draw := 0L]
+      rd <- rb[, .(h = sum(deaths_heat), c = sum(deaths_cold), n = sum(deaths_nonopt)), by = draw]
+      set(nat, j = "ref_deaths_heat_mean",   value = mean(rd$h))
+      set(nat, j = "ref_deaths_cold_mean",   value = mean(rd$c))
+      set(nat, j = "ref_deaths_nonopt_mean", value = mean(rd$n))
+    }
+    if (year %in% temp_years) {
+      set(nat, j = "temp_popw",     value = popw_temp(loc, model, scen, year))
+      set(nat, j = "ref_temp_popw", value = popw_temp(loc, model, ref_scen, year))
     }
   }
 
@@ -298,6 +342,117 @@ if ("pipeline_deaths_nonopt_mean" %in% names(nat)) {
   for (i in seq_len(nrow(rs))) w(sprintf("    loc %-4d %s  median %.4f  range %.4f to %.4f",
                                          rs$location_id[i], rs$scenario[i], rs$median[i],
                                          rs$min[i], rs$max[i]))
+}
+w("")
+w("--- Plausibility: does the target behave like its climate? ---")
+w("  Rules of thumb, not arithmetic. CHECK means look at it; a real result can")
+w("  break a rule of thumb. Ensemble = mean over the models with both scenarios.")
+w("  Thresholds are judgment calls, stated with each check.")
+tn <- nat[scenario != ref_scen]
+has_ref  <- "ref_deaths_nonopt_mean" %in% names(tn) && any(!is.na(tn$ref_deaths_nonopt_mean))
+has_temp <- "temp_popw" %in% names(tn) && any(!is.na(tn$temp_popw) & !is.na(tn$ref_temp_popw))
+flag <- function(ok) if (isTRUE(ok)) "ok   " else "CHECK"
+if (!has_ref) {
+  w("  (no reference-scenario burden files found; burden checks skipped)")
+} else {
+  tn[, `:=`(dheat = deaths_heat_attrib_mean - ref_deaths_heat_mean,
+            dcold = deaths_cold_attrib_mean - ref_deaths_cold_mean)]
+  tn[, decade := fifelse(year <= 2030, "2022-2030", fifelse(year <= 2040, "2031-2040", "2041-2050"))]
+
+  w("")
+  w("  P1. Temperature: ensemble population-weighted mean temperature,")
+  w("      target minus reference (C), at the years in --temp_years.")
+  w("      Expect about 0 in 2022 (the scenarios share history to 2014 and")
+  w("      differ little by the 2020s), then positive and growing. CHECK if")
+  w("      2040 or 2050 is <= 0, if the last year is not the largest, or if")
+  w("      any value exceeds 2 C.")
+  if (!has_temp) {
+    w("      (temperature files not found; skipped)")
+  } else {
+    tt <- tn[!is.na(temp_popw) & !is.na(ref_temp_popw),
+             .(d = mean(temp_popw - ref_temp_popw), sd_models = sd(temp_popw - ref_temp_popw), n = .N),
+             by = .(location_id, year)][order(location_id, year)]
+    for (l in unique(tt$location_id)) {
+      x <- tt[location_id == l]
+      late <- x[year >= 2040]
+      ok <- nrow(late) > 0 && all(late$d > 0) && x$d[which.max(x$year)] == max(x$d) && all(abs(x$d) <= 2)
+      w(sprintf("      %s loc %-4d %s", flag(ok), l,
+                paste(sprintf("%d: %+.2f (sd %.2f, %d models)", x$year, x$d, x$sd_models, x$n), collapse = "  ")))
+    }
+  }
+
+  w("")
+  w("  P2. Direction of burden: ensemble target / reference ratio of heat and of")
+  w("      cold deaths (unscaled pipeline burden in both, so this isolates the")
+  w("      climate), by decade. Expect heat ratio near 1 in 2022-2030 and above 1")
+  w("      by 2041-2050; cold ratio at or below 1 by 2041-2050. CHECK if")
+  w("      2041-2050 heat ratio <= 1, cold ratio > 1.02, or 2022-2030 heat or")
+  w("      cold ratio outside 0.90-1.10. Cold ratio is skipped where reference")
+  w("      cold deaths are under 10 (a ratio of small numbers means little).")
+  bd <- tn[, .(heat_t = mean(pipeline_deaths_heat_mean), heat_r = mean(ref_deaths_heat_mean),
+               cold_t = mean(pipeline_deaths_cold_mean), cold_r = mean(ref_deaths_cold_mean)),
+           by = .(location_id, decade)][order(location_id, decade)]
+  bd[, `:=`(hr = heat_t / heat_r, cr = fifelse(abs(cold_r) >= 10, cold_t / cold_r, NA_real_))]
+  for (l in unique(bd$location_id)) {
+    x <- bd[location_id == l]; e <- x[decade == "2022-2030"]; z <- x[decade == "2041-2050"]
+    ok <- (nrow(z) == 0 || (z$hr > 1 && (is.na(z$cr) || z$cr <= 1.02))) &&
+          (nrow(e) == 0 || (abs(e$hr - 1) <= 0.10 && (is.na(e$cr) || abs(e$cr - 1) <= 0.10)))
+    w(sprintf("      %s loc %-4d heat %s   cold %s", flag(ok), l,
+              paste(sprintf("%s %.3f", x$decade, x$hr), collapse = ", "),
+              paste(sprintf("%s %s", x$decade, ifelse(is.na(x$cr), "  n/a", sprintf("%.3f", x$cr))), collapse = ", ")))
+  }
+
+  if (has_temp) {
+    w("")
+    w("  P3. Models that warm more should add more heat burden: correlation across")
+    w("      models, per location, between the target-minus-reference temperature")
+    w("      difference and the heat-death difference, at the last --temp_years")
+    w("      year. CHECK if <= 0 (with fewer than 10 models, just reported).")
+    ly <- max(temp_years)
+    cc <- tn[year == ly & !is.na(temp_popw) & !is.na(ref_temp_popw),
+             .(r = if (.N >= 3) suppressWarnings(cor(temp_popw - ref_temp_popw,
+                                                      pipeline_deaths_heat_mean - ref_deaths_heat_mean)) else NA_real_,
+               n = .N), by = location_id][order(location_id)]
+    for (i in seq_len(nrow(cc))) w(sprintf("      %s loc %-4d r = %s over %d models (%d)",
+      if (cc$n[i] < 10) "     " else flag(isTRUE(cc$r[i] > 0)), cc$location_id[i],
+      ifelse(is.na(cc$r[i]), "n/a", sprintf("%+.2f", cc$r[i])), cc$n[i], ly))
+  }
+
+  w("")
+  w("  P4. Size of the scaling: ensemble scaled / unscaled target non-optimal")
+  w("      deaths by decade, and the implied change in IHME's 17-cause mortality")
+  w("      (m_scaled / ihme_deaths - 1). The scaling moves mortality by the")
+  w("      change in 1/(1 - PAF), so expect a few percent at most. CHECK if any")
+  w("      decade's ratio is outside 0.90-1.10 or the mortality change exceeds 5 %.")
+  sd_ <- tn[, .(ratio = mean(deaths_nonopt_attrib_mean) / mean(pipeline_deaths_nonopt_mean),
+                mchg = mean(m_scaled_mean) / mean(ihme_deaths_mean) - 1),
+            by = .(location_id, decade)][order(location_id, decade)]
+  for (l in unique(sd_$location_id)) {
+    x <- sd_[location_id == l]
+    ok <- all(abs(x$ratio - 1) <= 0.10) && all(abs(x$mchg) <= 0.05)
+    w(sprintf("      %s loc %-4d %s", flag(ok), l,
+              paste(sprintf("%s ratio %.3f mortality %+.2f%%", x$decade, x$ratio, 100 * x$mchg), collapse = "  ")))
+  }
+
+  w("")
+  w("  P5. Heat share of the scaled burden, heat / (|heat| + |cold|), ensemble,")
+  w("      target vs reference, 2041-2050. Expect the target's share at or above")
+  w("      the reference's. CHECK if it is lower.")
+  hs <- tn[decade == "2041-2050", .(t = mean(deaths_heat_attrib_mean) /
+                                          mean(abs(deaths_heat_attrib_mean) + abs(deaths_cold_attrib_mean)),
+                                    r = mean(ref_deaths_heat_mean) /
+                                          mean(abs(ref_deaths_heat_mean) + abs(ref_deaths_cold_mean))),
+           by = location_id][order(location_id)]
+  for (i in seq_len(nrow(hs))) w(sprintf("      %s loc %-4d target %.3f  reference %.3f",
+    flag(hs$t[i] >= hs$r[i]), hs$location_id[i], hs$t[i], hs$r[i]))
+
+  w("")
+  w("  P6. Uncertainty: 95 % interval width / mean of scaled non-optimal deaths,")
+  w("      target vs the reference's own Workflow B output where present, else")
+  w("      reported alone. Reported, not flagged.")
+  uw <- tn[, .(w = median((deaths_nonopt_attrib_upper - deaths_nonopt_attrib_lower) /
+                            pmax(abs(deaths_nonopt_attrib_mean), 1))), by = location_id][order(location_id)]
+  for (i in seq_len(nrow(uw))) w(sprintf("            loc %-4d median relative width %.2f", uw$location_id[i], uw$w[i]))
 }
 w("")
 w("--- Coverage ---")

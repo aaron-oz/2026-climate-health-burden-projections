@@ -10,7 +10,7 @@
 # Each step is safe to re-run: finished work is skipped. Step 1 is the long one;
 # watch it with ./status.sh. Step 2 takes about an hour (estimate: 3.6 s per
 # scaled combo measured locally, ~840 combos per location, locations in
-# parallel); step 3 a few minutes.
+# parallel); step 3 roughly 10 to 30 minutes (estimate; it reads temperature files for the plausibility checks).
 #
 # Prerequisite: the ssp245 run for these locations is already on disk (it is the
 # Workflow B reference), along with run_env.sh and the CCKP mirror used for it.

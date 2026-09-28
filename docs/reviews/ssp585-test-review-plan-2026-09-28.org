@@ -1,0 +1,106 @@
+#+TITLE: ssp585 12-location test: review plan and expectations, written before the results
+#+DATE: 2026-09-28
+
+What we will check when Caspar's =ssp585_test_bundle.tar.gz= arrives, and
+what we expect to see, written down before seeing it so the expectations
+cannot drift toward the results. Test setup: =run_ssp585_test.sh=, email
+=docs/reviews/caspar-ssp585-test-email-draft.org=. Terms:
+
+- Unscaled burden: the pipeline's attributable deaths for a scenario, IHME
+  mortality x that scenario's PAF (PAF = population attributable fraction).
+- Scaled burden (Workflow B): IHME mortality x scale factor x target PAF,
+  with scale factor = (1 - PAF_ssp245) / (1 - PAF_ssp585) for the 13 causes
+  IHME temperature-adjusts, and 1 for the other 4.
+- Ensemble: mean over the 27 models that have both ssp245 and ssp585.
+
+* 1. Arithmetic (hard checks)
+
+Both QA reports' hard-check sections pass: the unscaled ssp585 report (same
+checks as ssp245, including the provenance check that every combo was
+computed in this run) and the Workflow B report (heat + cold = non-optimal,
+no NA or non-finite values, scale factor exactly 1 for the 4 non-adjusted
+causes, ssp245 scaled against itself reproducing the unscaled ssp245 burden
+draw for draw, every row matched to a life table). Any failure is a bug.
+
+* 2. Independent reproduction
+
+Our local runs of Colombia (125), model access-cm2, years 2022 and 2050,
+both scenarios, from the same code and the Colombia inputs Caspar sent on
+2026-09-27, must match his table values to rounding. Local values (draw
+means over 500 draws), computed 2026-09-28:
+
+| scenario | year | kind     | non-optimal deaths | heat deaths | cold deaths |       YLLs |
+|----------+------+----------+--------------------+-------------+-------------+------------|
+| ssp245   | 2022 | unscaled |           5,201.92 |      953.65 |    4,248.27 |  64,258.08 |
+| ssp245   | 2050 | unscaled |          10,995.06 |    2,229.44 |    8,765.62 | 135,958.03 |
+| ssp585   | 2022 | unscaled |           5,310.39 |      623.16 |    4,687.23 |  60,716.19 |
+| ssp585   | 2050 | unscaled |          11,132.01 |    3,581.30 |    7,550.72 | 143,882.72 |
+| ssp585   | 2022 | scaled   |           5,331.50 |      620.38 |    4,711.11 |  61,099.59 |
+| ssp585   | 2050 | scaled   |          11,133.37 |    3,595.22 |    7,538.15 | 143,998.42 |
+
+The ssp245 rows already reproduce Caspar's round-2 table exactly (to all
+printed digits, 2022 and 2050), so the local setup matches his.
+Illustration of why the plausibility checks work on the ensemble: in this
+one model, ssp585's 2022 is 0.72 C cooler (population-weighted) over
+Colombia than ssp245's 2022, so its heat deaths are lower; by 2050 it is
+0.98 C warmer and heat deaths are 1.61 x ssp245's, cold 0.86 x.
+
+Also recompute the scaled 2022 combo from the bundle's raw sample files
+(both burden files plus IHME mortality) and compare with his =wb_2022.rds=
+row for row.
+
+* 3. Plausibility (the summarizer's section, plus our reading)
+
+The Workflow B QA report now carries a plausibility section, flagged
+CHECK rather than failed. Our expectations, per check:
+
+- P1, temperature. Ensemble population-weighted temperature difference
+  ssp585 - ssp245 near 0 in 2022 and positive, growing, by 2040 and 2050 in
+  all 12 locations. Individual models can show either sign in any single
+  year (each scenario run has its own weather), which is why the check is
+  on the ensemble. We have not looked up the expected size of the 2050 gap
+  for these countries; the check only asks for sign, growth, and no value
+  above 2 C.
+- P2, direction. Unscaled heat deaths higher under ssp585 by 2041-2050 in
+  every location; cold deaths equal or lower. Near-identical in 2022-2030.
+  The net (heat + cold) can go either way: in cold-dominated locations
+  (Germany, United States, China) fewer cold deaths may outweigh more heat
+  deaths, so a lower net under ssp585 there is not by itself a problem. In
+  heat-dominated locations (Kuwait, India, Nigeria) we expect the net to
+  rise.
+- P3, coherence across models. Within a location, models whose ssp585
+  warms more relative to their ssp245 should show larger heat-death
+  increases: positive correlation across models at 2050.
+- P4, size of the scaling. Scaled / unscaled within a few percent of 1,
+  since the scale factor moves mortality by the change in 1/(1 - PAF).
+  Haiti is the exception to watch: in its floored-TMREL draws PAF reaches
+  about 0.7 (round-2 QA, max |paf_nonopt| 0.686), where 1/(1 - PAF) is
+  steep, so its scale factors can spread further.
+- P5, heat share of the burden higher under ssp585 by 2041-2050.
+- P6, uncertainty widths similar to ssp245's.
+
+Our own reading on top of the report:
+
+- 2022 ssp585 ensemble vs the round-2 ssp245 ensemble for the same
+  location: within a few percent, since the scenarios have barely diverged.
+- Shape over time: smooth ensemble trajectories 2022 to 2050, no jumps
+  between adjacent years.
+- Haiti's shock tail present equally in both scenarios (the mortality
+  draws are the same), so its mean-median gap should look like ssp245's.
+- The two models with ssp585 but no ssp245 (hadgem3-gc31-mm, taiesm1)
+  appear in the unscaled summary and as "missing-ref" in the scaled one.
+
+* 4. What this test cannot tell us
+
+- Whether ssp585 magnitudes are right in absolute terms: there is no
+  observed ssp585 world to compare with. We have not found a published
+  country-level SSP5-8.5 vs SSP2-4.5 temperature-mortality projection with
+  our cause set and years to compare against; a literature check would be
+  a separate task.
+- Whether the Workflow B method itself is right (anchoring on IHME's
+  ssp245 mortality and rescaling). The test checks that the code does what
+  the method note says, not the method.
+- Population: IHME's mortality counts carry IHME's reference-scenario
+  population, so the scaled ssp585 burden does not reflect SSP5
+  demography (known simplification, =docs/ops/pipeline-state-for-cckp.md=
+  section 5.1).
