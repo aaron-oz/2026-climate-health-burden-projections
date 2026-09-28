@@ -19,8 +19,18 @@
 #     deaths_heat_X         = m_IHME * paf_heat_X
 #     deaths_cold_X         = m_IHME * paf_cold_X
 #
-# S_Y is the pipeline's pop-weighted attributable-PAF aggregate at
-# (year, subloc, cause) under scenario Y. The ratio cancels pipeline-specific
+# S_Y is the pipeline's temperature scalar at (year, subloc, cause[, draw])
+# under scenario Y, S_Y = 1 / (1 - PAF_Y), where PAF_Y is the net non-optimal
+# (heat + cold) PAF aggregated over age and sex. This is the GBD forecast
+# scalar definition (GBD 2021 forecast appendix, eq. 41, S_c = 1/(1 - PAF_c);
+# gbd/ihme-plan-b-prep.tex, section "Mathematical setup"), so
+#     scale_factor = S_X / S_SSP2 = (1 - PAF_SSP2) / (1 - PAF_X),
+# which is close to 1 when the two scenarios' PAFs are close. Before
+# 2026-09-28 this file used S = PAF itself, which made the ratio
+# PAF_X / PAF_SSP2 (1.20 for PAFs of 0.06 vs 0.05, against 1.011 from the
+# formula above). That version was never run in production.
+#
+# The ratio cancels pipeline-specific
 # calibration drift (different ERFs / bias correction / pop recipe than IHME)
 # for the temp-scaled causes -- both numerator and denominator come from the
 # same pipeline and the constant factor drops out.
@@ -69,17 +79,18 @@ load_rds_list <- function(paths_csv) {
   rbindlist(parts, use.names = TRUE, fill = TRUE)
 }
 
-# Pipeline-side S: pop-weighted attributable-PAF aggregate at (year, subloc,
-# cause). Collapse age × sex from the burden frame because PAF is broadcast
-# across them in the pipeline. We use sum(deaths_nonopt) / sum(deaths) so the
-# aggregate is mortality-weighted across age/sex (matches what the pipeline
-# would produce if you computed PAF at the country level directly).
+# Pipeline-side S = 1 / (1 - PAF) at (year, subloc, cause[, draw]). The PAF is
+# broadcast across age x sex in the pipeline; sum(deaths_nonopt) / sum(deaths)
+# recovers it as a mortality-weighted aggregate (identical to the broadcast
+# value when it really is constant over age x sex). S is NA when PAF >= 1,
+# where the scalar is undefined; apply_ratio() then leaves the ratio NA.
 compute_S <- function(b) {
   keys <- c("year", "subloc_id", "acause")
   if ("draw" %in% names(b)) keys <- c(keys, "draw")   # per-draw when available
   agg <- b[, .(num = sum(deaths_nonopt, na.rm = TRUE),
                den = sum(deaths,        na.rm = TRUE)), by = keys]
-  agg[, S := num / pmax(den, 1)]
+  agg[, paf := num / pmax(den, 1)]
+  agg[, S := fifelse(paf < 1, 1 / (1 - paf), NA_real_)]
   agg[, .SD, .SDcols = c(keys, "S")]
 }
 
@@ -128,7 +139,7 @@ apply_ratio <- function(ref_burden     = REF_BURDEN,
   # signal for these, so we don't divide out a denominator we don't have.
   ratio_tbl[, scale_factor := fifelse(
     acause %in% CAUSES_IHME_NOT_TEMP_SCALED, 1.0,
-    fifelse(S_ref > 0, S_tgt / S_ref, NA_real_))]
+    S_tgt / S_ref)]
 
   # Pull PAFs onto the same (year, subloc, cause[, draw]) frame.
   ratio_tbl <- merge(ratio_tbl, paf_tgt, by = jk, all.x = TRUE)

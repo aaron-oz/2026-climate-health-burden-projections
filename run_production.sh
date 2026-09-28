@@ -27,8 +27,10 @@ cd "$(dirname "$0")"
 PROJECT_ROOT="$(pwd)"
 export PROJECT_ROOT
 
-# Machine-specific settings live here, outside git.
-[ -f ./run_env.sh ] && . ./run_env.sh
+# Machine-specific settings live here, outside git. A wrapper that has already
+# sourced run_env.sh and then set its own values (run_ssp585_test.sh) exports
+# RUN_ENV_LOADED=1, so that sourcing it again here does not overwrite them.
+if [ -z "${RUN_ENV_LOADED:-}" ] && [ -f ./run_env.sh ]; then . ./run_env.sh; fi
 
 JOBS="${JOBS:-80}"
 export MAX_WORKERS_PER_LOCATION="${MAX_WORKERS_PER_LOCATION:-4}"
