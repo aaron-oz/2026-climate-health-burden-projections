@@ -272,7 +272,10 @@ the chosen SSP-RCP scenario. The reference math is in
   Formulation-2 attributable burden.
 - **Formulation 4 (canonical; two pipeline runs + ratio).**
   $m^T_{c,X} = m^T_{c,SSP2,\text{IHME}} \times (\tilde{S}^X_c / \tilde{S}^{SSP2}_c)$
-  where $\tilde{S}$ is our pipeline's attributable-PAF aggregate.
+  where $\tilde{S} = 1/(1 - \text{PAF})$ is our pipeline's temperature
+  scalar, PAF being the net non-optimal (heat + cold) PAF per cause and draw,
+  aggregated over age and sex (the code used $\tilde{S} = \text{PAF}$ until
+  2026-09-28; corrected before its first production use).
   Requires running the pipeline twice (SSP2 reference + target X),
   then applying `util_workflow_b_ratio.R` to combine with IHME counts.
 
