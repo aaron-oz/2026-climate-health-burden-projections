@@ -115,7 +115,8 @@ From the repo root:
 
    ./run_ssp585_test.sh summarize
 
-   This summarizes the unscaled ssp585 output (same QA report as for
+   Rough estimate: 10 to 30 minutes, most of it reading temperature
+   files for the sanity checks described below. This summarizes the unscaled ssp585 output (same QA report as for
    ssp245, including the provenance check), then the scaled output (a new
    summarizer, util_summarize_workflow_b.R, with its own QA report), and
    packs both, the manifests, and one combo's raw files (Colombia,
@@ -125,12 +126,23 @@ From the repo root:
 
    Please send us that file. We expect roughly 40 to 100 MB (estimate).
 
-What we will look at: the QA reports' hard checks, whether the scale
-factors sit near 1 as expected, the scaled vs unscaled totals for each
-location, and whether our local re-run of the Colombia combo matches
-yours. We ran the whole sequence here on that one combo (Colombia,
-access-cm2, 2022, for both scenarios) and all checks passed, so we do
-not expect surprises, but that was one combo, not 12 locations.
+The scaled-output QA report has two parts. The first is arithmetic that
+must hold; a failure there is a bug. The second is a set of sanity checks
+on whether ssp585 behaves like a warmer world than ssp245, comparing the
+two runs model by model: population-weighted temperature (ssp585 should
+be about equal in 2022 and warmer by 2040 and 2050), heat deaths up and
+cold deaths down by the 2040s, models that warm more showing larger
+heat-death increases, the scaling changing totals by a few percent at
+most, and the heat share of the burden rising. Those are marked CHECK
+rather than FAIL, because a real result can break a rule of thumb. If
+you see CHECK lines, no need to do anything; we will look into them.
+
+On our side we will also check that our own runs of Colombia
+(access-cm2, 2022 and 2050, both scenarios) match yours. We ran the whole
+sequence here on those combos: every arithmetic check passed, and our
+ssp245 values match your round-2 table exactly. (The sanity checks need
+many models to mean anything, so one model tells us little there.) So we do not expect surprises, but that
+is one location and one model, not 12 and 29.
 
 If anything fails, the logs to send are under output/logs/ (the newest
 dated folder for step 2, the ssp585_test_scale_* folder for step 3).
