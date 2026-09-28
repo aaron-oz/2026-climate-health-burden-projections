@@ -100,7 +100,9 @@ From the repo root:
 
    ./run_ssp585_test.sh scale
 
-   Minutes. It scales ssp585 against your existing ssp245 run, and also
+   This should take about an hour (estimate: 3.6 s per combo measured
+   here, about 840 combos per location, the 12 locations in parallel).
+   It scales ssp585 against your existing ssp245 run, and also
    scales ssp245 against itself for 2022 and 2050, which must reproduce
    the unscaled ssp245 numbers exactly (a built-in check). The last line
    printed for each location will report 58 "missing-ref" combos:
