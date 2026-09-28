@@ -8,7 +8,9 @@
 #   ./run_ssp585_test.sh summarize   # 3. tables, QA reports, and a bundle to send
 #
 # Each step is safe to re-run: finished work is skipped. Step 1 is the long one;
-# watch it with ./status.sh. Steps 2 and 3 take minutes.
+# watch it with ./status.sh. Step 2 takes about an hour (estimate: 3.6 s per
+# scaled combo measured locally, ~840 combos per location, locations in
+# parallel); step 3 a few minutes.
 #
 # Prerequisite: the ssp245 run for these locations is already on disk (it is the
 # Workflow B reference), along with run_env.sh and the CCKP mirror used for it.
@@ -133,7 +135,7 @@ summarize)
   ;;
 
 *)
-  sed -n '3,21p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,23p' "$0" | sed 's/^# \{0,1\}//'
   exit 1
   ;;
 esac
