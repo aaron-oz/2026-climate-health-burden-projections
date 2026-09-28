@@ -1,10 +1,13 @@
 #+TITLE: Draft email to Caspar: ssp585 test on 12 locations, with the Workflow B scaling
 #+DATE: 2026-09-28
 
-Draft for Aaron's review; NOT sent. Send only after the
-=ssp585-scaling-test= branch is merged to main and pushed (step 1 of the
-email is a =git pull= that must bring in =run_ssp585_test.sh=, the new
-summarizer, and the corrected scaling formula).
+Below the line: Aaron's final version (2026-09-28). Reconstructed: the
+text he pasted, plus the changes he reported making in his mail client
+afterwards (steps numbered 1 to 4, "output/" lower case, "production",
+the table's last row closed, and the "if anything fails" logs paragraph
+added back in its earlier wording). His client's exact wording of those
+edits may differ slightly. No subject line in his version. Everything it
+pulls is on main as of merge aab20d0.
 
 Background for Aaron, not for the email:
 - Decided at the 2026-09-28 group meeting: run a small ssp585 test through
@@ -34,20 +37,11 @@ Background for Aaron, not for the email:
 
 -----
 
-Subject: ssp585 test on 12 locations, including the scaling step
-
 Hi Caspar,
 
-Following today's meeting: before launching the other scenarios in full,
-we would like one small end-to-end test of SSP5-RCP8.5 (ssp585) on 12
-locations, carried all the way through the scaling step (Workflow B,
-which rescales IHME's ssp245-based mortality by the ratio of our
-ssp585 and ssp245 temperature signals). That step has not yet been run
-on your machine, and we would rather find any problems on 12 locations
-than on 204.
+Following today's meeting: before launching the other scenarios in full, I've put together an end-to-end test of SSP5-RCP8.5 (ssp585) on 12 locations, carried all the way through the scaling step (Workflow B, which rescales IHME's ssp245-based mortality by the ratio of our ssp585 and ssp245 temperature signals). That step has not yet been run in production, and we would rather find any problems on 12 locations than on 204.
 
-The 12 locations, chosen to cover climates, sizes and regions, mostly
-reusing the pilot locations whose ssp245 results we know well:
+The 12 locations, chosen to cover climates, sizes and regions, mostly reusing the pilot locations whose ssp245 results we know well:
 
 | id  | location      | why                                               |
 |-----+---------------+---------------------------------------------------|
@@ -64,88 +58,35 @@ reusing the pilot locations whose ssp245 results we know well:
 | 114 | Haiti         | the known shock-tail case; tests the scaling there |
 |  14 | Maldives      | micro-nation, tiny grid                           |
 
-Everything is in one new script, run_ssp585_test.sh, with three steps.
-From the repo root:
-
+Everything is in one new script, run_ssp585_test.sh, with three steps.  From the repo root:
 1. Update the repo:
+git pull
 
-   git pull
-
-   Besides the new script, this brings a correction to the scaling
-   formula (util_workflow_b_ratio.R): it used the attributable fraction
-   itself where the method calls for the temperature scalar
-   1 / (1 - attributable fraction). Nothing you have run used it yet.
-
+To pull in new scripts for these tests.
 2. Run the burden pipeline for ssp585 on the 12 locations:
+./run_ssp585_test.sh run
 
-   ./run_ssp585_test.sh run
-
-   This is run_production.sh restricted to the 12 locations and ssp585,
-   with the same preflight checks. It runs all 29 models x 29 years
-   (2022 to 2050). It uses the settings in your run_env.sh (mirror paths
-   and so on) except three it sets for this test: 12 locations at once,
-   ssp585 only, and 4 burden workers per location (48 combos at once,
-   fewer than the 80 in the ssp245 run; override with BURDEN_WORKERS=2
-   in front of the command if memory gets tight). Watch it with
-   ./status.sh. If it stops for any reason, run the same command again
-   and it picks up where it left off.
-
-   Rough estimate, not measured: about half a day to a day, set by the
-   United States (its ssp245 burden step summed to about 40 hours of
-   combo time; with 4 workers that is about 10 to 11 hours, plus the
-   temperature conversion). Disk: about 300 GB of pipeline output
-   (about 30 MB per combo, 10,092 combos).
-
+This is run_production.sh restricted to the 12 locations and ssp585, with the same preflight checks. It runs all 29 models x 29 years (2022 to 2050). It uses the settings in your run_env.sh (mirror paths and so on) except three it sets for this test: 12 locations at once, ssp585 only, and 4 burden workers per location (48 combos at once, fewer than the 80 in the ssp245 run; override with BURDEN_WORKERS=2 in front of the command if memory gets tight). Watch it with ./status.sh. If it stops for any reason, run the same command again and it picks up where it left off.
+Rough estimate, not measured: about half a day to a day, set by the United States (its ssp245 burden step summed to about 40 hours of combo time; with 4 workers that is about 10 to 11 hours, plus the temperature conversion). Disk: about 300 GB of pipeline output (about 30 MB per combo, 10,092 combos).
 3. When step 2 has finished, run the scaling:
+./run_ssp585_test.sh scale
 
-   ./run_ssp585_test.sh scale
-
-   This should take about an hour (estimate: 3.6 s per combo measured
-   here, about 840 combos per location, the 12 locations in parallel).
-   It scales ssp585 against your existing ssp245 run, and also
-   scales ssp245 against itself for 2022 and 2050, which must reproduce
-   the unscaled ssp245 numbers exactly (a built-in check). The last line
-   printed for each location will report 58 "missing-ref" combos:
-   hadgem3-gc31-mm and taiesm1 have ssp585 data but no ssp245, so they
-   cannot be scaled (2 models x 29 years). That is expected. Anything
-   marked "fail" is not. Disk: about 110 GB (about 11 MB per scaled
-   combo).
-
+ This should take about an hour (estimate: 3.6 s per combo measured here, about 840 combos per location, the 12 locations in parallel).  It scales ssp585 against your existing ssp245 run, and also scales ssp245 against itself for 2022 and 2050, which must reproduce the unscaled ssp245 numbers exactly (a built-in check). The last line printed for each location will report 58 "missing-ref" combos: hadgem3-gc31-mm and taiesm1 have ssp585 data but no ssp245, so they cannot be scaled (2 models x 29 years). That is expected. Anything marked "fail" is not. Disk: about 110 GB (about 11 MB per scaled combo).
 4. Summarize and pack:
+./run_ssp585_test.sh summarize
 
-   ./run_ssp585_test.sh summarize
+Rough estimate: 10 to 30 minutes, most of it reading temperature files for the sanity checks described below. This summarizes the unscaled ssp585 output (same QA report as for ssp245, including the provenance check), then the scaled output (a new summarizer, util_summarize_workflow_b.R, with its own QA report), and packs both, the manifests, and one combo's raw files (Colombia, access-cm2, 2022) into:
 
-   Rough estimate: 10 to 30 minutes, most of it reading temperature
-   files for the sanity checks described below. This summarizes the unscaled ssp585 output (same QA report as for
-   ssp245, including the provenance check), then the scaled output (a new
-   summarizer, util_summarize_workflow_b.R, with its own QA report), and
-   packs both, the manifests, and one combo's raw files (Colombia,
-   access-cm2, 2022) into:
+output/ssp585_test/ssp585_test_bundle.tar.gz
 
-   output/ssp585_test/ssp585_test_bundle.tar.gz
+Please send us that file. It is expected to be roughly 40 to 100 MB (estimate).
 
-   Please send us that file. We expect roughly 40 to 100 MB (estimate).
+ The scaled-output QA report has two parts. The first is arithmetic that must hold; a failure there is a bug. The second is a set of sanity checks on whether ssp585 behaves like a warmer world than ssp245, comparing the two scenarios across models: population-weighted temperature (ssp585 should be about equal in 2022 and warmer by 2040 and 2050), heat deaths up and cold deaths down by the 2040s, models that warm more showing larger heat-death increases, the scaling changing totals by a few percent at most, and the heat share of the burden rising. Those are marked CHECK rather than FAIL, because a real result can break a rule of thumb. If you see CHECK lines, no need to do anything on your end, but I'll look into them when they land.
 
-The scaled-output QA report has two parts. The first is arithmetic that
-must hold; a failure there is a bug. The second is a set of sanity checks
-on whether ssp585 behaves like a warmer world than ssp245, comparing the
-two runs model by model: population-weighted temperature (ssp585 should
-be about equal in 2022 and warmer by 2040 and 2050), heat deaths up and
-cold deaths down by the 2040s, models that warm more showing larger
-heat-death increases, the scaling changing totals by a few percent at
-most, and the heat share of the burden rising. Those are marked CHECK
-rather than FAIL, because a real result can break a rule of thumb. If
-you see CHECK lines, no need to do anything; we will look into them.
-
-On our side we will also check that our own runs of Colombia
-(access-cm2, 2022 and 2050, both scenarios) match yours. We ran the whole
-sequence here on those combos: every arithmetic check passed, and our
-ssp245 values match your round-2 table exactly. (The sanity checks need
-many models to mean anything, so one model tells us little there.) So we do not expect surprises, but that
-is one location and one model, not 12 and 29.
+I'll also check that my own runs of Colombia (access-cm2, 2022 and 2050, both scenarios) match yours. I ran the whole sequence here on those combos: every arithmetic check passed, and our ssp245 values match your round-2 table exactly. (The sanity checks need many models to mean anything, but I'm hoping these preliminary checks extend to what you do too!)
 
 If anything fails, the logs to send are under output/logs/ (the newest
 dated folder for step 2, the ssp585_test_scale_* folder for step 3).
 
-Thanks!
+Thanks,
 Aaron
