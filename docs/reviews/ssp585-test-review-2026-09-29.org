@@ -1,0 +1,226 @@
+#+TITLE: ssp585 12-location test: review of Caspar's bundle
+#+DATE: 2026-09-29
+
+Review of =ssp585_test_bundle.tar.gz= (run started 2026-09-28T18:35:49 on
+Caspar's machine, summarized 2026-09-29T01:33), extracted to
+=~/data/wb-temp-attr-projections/review/ssp585/bundle/=. Checked against the
+expectations written before the results arrived,
+=docs/reviews/ssp585-test-review-plan-2026-09-28.org=. Terms as defined there:
+unscaled burden = IHME mortality x the scenario's PAF (population
+attributable fraction); scaled burden (Workflow B) = IHME mortality x scale
+factor x target PAF; ensemble = mean over the 27 models with both scenarios.
+
+* Verdict
+
+Not accepted yet. 119 of the 10,092 unscaled ssp585 files (location x model
+x year combinations, "combos") were not computed by this run: a file was
+already on disk, so the run skipped them, and the manifest holds no
+successful computation of them at any date. The one we could test (the
+Colombia sample) was computed under the legacy TMREL setting
+(=TMREL_MODE = released_recycled=, the default before 2026-08-24), and a
+sample of 10 more of the 119, covering all five affected (location, model)
+pairs, matches that setting too (section "Verifying the other 118"). The
+other 9,973 combos were computed in this run. The fix is to recompute the
+119 combos, re-scale three locations, and re-summarize (commands below).
+
+Affected (location, model, years):
+
+| location     | model         | years     | combos |
+|--------------+---------------+-----------+--------|
+| Haiti (114)  | access-cm2    | 2022-2040 |     19 |
+| Colombia (125) | access-cm2  | 2022-2050 |     29 |
+| Colombia (125) | access-esm1-5 | 2022-2050 |   29 |
+| Colombia (125) | bcc-csm2-mr | 2022-2036 |     15 |
+| Kuwait (145) | access-cm2    | 2022-2048 |     27 |
+
+* How it was found
+
+1. The unscaled QA report printed "recomputed since --since: PASS" and, on
+   the next line, "combos with no manifest row: 119".
+2. The burden manifest (=manifests/burden_manifest_ssp585.csv=, one row per
+   combo attempt) has, for each of the 119, only a "skip" row dated
+   2026-09-28 (skip = output file already present) and no "ok" row at any
+   date.
+3. The bundle's Colombia sample, =cckp/125/access-cm2-r1i1p1f1-ssp585/burden_2022.rds=,
+   is one of the 119. Its draw-mean non-optimal deaths are 4,824.48, against
+   5,310.39 in our pre-registered local recompute.
+4. Rerunning that combo locally (same code on main, same temperature, the
+   Colombia IHME inputs Caspar sent 2026-09-27, 500 draws):
+
+   | TMREL setting                 | non-optimal deaths | heat   | cold     | PAF vs Caspar's file, max abs difference |
+   |-------------------------------+--------------------+--------+----------+------------------------------------------|
+   | derived_per_draw (current)    |           5,310.39 | 623.16 | 4,687.23 | 0.052                                    |
+   | released_recycled (legacy)    |           4,824.48 | 494.88 | 4,329.60 | 0 (all 289,000 rows)                     |
+   | Caspar's file                 |           4,824.48 | 494.88 | 4,329.60 |                                          |
+
+   The legacy setting reproduces his file exactly. The file also lacks the
+   =model= and =scenario= columns that the current ssp245 files carry,
+   consistent with an older code version.
+
+Why the check passed: =util_run_provenance.R= ignores "skip" rows when
+finding a combo's latest attempt, so a combo that was only ever skipped
+looks as if it has no manifest record, and "no record" was reported but
+exempt from the =--since= test. Fixed on branch =ssp585-bundle-review=: with
+=--since= given, a combo with no "ok" attempt since that time now fails
+whether or not it has other rows. Tested on this bundle's manifest: the
+check now fails on exactly these 119 combos and the generated
+=fix_run.sh= reruns exactly them.
+
+* Verifying the other 118
+
+Recomputing all 118 would need about 70 more CMIP6 temperature files of
+about 770 MB each (measured download 5.8 MB/s, so roughly 2.5 hours), so I
+checked a sample: the first and last stale year of each affected
+(location, model) pair, plus, as a control, the first freshly computed year
+next to the stale range where one exists. Same code on main, 500 draws.
+
+- Colombia: full recompute from Caspar's 2026-09-27 Colombia inputs (all 17
+  causes), under both TMREL settings, compared with his
+  =national_by_year.csv= draw-mean non-optimal deaths.
+- Haiti and Kuwait: we do not have their 17-cause IHME inputs locally, only
+  ischemic heart disease (=cvd_ihd=). Under the legacy setting each cause's
+  PAF does not depend on the other causes, so I recomputed =cvd_ihd= alone
+  under the legacy setting and compared with his =by_cause.csv= =cvd_ihd=
+  row. The =cvd_ihd= input deaths agree with his to 1e-11, so the inputs
+  are the same. (The derived setting weights all 17 causes, so it cannot be
+  run from one cause; the control there is only "does not match legacy".)
+
+| location | model         | year | stale? | relative difference, legacy recompute vs Caspar | derived recompute vs Caspar |
+|----------+---------------+------+--------+-------------------------------------------------+-----------------------------|
+| Colombia | access-cm2    | 2022 | yes    | 0                                               | +10.1 %                     |
+| Colombia | access-cm2    | 2050 | yes    | 1e-15                                           | +10.5 %                     |
+| Colombia | access-esm1-5 | 2022 | yes    | -1e-15                                          | +10.2 %                     |
+| Colombia | access-esm1-5 | 2050 | yes    | 3e-15                                           | +10.0 %                     |
+| Colombia | bcc-csm2-mr   | 2022 | yes    | -4e-16                                          | +10.0 %                     |
+| Colombia | bcc-csm2-mr   | 2036 | yes    | 0                                               | +10.0 %                     |
+| Colombia | bcc-csm2-mr   | 2037 | no     | -9.1 %                                          | -1e-16                      |
+| Haiti    | access-cm2    | 2022 | yes    | -1e-15 (cvd_ihd)                                | not run                     |
+| Haiti    | access-cm2    | 2040 | yes    | -1e-15 (cvd_ihd)                                | not run                     |
+| Haiti    | access-cm2    | 2041 | no     | -87 % (cvd_ihd)                                 | not run                     |
+| Kuwait   | access-cm2    | 2022 | yes    | 8e-16 (cvd_ihd)                                 | not run                     |
+| Kuwait   | access-cm2    | 2048 | yes    | -9e-16 (cvd_ihd)                                | not run                     |
+| Kuwait   | access-cm2    | 2049 | no     | -9.4 % (cvd_ihd)                                | not run                     |
+
+Every sampled stale combo matches the legacy setting to machine precision,
+and every sampled fresh combo does not; the one fresh Colombia combo
+matches the current setting exactly. This shows the stale files were
+computed with the pre-2026-08-24 TMREL setting. It does not show which
+earlier run wrote them, and the 108 unsampled stale combos are covered by
+inference from the pattern, not by direct recompute. Local outputs are in
+=output/results/cckp/{114,125,145}/*-ssp585.verify-*= (main checkout,
+untracked).
+
+* What passed
+
+Unscaled ssp585 report: all hard checks pass (heat + cold = non-optimal for
+PAFs and deaths, |PAF| <= 1 with max 0.642, all finite); 500 draws per
+combo; 29 models x 29 years (2022-2050) for all 12 locations; YLLs present
+for every combo.
+
+Workflow B report: all hard checks pass, including scale factor exactly 1
+for the 4 non-temperature-scaled causes and ssp245 scaled against itself
+reproducing the unscaled ssp245 burden (648 combos, worst relative deviation
+4.6e-15). Scale factors for the 13 temperature-scaled causes range 0.62 to
+1.46 per cause-draw, with yearly means 0.9996 to 1.0037. The two models with
+ssp585 but no ssp245 run (hadgem3-gc31-mm, taiesm1) show as "missing-ref",
+as expected. The coverage section lists all 324 ssp245 (location, model)
+pairs as "missing 27 of 29 years"; that is by design (the self-check ran on
+2022 and 2050 only), not a gap.
+
+Colombia ssp245 sample (not affected): draw means 5,201.92 non-optimal,
+953.65 heat, 4,248.27 cold deaths for access-cm2 2022, identical to the
+round-2 value and to our local run, and its scaled-against-itself file gives
+the same numbers.
+
+* Plausibility, with the stale combos noted
+
+These readings include the 119 stale combos, so for Haiti, Colombia and
+Kuwait they are provisional until the repaired bundle arrives. The other
+nine locations have no stale combos.
+
+- P1, temperature (ensemble population-weighted temperature, ssp585 minus
+  ssp245). Near 0 in 2022 (-0.33 to +0.05 C), positive by 2040 and 2050 in
+  all 12 locations (2050: +0.21 to +0.59 C). Three CHECK flags (Brazil
+  135, India 163, Uganda 190) are only that 2040 exceeds 2050 (India +0.44
+  vs +0.43 C); with an across-model standard deviation near 0.5 C over 27
+  models, single-year ensemble differences of that size are within noise
+  (rough reasoning, not a formal test). I read the rule "last year must be
+  the largest" as too strict for single years.
+- P2, direction (ensemble ssp585 / ssp245 heat and cold deaths, by decade).
+  11 of 12 locations as expected: 2041-2050 heat ratios 1.07 to 1.41, cold
+  ratios 0.84 to 1.01. Haiti is the CHECK: heat 0.976 in 2022-2040 and cold
+  1.027 in 2041-2050. Dropping Haiti's one stale model moves 2022-2040 heat
+  to about 1.00 but leaves 2041-2050 cold at 1.029. Splitting by cause
+  (26 models, summed over years): without =inj_disaster=, Haiti's 2041-2050
+  heat is 1.49 x ssp245 and cold 0.88 x, as expected; =inj_disaster= alone
+  goes the other way (heat 0.95 x, cold 1.19 x) and is large (heat
+  330,093 vs 109,651 for all other causes combined, sums over models and
+  years). This is the known Haiti =inj_disaster= shock tail, the same
+  mechanism behind the round-2 asterisk, not a new problem.
+- P3, models that warm more add more heat deaths: correlation positive in
+  all 12 locations at 2050 (r = +0.27 Haiti to +0.97 Nigeria).
+- P4, size of the scaling: ensemble scaled / unscaled within 0.999 to 1.012
+  per decade; implied change in IHME mortality -0.06 % to +0.43 %.
+- P5, heat share higher under ssp585 in 2041-2050 in all 12 locations.
+- P6, uncertainty: median relative 95 % interval widths 0.34 to 1.67,
+  except Haiti at 14.6 (shock tail, as in ssp245).
+
+Not yet checked from the plan (waiting for the repaired bundle, since the
+Colombia sample combo is stale): the Colombia 2050 comparison, the
+row-by-row recompute of the scaled 2022 file, smoothness of ensemble
+trajectories across adjacent years, and Haiti's mean-median gap against
+ssp245's.
+
+* Repair (on Caspar's machine, after pulling the provenance fix)
+
+In execution order, from the repo root:
+
+#+begin_src bash
+git pull --ff-only origin main
+# 1. Recompute the 119 stale unscaled combos (forces the burden phase only)
+Rscript global-scripts/util_run_global.R --location_id=114 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2040 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2050 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=access-esm1-5-r1i1p1f1 --years=2022-2050 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=bcc-csm2-mr-r1i1p1f1 --years=2022-2036 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=145 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2048 --force_burden=TRUE
+# 2. Re-scale those combos (Workflow B skips existing outputs unless forced)
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=114 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2040 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=125 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1,access-esm1-5-r1i1p1f1 --years=2022-2050 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=125 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=bcc-csm2-mr-r1i1p1f1 --years=2022-2036 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=145 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2048 --force=TRUE
+# 3. Drop the three locations from the summary cache, re-summarize, re-pack
+rm -f output/ssp585_test/summary_pipeline/_cache/114.rds output/ssp585_test/summary_pipeline/_cache/125.rds output/ssp585_test/summary_pipeline/_cache/145.rds
+./run_ssp585_test.sh summarize
+#+end_src
+
+Expected: the provenance section passes with 0 combos flagged, and the
+Colombia ssp585 2022 sample gives 5,310.39 / 623.16 / 4,687.23 (non-optimal /
+heat / cold draw-mean deaths).
+
+* Implication for the full ssp585 run
+
+The manifest also shows July ssp585 test rows for locations 131, 305 and 367
+(outside this test). Any such leftover file on Caspar's machine would be
+skipped the same way in a full ssp585 run. With the provenance fix the
+summarizer now catches them; the cheaper prevention is to clear
+=output/results/cckp/*/*-ssp585/= (or run with =--force_burden=TRUE=) before
+the full run, since no ssp585 output made before 2026-08-24 is usable.
+
+* Decision: combining climate models (Aaron, 2026-09-29)
+
+Draws are already paired correctly within Workflow B: for each climate
+model, ssp245 and ssp585 are joined by draw index
+(=util_workflow_b_ratio.R=), and draw d uses the same risk-curve draw (the
+first 500 of 1,000), the TMREL derived from it, and IHME mortality draw d in
+every climate model, so only temperature differs between models at a given
+draw. Open question for IHME, not blocking: whether their mortality draw d
+was built with risk-curve draw d; if not, the scale factor adds some noise
+to intervals rather than cancelling it (size not measured).
+
+For the multi-model summary (not yet built), decided:
+
+- Headline intervals pool all models x draws (27 x 500) and take quantiles
+  of that mixture, so disagreement between climate models is part of the
+  interval. Alongside, report the range of the 27 per-model means.
+- Aggregates across locations (regions, world) keep the climate model fixed
+  and sum draw by draw within a model before pooling.

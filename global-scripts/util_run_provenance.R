@@ -15,8 +15,14 @@
 #   not_since with --since given: no "ok" attempt at or after that time, so the
 #             file was not produced by the run being reviewed (e.g. a location
 #             whose process died before reaching the combo writes no row at all)
-#   no_record no manifest row at all (reported, not failed: output made by hand
-#             or before the manifest existed)
+#   no_record no manifest row other than "skip" (reported, not failed, when no
+#             --since is given: output made by hand or before the manifest
+#             existed). With --since it counts as not_since: a file that was
+#             only ever skipped cannot be shown to come from the run under
+#             review. The 2026-09-28 ssp585 test hit exactly this: 119 ssp585
+#             files left over from a July test run under the legacy TMREL
+#             setting were skipped as already present, logged only "skip", and
+#             passed the check. See docs/reviews/ssp585-test-review-2026-09-29.org.
 #
 # run_ts is the writing machine's local time as "%Y-%m-%dT%H:%M:%S"; ISO text
 # sorts in time order, so it is compared as text, and --since may be a date
@@ -44,7 +50,8 @@ provenance_check <- function(combos, latest, since = "") {
   x[is.na(status) & is.na(last_ok_ts), issue := "no_record"]
   x[!is.na(status) & status != "ok", issue := "stale"]
   if (nzchar(since))
-    x[is.na(issue) & (is.na(last_ok_ts) | last_ok_ts < since), issue := "not_since"]
+    x[(is.na(issue) | issue == "no_record") & (is.na(last_ok_ts) | last_ok_ts < since),
+      issue := "not_since"]
   x[]
 }
 
