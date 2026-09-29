@@ -1,0 +1,96 @@
+#+TITLE: Draft email to Caspar: ssp585 test, rerun 119 old files
+#+DATE: 2026-09-29
+
+Background for Aaron, not for the email:
+- Full review: =docs/reviews/ssp585-test-review-2026-09-29.org=.
+- The =git pull= in step 1 only picks up the provenance fix once branch
+  =ssp585-bundle-review= is merged to main. Send after the merge.
+- Runtime estimate: his run's per-file burden time for these three
+  locations was a median of about 70 seconds (under a 12-way parallel run),
+  so 119 files is about 2.3 hours if they run one at a time; the scaling
+  step took about 4 seconds per file. Estimate, not measured serially.
+- Location 131's 13 July files: manifest rows "ok" dated 2026-07-27, never
+  recomputed since. File dates on his disk not seen; the 24 August cutoff
+  in the find command assumes the stale files keep their original dates.
+- "Roughly 10 % too low" is measured on the 7 Colombia combos I recomputed
+  (the old setting gives 9 to 10 % fewer non-optimal deaths than the
+  current one); not measured for Haiti or Kuwait at all 17 causes.
+
+-----
+
+Subject: ssp585 test: 119 old files need rerunning
+
+Hi Caspar,
+
+Thanks for the ssp585 test. Nearly everything checks out, but 119 of the
+ssp585 result files were not made by this run. They were already on your
+disk from an earlier test, so the run skipped them instead of recomputing.
+They use the TMREL setting we replaced in August, which puts Colombia's
+numbers roughly 10 % too low. Our QA report should have flagged this and
+didn't; that check is fixed now.
+
+The affected files:
+
+| location     | model         | years     |
+|--------------+---------------+-----------|
+| Haiti (114)  | access-cm2    | 2022-2040 |
+| Colombia (125) | access-cm2  | 2022-2050 |
+| Colombia (125) | access-esm1-5 | 2022-2050 |
+| Colombia (125) | bcc-csm2-mr | 2022-2036 |
+| Kuwait (145) | access-cm2    | 2022-2048 |
+
+Please run the following from the repo folder, in this order. It should
+take about 2 to 2.5 hours, almost all of it in step 2 (estimate from your
+run's timings).
+
+1. Get the fixed QA check:
+
+#+begin_src bash
+git pull --ff-only origin main
+#+end_src
+
+2. Recompute the 119 files:
+
+#+begin_src bash
+Rscript global-scripts/util_run_global.R --location_id=114 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2040 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2050 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=access-esm1-5-r1i1p1f1 --years=2022-2050 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=125 --scenarios=ssp585 --models=bcc-csm2-mr-r1i1p1f1 --years=2022-2036 --force_burden=TRUE
+Rscript global-scripts/util_run_global.R --location_id=145 --scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2048 --force_burden=TRUE
+#+end_src
+
+3. Redo the scaling for the same files:
+
+#+begin_src bash
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=114 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2040 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=125 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1,access-esm1-5-r1i1p1f1 --years=2022-2050 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=125 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=bcc-csm2-mr-r1i1p1f1 --years=2022-2036 --force=TRUE
+Rscript global-scripts/util_apply_workflow_b_batch.R --location_id=145 --ref_scenario=ssp245 --target_scenarios=ssp585 --models=access-cm2-r1i1p1f1 --years=2022-2048 --force=TRUE
+#+end_src
+
+4. Clear the three locations from the summary cache, re-summarize, and
+   re-pack the bundle:
+
+#+begin_src bash
+rm -f output/ssp585_test/summary_pipeline/_cache/114.rds output/ssp585_test/summary_pipeline/_cache/125.rds output/ssp585_test/summary_pipeline/_cache/145.rds
+./run_ssp585_test.sh summarize
+#+end_src
+
+The "Provenance" section of the new =qa_report.txt= should show no
+problems. Then please send the new =ssp585_test_bundle.tar.gz=.
+
+One thing for the full ssp585 run later: your log shows at least 13 more
+old ssp585 files from a July test (location 131), and the run would skip
+them the same way. Before that run, please delete any
+ssp585 result files older than 24 August 2026. This lists them first so you
+can check:
+
+#+begin_src bash
+find output/results/cckp -path '*-ssp585/*' -type f ! -newermt 2026-08-24
+#+end_src
+
+and adding =-delete= to the end of the same command removes them. If any
+slip through, the fixed QA check will now list them.
+
+Thanks,
+Aaron
