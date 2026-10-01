@@ -224,3 +224,68 @@ For the multi-model summary (not yet built), decided:
   interval. Alongside, report the range of the 27 per-model means.
 - Aggregates across locations (regions, world) keep the climate model fixed
   and sum draw by draw within a model before pooling.
+
+* Repaired bundle (v2), reviewed 2026-10-01
+
+Caspar's =ssp585_test_bundle.tar.gz= of 2026-10-01 (summaries written
+2026-10-01T00:52 unscaled and 01:10 scaled, Caspar's clock), saved as
+=review/ssp585/ssp585_test_bundle-v2.tar.gz= and extracted to
+=review/ssp585/bundle-v2/=. Scripts: =output/review-ssp585/v2check.R=,
+=v2check2.R=.
+
+Verdict: accepted. The 119 stale combos were recomputed and re-scaled,
+nothing else moved, and every check deferred above passes.
+
+- Provenance: "combos with no manifest row" is 0 (v1: 119) and "recomputed
+  since 2026-09-28" passes, now with the fixed check. The burden manifest has
+  an "ok" row dated 2026-09-30 for each of the 119; the Workflow B manifest
+  has an "ok" row dated 2026-10-01 for each.
+- What changed, v1 to v2: in both =national_by_year.csv= files (unscaled
+  10,092 rows, scaled 10,044 rows) exactly 119 rows differ, and they are
+  exactly the five (location, model) pairs and year ranges in the table at
+  the top. No rows were added or lost.
+- Hard checks: all pass in both QA reports, as in v1.
+- Colombia, access-cm2, against the values written before the results
+  arrived (=ssp585-test-review-plan-2026-09-28.org=): all ten numbers match
+  to the printed digits (unscaled 2022 5,310.39 / 623.16 / 4,687.23
+  non-optimal / heat / cold deaths, YLLs 60,716.19; 2050 11,132.01 /
+  3,581.30 / 7,550.72, YLLs 143,882.72; scaled 2022 5,331.50 / 620.38 /
+  4,711.11, YLLs 61,099.59; 2050 11,133.37 / 3,595.22 / 7,538.15, YLLs
+  143,998.42). The sample burden file itself gives the same 2022 draw means.
+- Scaled 2022 sample, recomputed row by row: running =apply_ratio()=
+  (=util_workflow_b_ratio.R=, main) on the bundle's two Colombia sample
+  burden files and the Colombia IHME inputs of 2026-09-27 reproduces his
+  =wb_2022.rds= exactly: 289,000 rows, maximum absolute difference 0 in every
+  numeric column. This tests that his output equals our code on his inputs;
+  it does not independently test the formula.
+- Plausibility (QA report P1-P6), now without stale combos. Haiti's
+  2022-2030 heat ratio moved from 0.976 to 1.004 and Colombia's 2041-2050
+  heat ratio from 1.285 to 1.305; Kuwait's ratios moved by at most 0.003; the
+  other nine locations are unchanged.
+  Haiti stays flagged on P2 (cold 2041-2050 1.027), the =inj_disaster=
+  shock tail already explained above. The three P1 flags (Brazil, India,
+  Uganda: 2040 above 2050) are unchanged and read as above.
+- Smoothness of ensemble trajectories (mean over models of the per-model
+  draw mean, unscaled, 2022-2050). Largest year-to-year change is 3-10 %
+  in nine locations. Exceptions: Haiti (up to 87 %, 2042 to 2043) and
+  Maldives (up to 22 %, on 5 to 48 deaths a year). Both swing the same way
+  in the ssp245 round-2 results (Haiti 2043: +86.7 % ssp245 vs +87.2 %
+  ssp585; Maldives up to +20 % in ssp245). Haiti's swings are the shared
+  shock-tail mortality draws; Maldives is small numbers. The ssp585
+  ensemble here has 29 models and ssp245's 27, so the two are not on
+  identical model sets.
+- Haiti mean-median gap: |mean - median| / |median| > 0.10 in every
+  model-year in both scenarios, as expected from shared mortality draws.
+  Haiti's ensemble median grows faster under ssp585 (2050: 921 vs 791
+  non-optimal deaths), the expected direction.
+
+Still open, not blocking a full ssp585 launch:
+- hadgem3-gc31-mm and taiesm1 have ssp585 but no ssp245 run, so Workflow B
+  cannot scale them ("missing-ref"). In a full run they would appear in the
+  unscaled ensemble (29 models) but not the scaled one (27). Needs a decision
+  on whether the headline ssp585 ensemble uses 27 models.
+- The multi-model summary (pool models x draws, decided 2026-09-29) is not
+  built yet.
+- Stale-file cleanup on Caspar's machine before the full run (section
+  "Implication for the full ssp585 run" above). Not verifiable from the
+  bundle; the fixed provenance check will list any leftovers.

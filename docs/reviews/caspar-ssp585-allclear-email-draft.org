@@ -1,0 +1,37 @@
+#+TITLE: Draft email to Caspar: ssp585 test accepted
+#+DATE: 2026-10-01
+
+Background for Aaron, not for the email:
+- Review: =docs/reviews/ssp585-test-review-2026-09-29.org=, section
+  "Repaired bundle (v2)".
+- Whether this is the go-ahead for the full ssp585 run is your call; the
+  draft gives it, conditional on the cleanup. If you want the 27-vs-29 model
+  question or anything else settled first, cut the last paragraph.
+- The cleanup command is the one from the 2026-09-29 email. He said he will
+  "look at cleaning up next"; the draft just makes the order explicit.
+
+-----
+
+Subject: Re: ssp585 test bundle
+
+Hi Caspar,
+
+Thanks. The new bundle checks out. Exactly the 119 files we asked about
+changed and nothing else did, the QA report's provenance section is clean,
+and the Colombia numbers match our own recompute of the same files to the
+last printed digit.
+
+For the full ssp585 run, please do the cleanup first. Delete the ssp585
+result files older than 24 August 2026 (list them, check, then delete):
+
+#+begin_src bash
+find output/results/cckp -path '*-ssp585/*' -type f ! -newermt 2026-08-24
+find output/results/cckp -path '*-ssp585/*' -type f ! -newermt 2026-08-24 -delete
+#+end_src
+
+After that, you have the all clear to launch. If the provenance section of
+the full run's QA report lists any old files, send us the report before
+rerunning anything.
+
+Thanks,
+Aaron
