@@ -1,0 +1,59 @@
+#+TITLE: Draft email to Caspar: ssp585 test accepted
+#+DATE: 2026-10-01
+
+Background for Aaron, not for the email:
+- Review: =docs/reviews/ssp585-test-review-2026-09-29.org=, section
+  "Repaired bundle (v2)".
+- Aaron approved the go-ahead 2026-10-01. The 27-vs-29 model question
+  (hadgem3-gc31-mm and taiesm1 have no ssp245 run, so cannot be scaled) is
+  deferred; it does not change what Caspar runs.
+- The cleanup command is the one from the 2026-09-29 email. He said he will
+  "look at cleaning up next"; the draft just makes the order explicit.
+- Why step 3 exists: a leftover file is skipped silently at launch (the
+  burden manifest gets a "skip" row, nothing is printed). The only place it
+  shows is the Provenance section of the summarizer's QA report, and only
+  when the summarizer is run with --since. run_production.sh does not run
+  the summarizer, so without step 3 nobody would see it. The summarizer
+  prints the QA report to the console at the end and writes fix_run.sh with
+  the rerun commands. --out keeps it from overwriting the ssp245 tables in
+  output/summary.
+
+-----
+
+Subject: Re: ssp585 test bundle
+
+Hi Caspar,
+
+Thanks. The new bundle checks out. Exactly the 119 files we asked about
+changed and nothing else did, the QA report's provenance section is clean,
+and the Colombia numbers match our own recompute of the same files to the
+last printed digit.
+
+For the full ssp585 run, three steps:
+
+1. Before launching, delete the ssp585 result files older than 24 August
+   2026. The first command lists them so you can check; the second deletes
+   them:
+
+#+begin_src bash
+find output/results/cckp -path '*-ssp585/*' -type f ! -newermt 2026-08-24
+find output/results/cckp -path '*-ssp585/*' -type f ! -newermt 2026-08-24 -delete
+#+end_src
+
+2. Note the date you launch, then launch. You have the all clear.
+
+3. When the run has finished, run the summarizer with that launch date
+   (replace 2026-10-02 with yours):
+
+#+begin_src bash
+Rscript global-scripts/util_summarize_run.R --scenarios=ssp585 --jobs=16 --since=2026-10-02 --out=output/summary_ssp585
+#+end_src
+
+   It prints the QA report at the end (also saved as
+   output/summary_ssp585/qa_report.txt). This is the only place an old,
+   skipped file would show up; the run itself skips them silently. If the
+   "Provenance" section says FAIL anywhere, please send us the report before
+   rerunning anything.
+
+Thanks,
+Aaron
