@@ -115,3 +115,6 @@ output/review-ssp245/stepE/
 # the rerun pilot against them; see pilot_check.R)
 !output/review-ssp245/pilot_expectations_burden.csv
 !output/review-ssp245/pilot_expectations_tmrel.csv
+# ssp585 vs ssp245 comparison table for the 12-location ssp585 test (small;
+# written by util_compare_scenarios.R)
+!output/review-ssp585/ssp585_vs_ssp245_by_decade.csv
