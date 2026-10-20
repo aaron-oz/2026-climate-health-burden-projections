@@ -1,0 +1,104 @@
+#+TITLE: Review of Caspar's four scenario summary bundles, 2026-10-20
+#+DATE: 2026-10-20
+
+* Verdict
+
+| Scenario | Bundle                                   | Verdict                                                      |
+|----------+------------------------------------------+--------------------------------------------------------------|
+| ssp126   | 170-byte zip, empty =ssp126/= folder     | Nothing to review; needs re-export from Caspar               |
+| ssp370   | summaries written 2026-10-19 00:43       | Passes every check below                                     |
+| ssp585   | summaries written 2026-10-15 21:33       | Passes every check below; 12 test locations match exactly   |
+| ssp245   | summaries written 2026-09-26 23:40       | Byte-identical to the fix-up summary verified 2026-09-28     |
+
+Timestamps are from the zip entries (Caspar's clock). These are summary
+tables only (=national_by_year.csv=, =by_cause.csv=, =by_age_sex.csv=,
+=coverage.csv=, =provenance.csv=, =qa_report.txt=); no burden files, no
+Workflow B (scaled) summaries, no multi-model summary.
+
+Bundles were downloaded to =output/review/= (zips from Google Drive,
+2026-10-20) and extracted to
+=~/data/wb-temp-attr-projections/review/scenarios-2026-10-20/<scenario>/=.
+Scripts: =output/review-scenarios-2026-10-20/scen_check.R= (one scenario
+against ssp245; in its printed output the =.370= / "ssp370" labels mean
+"the scenario under test") and =three_way.R=.
+
+* Mechanical checks (ssp370 and ssp585)
+
+- Caspar's QA reports: all hard checks pass (PAF and death identities,
+  |PAF| <= 1, finiteness); provenance passes with no failed or stale combos
+  (ssp370 recomputed at or after 2026-10-14, ssp585 at or after 2026-10-12);
+  500 draws and 289,000 rows per combo; no all-zero combos.
+- Coverage: 204 locations x 29 years (2022 to 2050) for every
+  (location, model) pair; YLLs present for all combos.
+  ssp370 has 25 models (147,900 combos), ssp585 29 (171,564). Both are
+  exactly the sets predicted by =config.R= =MODELS_ALL= and its documented
+  gaps (ssp370 lacks gfdl-cm4, hadgem3-gc31-ll, hadgem3-gc31-mm, nesm3).
+- All-cause deaths (=deaths_mean=, from the GBD mortality forecast) are
+  identical to ssp245 for every common row and identical across models.
+- No NA cells; no rows with lower > median or median > upper.
+- =by_cause.csv= and =by_age_sex.csv= sum to =national_by_year.csv= draw
+  means within 1.3e-13 relative difference.
+- Negative heat or cold means: 13 rows (ssp370), 20 (ssp585), 16 (ssp245),
+  all below 1e-5 deaths in absolute value, mostly Greenland (349), which has
+  essentially no heat burden. Floating-point noise.
+- ssp585 against the accepted 12-location test bundle (v2, 2026-10-01):
+  all 10,092 rows match, max absolute difference 0 in heat, cold and
+  non-optimal deaths, non-optimal YLLs and the non-optimal median.
+
+* Plausibility
+
+Global figures: per model, sum the draw-mean deaths over the 204
+locations, then average over models. Only the 24 models common to ssp245,
+ssp370 and ssp585 are used.
+
+| Year | Heat ssp245 | Heat ssp370 | Heat ssp585 | Cold ssp245 | Cold ssp370 | Cold ssp585 |
+|------+-------------+-------------+-------------+-------------+-------------+-------------|
+| 2022 |     395,197 |     381,899 |     389,138 |   1,402,775 |   1,411,665 |   1,413,239 |
+| 2030 |     460,867 |     458,007 |     482,160 |   1,584,538 |   1,594,518 |   1,567,942 |
+| 2040 |     618,796 |     624,126 |     701,064 |   1,892,223 |   1,889,410 |   1,845,324 |
+| 2050 |     813,073 |     833,259 |     937,972 |   2,088,517 |   2,096,937 |   2,024,612 |
+
+Deaths per year. Growth from 2022 to 2050 combines warming with growth in
+the forecast all-cause deaths; I have not separated the two.
+
+- ssp585 vs ssp245 (27 common models), 2041-2050: heat ratio 1.128
+  globally; every one of the 27 models above 1 (range 1.04 to 1.25); cold
+  ratio below 1 in all 27 (0.95 to 0.99). The ratio grows with time
+  (decade means 1.01, 1.06, 1.13). Per location, median-over-models heat
+  ratio 0.99 to 1.86, median 1.19. Expected direction and divergence.
+- ssp370 vs ssp245 (24 common models), 2041-2050: heat ratio 1.006
+  globally, cold 1.003; per-model heat ratio 0.90 to 1.08, 13 of 24 models
+  above 1. So the two are close to indistinguishable before 2050. This is
+  consistent with my recollection (not re-checked) of IPCC AR6, where
+  SSP2-4.5 and SSP3-7.0 differ by roughly 0.1 C of global warming for
+  2041-2060, with SSP3-7.0 aerosols offsetting early warming. It is not
+  evidence of a bug, but it also means ssp370 results to 2050 carry little
+  scenario signal beyond ssp245.
+- In ssp370, Western and Central European locations (e.g. Austria 75,
+  Germany 81, Czechia 47, Netherlands 89) have lower heat than ssp245 in
+  most models (median ratio 0.88 to 0.98). Unexplained; I suspect regional
+  aerosol forcing or model noise, unverified.
+- Scenario ordering, 2041-2050 heat, 24 common models: ssp585 is the
+  highest of the three globally in all 24 models; strict 245 < 370 < 585
+  holds in 13 of 24 (the rest have ssp370 below ssp245). Per
+  (location, model) pair: ssp585 > ssp245 in 89 %, ssp585 > ssp370 in
+  80 %, ssp370 > ssp245 in 65 %.
+- 2022 ratios are near 1 (heat 0.97 to 0.99, cold 1.006 to 1.007), as
+  expected since scenarios diverge only from 2015.
+- YLL per non-optimal death in 2050: 13.32 (ssp245), 13.34 (ssp370),
+  13.48 (ssp585).
+- Shock-tail locations (draw mean vs median of national non-optimal deaths
+  differ by more than 10 %): the same locations as ssp245, led by Haiti
+  (114) and Singapore (69), with Honduras (129) present. Nothing new.
+- By cause, the heat ratios for =cvd_cmp= (2.97 for ssp585, 0.74 for
+  ssp370) are ratios of near-zero, sign-changing totals (share of heat
+  deaths about 0.000 to -0.002) and carry no information.
+
+* Open
+
+- ssp126: needs a fresh export from Caspar.
+- Not in these bundles: Workflow B scaled summaries for ssp370/ssp585/ssp126,
+  and the multi-model summary (pool models x draws, decided 2026-09-29).
+- Still deferred: whether the headline ssp585 ensemble uses 27 or 29 models
+  (hadgem3-gc31-mm and taiesm1 have no ssp245 run, so Workflow B cannot
+  scale them); the Honduras asterisk.
