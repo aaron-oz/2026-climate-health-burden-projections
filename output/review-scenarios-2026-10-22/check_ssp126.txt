@@ -1,0 +1,108 @@
+rows 165648 159732 
+locations 204  models 28 
+
+[1] common rows 153816  models 26 
+    max |deaths_mean diff| 0 
+    max across-model spread in deaths_mean (ssp370) 0 
+
+[2] NA cells 0 
+    deaths_heat_mean <0: ssp370 21 rows, ssp245 14 rows
+    deaths_cold_mean <0: ssp370 5 rows, ssp245 2 rows
+    deaths_nonopt_mean <0: ssp370 0 rows, ssp245 0 rows
+    ui ordering lower<=median<=upper violations (deaths_nonopt): 0 
+
+[3] global, 26 common models, model-mean of location sums (deaths)
+Key: <year>
+    year heat.245 heat.370 heat_ratio cold.245 cold.370 cold_ratio nonopt_ratio
+   <int>    <num>    <num>      <num>    <num>    <num>      <num>        <num>
+1:  2022   400811   391494      0.977  1400179  1402183      1.001        0.996
+2:  2025   423562   440850      1.041  1460598  1454068      0.996        1.006
+3:  2030   463493   485496      1.047  1583945  1562470      0.986        1.000
+4:  2035   545169   560675      1.028  1722206  1709489      0.993        1.001
+5:  2040   628820   623529      0.992  1887228  1870684      0.991        0.991
+6:  2045   709743   689172      0.971  1991394  1990673      1.000        0.992
+7:  2050   824997   788348      0.956  2082461  2113557      1.015        0.998
+    decade means of heat_ratio: 2022-2030 1.018  2031-2040 1.015  2041-2050 0.965 
+    decade means of cold_ratio: 2022-2030 0.995  2031-2040 0.995  2041-2050 1.004 
+    ssp245 global heat 2022 -> 2050 growth 2.058 ; ssp370 2.014 
+
+[4] per model, global 2041-2050: heat ratio 370/245 range 0.899 1.052 ; models with ratio>1: 7 of 26 
+    cold ratio range 0.97 1.026 ; models with ratio<1: 11 of 26 
+                        model heat_ratio cold_ratio
+                       <char>      <num>      <num>
+ 1:      ukesm1-0-ll-r1i1p1f2      0.899      1.018
+ 2:        fgoals-g3-r3i1p1f1      0.899      1.012
+ 3:       noresm2-lm-r1i1p1f1      0.903      1.021
+ 4:     ipsl-cm6a-lr-r1i1p1f1      0.906      1.019
+ 5:          canesm5-r1i1p1f1      0.922      1.011
+ 6:  hadgem3-gc31-ll-r1i1p1f3      0.928      1.015
+ 7:        inm-cm4-8-r1i1p1f1      0.929      1.007
+ 8:      bcc-csm2-mr-r1i1p1f1      0.932      1.026
+ 9:    access-esm1-5-r1i1p1f1      0.944      0.998
+10:       kace-1-0-g-r1i1p1f1      0.948      1.020
+11:       noresm2-mm-r1i1p1f1      0.950      1.011
+12:        inm-cm5-0-r1i1p1f1      0.954      0.998
+13:      giss-e2-1-g-r1i1p1f2      0.961      1.017
+14:    mpi-esm1-2-lr-r1i1p1f1      0.969      1.001
+15:    mpi-esm1-2-hr-r1i1p1f1      0.975      0.993
+16:       mri-esm2-0-r1i1p1f1      0.977      1.006
+17:       cnrm-cm6-1-r1i1p1f2      0.985      0.995
+18:        gfdl-esm4-r1i1p1f1      0.989      0.988
+19:            nesm3-r1i1p1f1      0.994      1.005
+20: ec-earth3-veg-lr-r1i1p1f1      1.002      0.995
+21:       access-cm2-r1i1p1f1      1.004      0.997
+22:           miroc6-r1i1p1f1      1.006      1.008
+23:      cnrm-esm2-1-r1i1p1f2      1.018      0.979
+24:        cmcc-esm2-r1i1p1f1      1.025      0.998
+25:       miroc-es2l-r1i1p1f2      1.038      0.993
+26:        ec-earth3-r1i1p1f1      1.052      0.970
+                        model heat_ratio cold_ratio
+                       <char>      <num>      <num>
+
+[5] per location, median over models of 2041-2050 heat ratio 370/245
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+ 0.6773  0.8753  0.9116  0.9086  0.9531  1.0550       1 
+    locations with median heat ratio < 1: NA  (<0.97: NA )
+    locations with median cold ratio > 1: 160 
+     location_id        hr        cr   frac_up         h245
+           <int>     <num>     <num>     <num>        <num>
+  1:          78 0.6773455 1.0040641 0.3076923 6.158243e+00
+  2:          83 0.6998661 1.0028265 0.4615385 5.527551e-05
+  3:         185 0.7435803 1.0602279 0.3461538 3.421530e-01
+  4:          93 0.7528468 1.0003650 0.2692308 8.675868e+00
+  5:          98 0.7653017 1.0120422 0.2307692 4.983107e+00
+ ---                                                       
+176:         164 0.9736833 1.0097106 0.3846154 1.591660e+03
+177:          45 0.9765923 0.9968339 0.4615385 1.726317e+02
+178:         177 0.9791064 1.0673031 0.1538462 3.649144e+02
+179:         522 0.9796309 1.0049028 0.3461538 1.286633e+04
+180:           8 0.9796954 1.0249274 0.3846154 1.890899e+03
+
+[6] 2022 global heat ratio 0.977  cold ratio 1.001 
+
+[7] YLL per non-optimal death, 2050: ssp370 13.29  ssp245 13.32 
+
+[8] by_cause rows 2816016  causes 17 
+    max rel diff by_cause sum vs national mean: heat 9.03e-15  cold 1.32e-14  nonopt 6.68e-15 
+    by cause, 2041-2050 common models: heat ratio 370/245, cold ratio
+             acause heat_ratio cold_ratio heat_share_370
+             <char>      <num>      <num>          <num>
+ 1:         cvd_cmp      0.669      0.998          0.000
+ 2:         cvd_htn      0.950      1.005          0.036
+ 3:    inj_homicide      0.952      1.015          0.020
+ 4:             ckd      0.955      1.008          0.063
+ 5:  inj_trans_road      0.957      1.006          0.068
+ 6:         cvd_ihd      0.962      1.001          0.231
+ 7:        diabetes      0.962      1.008          0.117
+ 8:        inj_mech      0.962      1.009          0.004
+ 9:      cvd_stroke      0.964      1.003          0.198
+10:             lri      0.967      1.011          0.103
+11:       resp_copd      0.968      1.003          0.109
+12: inj_trans_other      0.970      1.010          0.002
+13:     inj_suicide      0.971      1.008          0.030
+14:    inj_drowning      0.991      1.008          0.011
+15: inj_othunintent      0.999      1.014          0.001
+16:      inj_animal      1.018      1.021          0.004
+17:    inj_disaster      1.030      1.023          0.004
+
+    by_age_sex rows 776832 ; max rel diff vs national: deaths_nonopt 5.79e-15  yll_nonopt 2.64e-13 

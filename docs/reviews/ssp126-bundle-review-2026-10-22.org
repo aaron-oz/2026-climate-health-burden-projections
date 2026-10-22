@@ -1,0 +1,124 @@
+#+TITLE: Review of Caspar's ssp126 summary bundle, 2026-10-22
+#+DATE: 2026-10-22
+
+* Verdict
+
+Passes every mechanical check that ssp370 and ssp585 passed on 2026-10-20
+(=scenario-bundles-review-2026-10-20.org=). The scenario comparison
+against ssp245 points the expected way by mid-century, with two features
+worth knowing about (sections "Early years" and "Size of the mid-century
+gap" below). I found nothing that looks like a bug.
+
+Bundle: =ssp126.zip= from Google Drive, downloaded 2026-10-22, summaries
+written 2026-10-21 12:53 (zip entry time, Caspar's clock), QA run
+2026-10-21T13:53:36. Extracted to
+=~/data/wb-temp-attr-projections/review/scenarios-2026-10-20/ssp126/=.
+Same six summary tables as the other scenarios; no burden files, no
+Workflow B (scaled) summaries. Scripts and printed output:
+=output/review-scenarios-2026-10-22/= (=check_ssp126.txt= is
+=scen_check.R= from the 2026-10-20 review run with ssp126 as the scenario
+under test, so its labels ".370" / "ssp370" mean ssp126; =extra126.R= /
+=extra126.txt= add the four-scenario comparison).
+
+* Mechanical checks
+
+- Caspar's QA report: all hard checks pass (PAF and death identities,
+  max |PAF| 0.6885, all values finite). Provenance passes: every combo
+  (one location x climate model x year) recomputed at or after
+  2026-10-18, no combos without a manifest row, no failed attempts.
+  500 draws and 289,000 rows per combo; no all-zero combos.
+- Coverage: 204 locations x 29 years (2022 to 2050) x 28 models =
+  165,648 combos, YLLs present for all. The 28 models are =MODELS_ALL=
+  (=config.R=) minus gfdl-cm4, which has no ssp126 run, as documented
+  there. Two of the 28 (hadgem3-gc31-mm, taiesm1) have no ssp245 run, so
+  26 models are shared with ssp245 and 24 with all four scenarios.
+- All-cause deaths (=deaths_mean=) are identical to ssp245 on all 153,816
+  common rows and identical across models.
+- No NA cells; no rows with lower > median or median > upper for
+  non-optimal deaths.
+- =by_cause.csv= (17 causes) and =by_age_sex.csv= sum to
+  =national_by_year.csv= draw means within 2.6e-13 relative difference.
+- Negative draw-mean heat deaths in 21 rows and cold in 5 (ssp245: 14 and
+  2); as in the other scenarios these are floating-point noise around zero,
+  mostly Greenland (349). Greenland's heat is zero or negative in some
+  models, which is why one per-location ratio in =check_ssp126.txt= is NA.
+- YLL per non-optimal death in 2050: 13.29 (ssp245 13.32, ssp370 13.34,
+  ssp585 13.48).
+- Shock-tail locations (draw mean and median of national non-optimal
+  deaths differ by more than 10 %) are the same as in the other scenarios,
+  led by Haiti (114) and Singapore (69), with Honduras (129) present.
+
+* Plausibility
+
+Global figures are computed as in the 2026-10-20 review: per model, sum the
+draw-mean deaths over the 204 locations, then average over models. Table:
+the 24 models common to all four scenarios. Deaths per year.
+
+| Year | Heat ssp126 | Heat ssp245 | Heat ssp370 | Heat ssp585 | Cold ssp126 | Cold ssp245 |
+|------+-------------+-------------+-------------+-------------+-------------+-------------|
+| 2022 |     384,570 |     395,197 |     381,899 |     389,138 |   1,406,823 |   1,402,775 |
+| 2025 |     438,583 |     416,848 |     405,533 |     425,577 |   1,454,556 |   1,462,417 |
+| 2030 |     479,661 |     460,867 |     458,007 |     482,160 |   1,567,347 |   1,584,538 |
+| 2035 |     549,367 |     540,639 |     530,620 |     568,106 |   1,714,627 |   1,722,924 |
+| 2040 |     617,566 |     618,796 |     624,126 |     701,064 |   1,874,311 |   1,892,223 |
+| 2045 |     684,122 |     700,987 |     709,695 |     806,558 |   1,994,509 |   1,995,947 |
+| 2050 |     778,591 |     813,073 |     833,259 |     937,972 |   2,120,521 |   2,088,517 |
+
+** ssp126 against ssp245 (26 shared models)
+
+Heat ratio = ssp126 heat deaths / ssp245 heat deaths, global.
+
+- Decade means of the yearly global heat ratio: 1.018 (2022-2030), 1.015
+  (2031-2040), 0.965 (2041-2050). Cold: 0.995, 0.995, 1.004.
+- 2041-2050 total, per model: heat ratio 0.90 to 1.05, below 1 in 19 of
+  26 models. Cold ratio 0.97 to 1.03, above 1 in 15 of 26.
+- Per location, median over models of the 2041-2050 heat ratio: median
+  0.91, interquartile range 0.88 to 0.95. The lowest ratios (Denmark 78
+  0.68, Iceland 83 0.70, Rwanda 185 0.74, Sweden 93 0.75, Chile 98 0.77)
+  are on small heat burdens (under 10 heat deaths per year in ssp245).
+- Ordering, 2041-2050 heat, 24 models common to all four: ssp126 is below
+  ssp245 in 75 % of (location, model) pairs and below ssp585 in 92 %;
+  ssp126 is the lowest of the four scenarios globally in 11 of 24 models;
+  ssp126 < ssp245 < ssp585 holds in 17 of 24.
+- 2022 heat ratio 0.977, cold 1.001; near 1 as expected.
+- By cause, 2041-2050, heat ratios lie between 0.95 and 1.03 for every
+  cause except =cvd_cmp= (0.67), which, as in the other scenarios, is a
+  ratio of near-zero totals and carries no information.
+
+** Early years: ssp126 heat above ssp245 until about 2036
+
+From 2024 to 2036 the global heat ratio is mostly above 1 (even-year values
+0.99 to 1.07; for example 1.038 in 2024, 1.067 in 2028, 1.044 in 2036), and
+it falls below 1 from about 2038. In 2026-2035 the per-location median ratio
+is 0.99, but several large heat-burden locations sit above 1: Bangladesh
+(161) 1.10, Nigeria (214) 1.05, China (6) 1.02; India (163) is 1.00.
+
+This is consistent with what I recall (not re-checked) from IPCC AR6: the
+SSPs barely differ in global warming before about 2040, and SSP1-2.6's
+fast cut in aerosol emissions removes some cooling early on, which could
+explain slightly more early warming over polluted regions in South and East
+Asia. It is also partly noise: in any single year only 46 % to 69 % of
+models have ssp126 above ssp245, so the year-to-year values swing (2028:
+1.067, 2032: 0.994). I have not checked the temperatures themselves.
+
+** Size of the mid-century gap
+
+By 2041-2050, ssp126 heat is 3.5 % below ssp245, while ssp585 was 12.8 %
+above (2026-10-20 review). The asymmetry may be fine: my recollection of
+AR6 (unverified) is that by 2041-2060 SSP1-2.6 is about 0.3 C below
+SSP2-4.5 while SSP5-8.5 is about 0.4 C above, 2041-2050 sits early in that
+window when the gap is still smaller, and heat risk curves are convex, so
+an equal temperature change moves heat deaths more on the upside. I have
+not quantified any of these. The population-weighted temperature
+difference per location, which the Workflow B summarizer prints, would show
+directly whether the small gap comes from the temperatures.
+
+* Open
+
+- Workflow B for ssp126 (steps 3 to 5 of the 2026-10-20 instructions with
+  =--target_scenarios=ssp126=). As with ssp585, hadgem3-gc31-mm and taiesm1
+  will be "missing-ref" (no ssp245 run), so the scaled ssp126 ensemble will
+  have 26 models against 28 unscaled.
+- Still deferred: the 27-vs-29-model ssp585 headline ensemble (the same
+  question now applies to ssp126: 26 vs 28), the multi-model summary
+  (pool models x draws), and the Honduras asterisk.
