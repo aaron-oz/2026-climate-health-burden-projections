@@ -1,0 +1,51 @@
+== per (location, model, year) ratio scaled / unscaled non-optimal deaths
+   scenario    q01 median   q99    min   max share_within_5pct
+     <char>  <num>  <num> <num>  <num> <num>             <num>
+1:   ssp126 0.9814  1.000 1.025 0.9249 1.160            0.9988
+2:   ssp370 0.9830  1.001 1.027 0.9357 1.165            0.9989
+3:   ssp585 0.9838  1.001 1.031 0.9412 1.154            0.9987
+   max_abs_mortality_change
+                      <num>
+1:                  0.06077
+2:                  0.05794
+3:                  0.04580
+
+== locations whose median ratio (over models and years) is furthest from 1
+    scenario location_id median    min   max   deaths
+      <char>       <int>  <num>  <num> <num>    <num>
+ 1:   ssp585          23 1.0083 0.9644 1.092    7.319
+ 2:   ssp585         369 1.0081 0.9412 1.056    1.419
+ 3:   ssp585          24 1.0081 0.9662 1.041    4.619
+ 4:   ssp585         118 1.0074 0.9527 1.055   56.742
+ 5:   ssp370          23 1.0067 0.9579 1.096    6.598
+ 6:   ssp370         369 1.0050 0.9357 1.063    1.238
+ 7:   ssp370          14 1.0044 0.9780 1.038   15.117
+ 8:   ssp370          24 1.0043 0.9528 1.032    3.898
+ 9:   ssp126          23 1.0039 0.9552 1.088    5.861
+10:   ssp126         367 1.0032 0.9850 1.034   18.046
+11:   ssp126         320 1.0031 0.9882 1.052    1.138
+12:   ssp126         212 0.9973 0.9486 1.036 1019.637
+
+== most extreme single combos
+   scenario location_id                  model  year     r
+     <char>       <int>                 <char> <int> <num>
+1:   ssp370          69 mpi-esm1-2-lr-r1i1p1f1  2038 1.165
+2:   ssp370          69 mpi-esm1-2-lr-r1i1p1f1  2044 1.164
+3:   ssp370          69 mpi-esm1-2-hr-r1i1p1f1  2049 1.155
+4:   ssp126          69 mpi-esm1-2-hr-r1i1p1f1  2037 1.160
+5:   ssp126          69 mpi-esm1-2-lr-r1i1p1f1  2036 1.152
+6:   ssp126          69 mpi-esm1-2-lr-r1i1p1f1  2031 1.149
+7:   ssp585          69        miroc6-r1i1p1f1  2041 1.154
+8:   ssp585          69     inm-cm5-0-r1i1p1f1  2035 1.151
+9:   ssp585          69     inm-cm5-0-r1i1p1f1  2036 1.149
+   pipeline_deaths_nonopt_mean
+                         <num>
+1:                      139.15
+2:                      204.97
+3:                      253.69
+4:                      130.36
+5:                      124.46
+6:                       88.32
+7:                      178.96
+8:                      116.40
+9:                      132.13
