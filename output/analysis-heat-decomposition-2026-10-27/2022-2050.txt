@@ -1,0 +1,53 @@
+comparing 2022 with 2050 
+models in all four scenarios: 24 
+worst relative spread of 17-cause deaths across models: 0 
+population locations without a GBD id:  
+burden locations without population: 0 
+reconstruction check, worst |H rebuilt - H| (deaths): 1.46e-11 
+
+== World: change in heat deaths, 2022 to 2050 , and its four parts (% of the 2022 level; mean over models)
+Key: <scenario>
+   scenario models heat_from heat_to change_pct population_size_pct
+     <char>  <int>     <num>   <num>      <num>               <num>
+1:   ssp126     24    384570  778591        104                22.8
+2:   ssp245     24    395197  813073        106                22.9
+3:   ssp370     24    381899  833259        119                24.2
+4:   ssp585     24    389138  937972        141                24.5
+   age_structure_pct death_rates_pct heat_share_pct heat_share_pct_min
+               <num>           <num>          <num>              <num>
+1:               105           -69.6           45.8              0.761
+2:               106           -69.9           46.9             14.357
+3:               109           -72.5           58.0             15.457
+4:               117           -77.3           77.6             28.850
+   heat_share_pct_max
+                <num>
+1:              127.5
+2:               93.7
+3:              131.2
+4:              135.8
+
+== ssp245: the 10 locations with the largest rise in heat deaths (deaths per year)
+        loc_name heat_from change population_size age_structure death_rates
+          <char>     <num>  <num>           <num>         <num>       <num>
+ 1:        India    139180 114627           22053        137333     -102068
+ 2:        China     58964  66042          -13384         94605      -46700
+ 3:     Pakistan     24578  19594            7743         23258      -18011
+ 4:      Nigeria     11938  14666           11442          7341       -9845
+ 5:   Bangladesh      9997  14047            1271         13047       -7785
+ 6:    Indonesia      6149  12721            1440          9171       -6515
+ 7: Saudi Arabia      5301  12527            2074         11020       -2685
+ 8:     Viet Nam      8717  12142            1534          9665       -4312
+ 9:        Egypt      6930   8738            4488          5899       -3419
+10:        Sudan      6580   8405            4408          7380       -4788
+    heat_share
+         <num>
+ 1:      57308
+ 2:      31521
+ 3:       6604
+ 4:       5728
+ 5:       7514
+ 6:       8625
+ 7:       2119
+ 8:       5256
+ 9:       1769
+10:       1405

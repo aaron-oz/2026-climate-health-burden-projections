@@ -16,7 +16,7 @@ for (ms in c("paired", "common")) {
   want <- if (ms == "paired") list(ssp126 = c("m1", "m2"), ssp585 = c("m1", "m2", "m3")) else list(ssp126 = c("m1", "m2"), ssp585 = c("m1", "m2"))
   ok("model sets as expected", all(sapply(names(want), function(t) setequal(S[target == t & note == "used", model], want[[t]]))))
   ok("units: 2 locations + World + groups A, B", setequal(unique(P$unit), c("125", "126", "World", "A", "B")))
-  ok("rows: 5 units x 2 targets x 2 periods x 6 measures", nrow(P) == 120)
+  ok("rows: 5 units x 2 targets x 2 periods x measures", nrow(P) == 5 * 2 * 2 * uniqueN(P$measure) && uniqueN(P$measure) %in% c(6, 9))
   # location 125, ssp585, 2022-2023, heat deaths
   for (cell in list(list(u = "125", locs = 125L, t = "ssp585", p = "2022-2023", m = "deaths_heat"),
                     list(u = "A", locs = c(125L, 126L), t = "ssp126", p = "2030", m = "deaths_nonopt"),
@@ -30,9 +30,9 @@ for (ms in c("paired", "common")) {
     row <- P[unit == cell$u & target == cell$t & period == cell$p & measure == cell$m]
     pmn <- pr[, .(mt = mean(vt), mr = mean(vr)), by = model]
     good <- nrow(row) == 1 && row$n_models == length(M) &&
-      close_(row$target_mean, mean(pr$vt)) && close_(row$target_lower, q(pr$vt, .025)) && close_(row$target_upper, q(pr$vt, .975)) &&
-      close_(row$ref_mean, mean(pr$vr)) && close_(row$diff_lower, q(pr$vt - pr$vr, .025)) &&
-      close_(row$diff_upper, q(pr$vt - pr$vr, .975)) && close_(row$ratio, mean(pr$vt) / mean(pr$vr)) &&
+      close_(row$target_mean, mean(pr$vt)) && close_(row$target_lower95, q(pr$vt, .025)) && close_(row$target_upper95, q(pr$vt, .975)) && close_(row$target_lower66, q(pr$vt, .17)) && close_(row$target_upper66, q(pr$vt, .83)) &&
+      close_(row$ref_mean, mean(pr$vr)) && close_(row$diff_lower95, q(pr$vt - pr$vr, .025)) &&
+      close_(row$diff_upper95, q(pr$vt - pr$vr, .975)) && close_(row$ratio, mean(pr$vt) / mean(pr$vr)) &&
       close_(row$target_model_min, min(pmn$mt)) && close_(row$ratio_model_max, max(pmn$mt / pmn$mr))
     ok(sprintf("cell %s %s %s %s recomputes", cell$u, cell$t, cell$p, cell$m), good)
   }

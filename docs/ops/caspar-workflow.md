@@ -363,24 +363,50 @@ orders of magnitude faster than the burden pipeline itself — probably
 years × 4 targets in parallel. Outputs land at
 `output/results/workflow_b/{LOC}/{model}-{target}/wb_{year}.rds`.
 
-## 10. Summarize Workflow B, with per-draw totals for the multi-model summary
+## 10. Summarize Workflow B, with per-draw exports for the multi-model summary
 
-The summarizer collapses the Workflow B files into review tables. With
-`--draw_periods=annual` it also writes, per location, the national heat and
-cold deaths and YLLs for every (model, scenario, year, draw). Those files are
-what the multi-model summary (`global-scripts/util_pool_workflow_b_draws.R`,
-run on our side) pools; it can form any period from the single years.
+The summarizer collapses the Workflow B files into review tables. With the
+options below it also writes, per location, per-draw national heat and cold
+deaths and YLLs for every (model, scenario, draw), which the multi-model
+summary (`global-scripts/util_pool_workflow_b_draws.R`, run on our side) pools:
+
+- `draws/`: national totals, every year (`--draw_periods=annual`);
+- `draws_cause/`: by cause (17 causes), summed over six blocks (2022-2025, then
+  five-year blocks to 2050);
+- `draws_age/`: by age group (under 5, 15-49, 65+) and sex, same blocks.
+
+Values are rounded to 6 significant digits and the files are xz-compressed. If a reference life table is
+supplied (`--ref_lifetable=path.csv` with columns `age_start, ex`), every
+export also carries YLLs on that table (`yllref_heat`, `yllref_cold`).
+
+### 10a. Benchmark first (measures run time, memory and disk on this machine)
+
+```bash
+Rscript global-scripts/util_benchmark_workflow_b_summary.R \
+  --scenarios=ssp245,ssp126,ssp370,ssp585 --ref_scenario=ssp245 \
+  --draw_periods=annual \
+  --breakdown_periods=2022-2025,2026-2030,2031-2035,2036-2040,2041-2045,2046-2050 \
+  --sample_locations=163,125,33 --jobs_full=8,16,32
+```
+
+It times the three sample locations one at a time and then together, and
+prints the estimated wall time, peak memory and output size for 8, 16 and 32
+workers. The benchmark itself takes roughly twice as long as summarizing the
+three sample locations.
+
+### 10b. The full run
 
 ```bash
 Rscript global-scripts/util_summarize_workflow_b.R \
   --scenarios=ssp245,ssp126,ssp370,ssp585 --ref_scenario=ssp245 --jobs=16 \
   --draw_periods=annual \
+  --breakdown_periods=2022-2025,2026-2030,2031-2035,2036-2040,2041-2045,2046-2050 \
   --out=output/summary_workflow_b_v2
 ```
 
 Outputs: the usual `national_by_year.csv`, `by_cause.csv`, `coverage.csv`,
-`qa_report.txt`, plus `draws/{LOC}.rds` (one file per location). Measured on a
-small test fixture (2026-10-27), a draw row takes about 30 bytes on disk, so
-29 years for 204 locations come to roughly 9 GB (an extrapolation, not
-measured on the full run). `--draw_periods` also takes explicit periods
-(e.g. `2022-2030,2031-2040,2041-2050`) if a smaller export is ever needed.
+`qa_report.txt`, plus `draws/`, `draws_cause/`, `draws_age/` (one file per
+location each). Size, extrapolated from a small test fixture (2026-10-27), not
+measured on a full run: about 3 GB (`draws/`), 14 GB (`draws_cause/`) and 5 GB
+(`draws_age/`), roughly 22 GB in all (we are not using `--ref_lifetable`). The
+benchmark in 10a gives a measured figure.
