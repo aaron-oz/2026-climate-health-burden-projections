@@ -1,11 +1,15 @@
 % ssp245-review-slides.tex -- slide version of the ssp245 validation review
-% Build: TEXINPUTS=/var/home/aoz/Dropbox/OZ-Labs/templates//: xelatex ssp245-review-slides.tex  (run twice)
+% Build: plain pdflatex (emacs, emacs-r container) or xelatex
+% (bittensor-ubuntu), run twice. beamerthemeozlabs.sty, ozcolors.sty and
+% ozfonts.sty in this directory are symlinks to ~/code/oz-templates/, and the
+% logo is set by absolute path below, so no TEXINPUTS setting is needed.
 \documentclass[aspectratio=169,11pt]{beamer}
 
 \usetheme{ozlabs}
 
 \renewcommand{\ozfootbrand}{OZ Labs}
 \renewcommand{\ozfooturl}{ozstats.space}
+\renewcommand{\ozeyelogo}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
 
 \usepackage{booktabs}
 

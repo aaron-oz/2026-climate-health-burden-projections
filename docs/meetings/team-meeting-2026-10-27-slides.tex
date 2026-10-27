@@ -1,8 +1,9 @@
 % team-meeting-2026-10-27-slides.tex -- discussion slides for the team meeting
 % on the finished scenario runs, 2026-10-27.
-% Build (either engine, run twice):
-%   TEXINPUTS=/var/home/aoz/code/oz-templates//: xelatex team-meeting-2026-10-27-slides.tex
-%   TEXINPUTS=/var/home/aoz/code/oz-templates//: pdflatex team-meeting-2026-10-27-slides.tex
+% Build: plain pdflatex (emacs, emacs-r container) or xelatex
+% (bittensor-ubuntu), run twice. beamerthemeozlabs.sty, ozcolors.sty and
+% ozfonts.sty in this directory are symlinks to ~/code/oz-templates/, and the
+% logo is set by absolute path below, so no TEXINPUTS setting is needed.
 % Numbers come from output/review-workflow-b-2026-10-26/ (paired_headline.txt,
 % model_sets.txt, wb_check.txt) and docs/reviews/workflow-b-full-run-review-2026-10-26.org.
 \documentclass[aspectratio=169,11pt]{beamer}
@@ -11,6 +12,7 @@
 
 \renewcommand{\ozfootbrand}{OZ Labs}
 \renewcommand{\ozfooturl}{ozstats.space}
+\renewcommand{\ozeyelogo}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
 
 \usepackage{booktabs}
 
