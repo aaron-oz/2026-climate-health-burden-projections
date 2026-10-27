@@ -1,0 +1,63 @@
+unscaled models per scenario: ssp126 28, ssp245 27, ssp370 25, ssp585 29 
+models in all four scenarios: 24 
+models not in all four:
+                                                  ssp126 
+         "hadgem3-gc31-ll,hadgem3-gc31-mm,nesm3,taiesm1" 
+                                                  ssp245 
+                        "gfdl-cm4,hadgem3-gc31-ll,nesm3" 
+                                                  ssp370 
+                                               "taiesm1" 
+                                                  ssp585 
+"gfdl-cm4,hadgem3-gc31-ll,hadgem3-gc31-mm,nesm3,taiesm1" 
+   scenario n_all heat_all_unscaled n_scaled heat_scaled n_common
+     <char> <int>             <num>    <int>       <num>    <int>
+1:   ssp126    28           7254406       26     7100663       24
+2:   ssp370    25           7381745       24     7353170       24
+3:   ssp585    29           8487639       27     8358418       24
+   heat_common_scaled ratio_all_vs_all245 ratio_paired_scaled
+                <num>               <num>               <num>
+1:            7031490              0.9845              0.9631
+2:            7353170              1.0018              1.0080
+3:            8219483              1.1519              1.1343
+   ratio_common_scaled
+                 <num>
+1:              0.9639
+2:              1.0080
+3:              1.1267
+
+ssp245 heat, all 27 models: 7368682  common set: 7295065 
+
+per-model heat 2041-2050, ssp585 / ssp245 (unscaled), and the two ssp585 models with no ssp245 run (level only)
+               model  ssp245   ssp585 ratio
+              <char>   <num>    <num> <num>
+ 1:  hadgem3-gc31-ll 9522455 11063228 1.162
+ 2:  hadgem3-gc31-mm      NA 10798755    NA
+ 3:          taiesm1      NA 10772985    NA
+ 4:          canesm5 8711501 10664151 1.224
+ 5:      ukesm1-0-ll 9503915 10570565 1.112
+ 6:       kace-1-0-g 9259282 10429509 1.126
+ 7:       access-cm2 8659112  9811062 1.133
+ 8:     ipsl-cm6a-lr 7972447  8930037 1.120
+ 9:       mri-esm2-0 7426565  8890082 1.197
+10:            nesm3 7086677  8830705 1.246
+11:    access-esm1-5 8120509  8705546 1.072
+12:       noresm2-mm 7380011  8667973 1.175
+13:       cnrm-cm6-1 7811523  8456391 1.083
+14:         gfdl-cm4 7263728  8330081 1.147
+15:        ec-earth3 7159999  8283670 1.157
+16:      cnrm-esm2-1 7134065  8081812 1.133
+17:       noresm2-lm 6962190  8062284 1.158
+18:      giss-e2-1-g 7155669  8003817 1.119
+19:      bcc-csm2-mr 6887105  7915819 1.149
+20:       miroc-es2l 6479284  7656039 1.182
+21:        cmcc-esm2 6988616  7523443 1.077
+22: ec-earth3-veg-lr 6844791  7331366 1.071
+23:        fgoals-g3 6820977  7310613 1.072
+24:        gfdl-esm4 6734261  7176940 1.066
+25:        inm-cm4-8 6417539  7088640 1.105
+26:           miroc6 6130782  7064857 1.152
+27:        inm-cm5-0 6180538  6837998 1.106
+28:    mpi-esm1-2-lr 6136418  6441734 1.050
+29:    mpi-esm1-2-hr 6204464  6441442 1.038
+               model  ssp245   ssp585 ratio
+              <char>   <num>    <num> <num>
