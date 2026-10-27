@@ -74,9 +74,9 @@
 #   draws_cause/{LOC}.rds, draws_age/{LOC}.rds
 #                         only with --breakdown_periods. The same, with an
 #                         acause column, or age_group and sex_id columns.
-#   All draw exports round values to 5 significant digits (relative error at
-#   most 5e-5) and use xz compression; together these cut their size by about
-#   two thirds on a test fixture.
+#   All draw exports round values to 6 significant digits (relative error at
+#   most 5e-6) and use xz compression; together these cut their size by about
+#   60% on a test fixture.
 #
 # The plausibility section needs the reference scenario's unscaled burden and
 # both scenarios' converted temperature files (data/temperature/cckp/...),
@@ -335,7 +335,7 @@ collapse_periods <- function(dt, periods, extra_keys) {
 write_draw_file <- function(dt, loc, dir, extra_keys) {
   if (is.null(dt) || nrow(dt) == 0) return(invisible(0L))
   vals <- intersect(c(DRAW_VALS, "yllref_heat", "yllref_cold"), names(dt))
-  for (v in vals) set(dt, j = v, value = signif(dt[[v]], 5))
+  for (v in vals) set(dt, j = v, value = signif(dt[[v]], 6))
   dt[, location_id := as.integer(loc)]
   setcolorder(dt, c("location_id", "model", "scenario", "period", extra_keys, "n_years", "draw"))
   saveRDS(dt, file.path(dir, paste0(loc, ".rds")), compress = "xz")

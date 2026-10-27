@@ -375,7 +375,7 @@ summary (`global-scripts/util_pool_workflow_b_draws.R`, run on our side) pools:
   five-year blocks to 2050);
 - `draws_age/`: by age group (under 5, 15-49, 65+) and sex, same blocks.
 
-Values are rounded to 5 significant digits and the files are xz-compressed. If a reference life table is
+Values are rounded to 6 significant digits and the files are xz-compressed. If a reference life table is
 supplied (`--ref_lifetable=path.csv` with columns `age_start, ex`), every
 export also carries YLLs on that table (`yllref_heat`, `yllref_cold`).
 
@@ -407,6 +407,6 @@ Rscript global-scripts/util_summarize_workflow_b.R \
 Outputs: the usual `national_by_year.csv`, `by_cause.csv`, `coverage.csv`,
 `qa_report.txt`, plus `draws/`, `draws_cause/`, `draws_age/` (one file per
 location each). Size, extrapolated from a small test fixture (2026-10-27), not
-measured on a full run: about 3 GB (`draws/`), 11 GB (`draws_cause/`) and 4 GB
-(`draws_age/`), roughly 18 GB in all; about 27 GB with `--ref_lifetable`. The
+measured on a full run: about 3 GB (`draws/`), 14 GB (`draws_cause/`) and 5 GB
+(`draws_age/`), roughly 22 GB in all (we are not using `--ref_lifetable`). The
 benchmark in 10a gives a measured figure.

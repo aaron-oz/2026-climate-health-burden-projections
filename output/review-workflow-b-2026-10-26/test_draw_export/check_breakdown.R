@@ -42,4 +42,4 @@ for (case in list(list(loc = 125L, model = "m2", scen = "ssp585"), list(loc = 12
              nrow(g), max(rel(g$deaths_heat, g$h), rel(g$yllref_heat, g$rh))),
      nrow(g) == 2 * 6 * 500 && max(rel(g$deaths_heat, g$h), rel(g$yllref_heat, g$rh)) < 1e-4)
 }
-ok("values rounded to 5 significant digits", all(tot$deaths_heat == signif(tot$deaths_heat, 5)))
+ok("values rounded to 6 significant digits", all(tot$deaths_heat == signif(tot$deaths_heat, 6)))
