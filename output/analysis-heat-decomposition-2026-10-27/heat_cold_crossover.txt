@@ -1,0 +1,26 @@
+Locations by when heat overtakes cold (median over 24 models):
+Key: <when>
+          when ssp126 ssp245 ssp370 ssp585
+        <char>  <int>  <int>  <int>  <int>
+1:   2022-2050      4      6      9     13
+2:  after 2050    117    115    115    113
+3: before 2022     83     83     80     78
+
+ssp245, crossover within 2022-2050, earliest 15:
+                                name median_year share_models_by_2050
+                              <char>       <num>                <num>
+ 1:            Sao Tome and Principe        2028            0.9166667
+ 2:               Dominican Republic        2035            0.7083333
+ 3:                             Iraq        2035            0.7083333
+ 4: Lao People's Democratic Republic        2036            0.6666667
+ 5:                          Vanuatu        2037            0.6666667
+ 6:                             Niue        2041            0.6250000
+ 7:                             <NA>          NA                   NA
+ 8:                             <NA>          NA                   NA
+ 9:                             <NA>          NA                   NA
+10:                             <NA>          NA                   NA
+11:                             <NA>          NA                   NA
+12:                             <NA>          NA                   NA
+13:                             <NA>          NA                   NA
+14:                             <NA>          NA                   NA
+15:                             <NA>          NA                   NA

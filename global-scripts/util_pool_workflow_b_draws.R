@@ -36,8 +36,8 @@
 #   --period_batch=  how many reported periods to build per pass over the draw
 #                    files; lower it if memory runs short. Default 4.
 #   --intervals=     central uncertainty intervals to report, in percent.
-#                    Default 95,66: GBD's 95% (2.5th-97.5th percentile) and the
-#                    IPCC "likely" 66% (17th-83rd).
+#                    Default 95,80,66 (team decision 2026-10-27): GBD's 95%, 80%, and the
+#                    IPCC "likely" 66% (17th-83rd percentile).
 #   --groups=        optional CSV with columns location_id, group: one row per
 #                    location per group (a location may be in several
 #                    groups). A "World" group of every location in the draw
@@ -63,7 +63,7 @@ suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(DRAWS_DIR = file.path(OUTPUT_DIR, "summary_workflow_b", "draws"),
                  MODEL_SET = "paired", REF_SCENARIO = "ssp245", GROUPS = "",
-                 PERIODS = "", PERIOD_BATCH = 4, INTERVALS = "95,66",
+                 PERIODS = "", PERIOD_BATCH = 4, INTERVALS = "95,80,66",
                  OUT = file.path(OUTPUT_DIR, "summary_multimodel"))
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
