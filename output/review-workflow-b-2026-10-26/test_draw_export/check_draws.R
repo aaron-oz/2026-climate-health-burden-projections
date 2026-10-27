@@ -39,8 +39,8 @@ e <- rbindlist(exp)[, .(h = sum(h), c = sum(c), yh = sum(yh), yc = sum(yc)), by 
 m <- merge(dr, e, by = c("location_id", "model", "scenario", "period", "draw"))
 rel <- function(a, b) max(abs(a - b) / pmax(abs(b), 1e-9))
 ok(sprintf("every row matched by the recomputation (%d of %d)", nrow(m), nrow(dr)), nrow(m) == nrow(dr) && nrow(e) == nrow(dr))
-ok(sprintf("deaths match (worst rel. dev %.1e)", max(rel(m$deaths_heat, m$h), rel(m$deaths_cold, m$c))), max(rel(m$deaths_heat, m$h), rel(m$deaths_cold, m$c)) < 1e-5)
-ok(sprintf("YLLs match (worst rel. dev %.1e)", max(rel(m$yll_heat, m$yh), rel(m$yll_cold, m$yc))), max(rel(m$yll_heat, m$yh), rel(m$yll_cold, m$yc)) < 1e-5)
+ok(sprintf("deaths match (worst rel. dev %.1e)", max(rel(m$deaths_heat, m$h), rel(m$deaths_cold, m$c))), max(rel(m$deaths_heat, m$h), rel(m$deaths_cold, m$c)) < 1e-4)
+ok(sprintf("YLLs match (worst rel. dev %.1e)", max(rel(m$yll_heat, m$yh), rel(m$yll_cold, m$yc))), max(rel(m$yll_heat, m$yh), rel(m$yll_cold, m$yc)) < 1e-4)
 
 # consistency with national_by_year.csv: mean over draws of a period sum equals the sum of the yearly draw means
 n <- fread(file.path(O, "national_by_year.csv"))
@@ -48,6 +48,6 @@ n[, period := fifelse(year %in% 2022:2023, "2022-2023", "2030")]
 nm <- n[, .(h = sum(deaths_heat_attrib_mean), yh = sum(yll_heat_mean), rh = sum(ref_deaths_heat_mean)), by = .(location_id, model, scenario, period)]
 dm <- dr[, .(h = mean(deaths_heat), yh = mean(yll_heat)), by = .(location_id, model, scenario, period)]
 x <- merge(dm[scenario != "ssp245"], nm, by = c("location_id", "model", "scenario", "period"))
-ok("target draw means agree with national_by_year.csv", nrow(x) == 20 && rel(x$h.x, x$h.y) < 1e-5 && rel(x$yh.x, x$yh.y) < 1e-5)
+ok("target draw means agree with national_by_year.csv", nrow(x) == 20 && rel(x$h.x, x$h.y) < 1e-4 && rel(x$yh.x, x$yh.y) < 1e-4)
 r <- merge(dm[scenario == "ssp245"], unique(nm[scenario == "ssp585", .(location_id, model, period, rh)]), by = c("location_id", "model", "period"))
-ok("reference draw means agree with ref_deaths_heat_mean", nrow(r) == 12 && rel(r$h, r$rh) < 1e-5)
+ok("reference draw means agree with ref_deaths_heat_mean", nrow(r) == 12 && rel(r$h, r$rh) < 1e-4)

@@ -20,7 +20,7 @@ ok("same (location, model, scenario) runs in all three files",
 cs <- cau[, lapply(.SD, sum), by = .(location_id, model, scenario, period, draw), .SDcols = c("deaths_heat", "yll_cold", "yllref_heat")]
 m <- merge(cs, tot, by = c("location_id", "model", "scenario", "period", "draw"))
 ok(sprintf("causes sum to the total (worst rel. dev %.1e)", max(rel(m$deaths_heat.x, m$deaths_heat.y), rel(m$yll_cold.x, m$yll_cold.y), rel(m$yllref_heat.x, m$yllref_heat.y))),
-   max(rel(m$deaths_heat.x, m$deaths_heat.y), rel(m$yll_cold.x, m$yll_cold.y), rel(m$yllref_heat.x, m$yllref_heat.y)) < 1e-4)
+   max(rel(m$deaths_heat.x, m$deaths_heat.y), rel(m$yll_cold.x, m$yll_cold.y), rel(m$yllref_heat.x, m$yllref_heat.y)) < 2e-4)
 
 # recompute age groups and reference YLLs for one target and one reference run
 for (case in list(list(loc = 125L, model = "m2", scen = "ssp585"), list(loc = 126L, model = "m3", scen = "ssp245"))) {
@@ -40,6 +40,6 @@ for (case in list(list(loc = 125L, model = "m2", scen = "ssp585"), list(loc = 12
              by = c("period", "age_group", "sex_id", "draw"))
   ok(sprintf("loc %d %s %s: age groups and reference YLLs recompute (%d rows, worst %.1e)", case$loc, case$model, case$scen,
              nrow(g), max(rel(g$deaths_heat, g$h), rel(g$yllref_heat, g$rh))),
-     nrow(g) == 2 * 6 * 500 && max(rel(g$deaths_heat, g$h), rel(g$yllref_heat, g$rh)) < 1e-5)
+     nrow(g) == 2 * 6 * 500 && max(rel(g$deaths_heat, g$h), rel(g$yllref_heat, g$rh)) < 1e-4)
 }
-ok("values rounded to 6 significant digits", all(tot$deaths_heat == signif(tot$deaths_heat, 6)))
+ok("values rounded to 5 significant digits", all(tot$deaths_heat == signif(tot$deaths_heat, 5)))

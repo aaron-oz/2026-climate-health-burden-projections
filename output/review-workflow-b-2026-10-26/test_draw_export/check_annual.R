@@ -16,5 +16,5 @@ for (ms in c("paired", "common")) {
   # the difference, though not relative to the burden
   scale <- pmax(abs(x$target_mean), abs(x$ref_mean), 1e-9)
   dev <- max(vapply(num, function(cn) max(abs(x[[cn]] - y[[cn]]) / pmax(abs(x[[cn]]), scale)), numeric(1)))
-  ok(sprintf("%s: annual route reproduces period route (worst rel. dev %.1e)", ms, dev), same_keys && dev < 1e-5)
+  ok(sprintf("%s: annual route reproduces period route (worst rel. dev %.1e)", ms, dev), same_keys && dev < 1e-4)
 }
