@@ -1,0 +1,116 @@
+#+TITLE: What drives the rise in heat deaths? A four-part split, 2026-10-27
+
+* Question
+
+Global heat deaths roughly double between 2022 and 2050 in every scenario.
+How much of that is population growth, population aging, changing death
+rates, and the heat itself?
+
+* Method
+
+For each location, heat deaths H are a sum over age-sex groups c (17 age
+groups from 0-4 to 80+, two sexes):
+
+  H = sum_c P * s_c * r_c * f_c
+
+- P: total population of the location.
+- s_c: share of the population in group c (age structure).
+- r_c: deaths per person in group c from the 17 temperature-related causes
+  (IHME's forecast death rates).
+- f_c: share of those deaths attributable to heat. This is mostly the
+  temperature, but it also moves if the mix of causes within an age group
+  changes.
+
+The change in H between two years is split into four additive parts with the
+Shapley (Das Gupta) method: each factor's part is its average effect over all
+24 orders of switching the factors from the first year to the second, so the
+parts sum exactly to the change and no factor is favored by going first.
+Done per location, climate model and scenario; world parts are sums of
+location parts; reported as the mean over models, as % of the starting
+year's world heat deaths.
+
+Inputs: the unscaled scenario summaries' =by_age_sex.csv= (pipeline burden;
+the adjustment to IHME's forecasts moves global totals by under 0.15%) and
+IHME's population forecast (=~/data/wb-temp-attr-projections/gbd-forecasts/population.csv=,
+mean of its draws). Models: the 24 run for all four scenarios. Script:
+=output/analysis-heat-decomposition-2026-10-27/decompose_heat.R=; printed
+output =2022-2050.txt=, =2022-2040.txt= and CSVs in the folders beside it.
+
+Checks (=check_decomposition.R=, output =check_2022-2050.txt= and
+=check_2022-2040.txt=), all passing:
+- the 17-cause deaths are identical across climate models (worst relative
+  spread 0), as expected, and every location matched a population;
+- every location-model heat total in 2022, 2040 and 2050 matches
+  =national_by_year.csv= (worst relative deviation 4e-11);
+- the four parts sum to the change in every location, model and scenario;
+- a separate brute-force average over all 24 orders reproduces the parts
+  (8 sampled location-model pairs, including India and China; worst
+  difference 1e-14 of the change);
+- world population (these 204 locations, IHME forecast) is 7.95 bn in
+  2022, 9.03 bn in 2040 and 9.38 bn in 2050; the share aged 65+ rises from
+  9.9% to 14.7% and 17.1%.
+
+* Limitation that shapes the comparison
+
+=by_age_sex.csv= holds only 2022, 2030, 2040 and 2050. So this compares
+single years (2022 with 2050, and 2022 with 2040), not the decades used
+elsewhere (2022-2030 with 2041-2050). A single year carries that year's
+weather in each model; averaging 24 models damps it, but the per-model range
+of the heat part is wide (below). A decade version needs =by_age_sex.csv=
+for every year, which means re-running the unscaled summarizer on Caspar's
+machine with =--age_years=2022-2050=.
+
+* Results: world, 2022 to 2050
+
+| Scenario | Heat deaths 2022 | 2050    | Change | Population size | Age structure | Death rates | Heat share | Heat share, model range |
+|----------+------------------+---------+--------+-----------------+---------------+-------------+------------+-------------------------|
+| ssp126   | 384,570          | 778,591 | +104%  | +23             | +105          | -70         | +46        | +1 to +128              |
+| ssp245   | 395,197          | 813,073 | +106%  | +23             | +106          | -70         | +47        | +14 to +94              |
+| ssp370   | 381,899          | 833,259 | +119%  | +24             | +109          | -73         | +58        | +15 to +131             |
+| ssp585   | 389,138          | 937,972 | +141%  | +25             | +117          | -77         | +78        | +29 to +136             |
+
+Parts are percentage points of the 2022 level and sum to the change. 2022
+differs a little between scenarios because each scenario's model runs have
+their own weather from 2015 on.
+
+Readings (model means; no uncertainty ranges):
+
+- Population aging is the largest single part, about +105 to +117 points
+  of a roughly +105 to +140% rise.
+- Falling age-specific death rates offset most of it, about -70 to -77.
+- Population growth adds about +23 to +25.
+- The heat share adds +46 (ssp126) to +78 (ssp585). This is the only part
+  that differs much between scenarios; the scenario contrast in heat deaths
+  comes almost entirely through it. The other parts differ slightly between
+  scenarios because each is evaluated alongside that scenario's heat share.
+- Under ssp245, aging contributes about twice as much as the heat share
+  (+106 against +47), but the heat share's model range (+14 to +94) is wide.
+
+2022 to 2040 (same table in =2022-2040.txt=): change +57% (ssp245) to +80%
+(ssp585); aging +57 to +62, death rates -39 to -42, population +16 to +17,
+heat share +23 (ssp245) to +44 (ssp585). ssp126's heat share (+27) is above
+ssp245's (+23) in 2040, consistent with its early excess noted on
+2026-10-22.
+
+* Largest contributors, ssp245, 2022 to 2050 (deaths per year)
+
+| Location   | 2022    | Change   | Population | Age structure | Death rates | Heat share |
+|------------+---------+----------+------------+---------------+-------------+------------|
+| India      | 139,180 | +114,627 | +22,053    | +137,333      | -102,068    | +57,308    |
+| China      | 58,964  | +66,042  | -13,384    | +94,605       | -46,700     | +31,521    |
+| Pakistan   | 24,578  | +19,594  | +7,743     | +23,258       | -18,011     | +6,604     |
+| Nigeria    | 11,938  | +14,666  | +11,442    | +7,341        | -9,845      | +5,728     |
+| Bangladesh | 9,997   | +14,047  | +1,271     | +13,047       | -7,785      | +7,514     |
+
+China's population shrinks (-13,384) while its aging adds +94,605. Nigeria is
+the one large contributor where population growth outweighs aging.
+
+* What this does not show
+
+- No uncertainty ranges; model means only, plus the model range of the heat
+  part.
+- The heat-share part mixes warming with shifts in cause mix within age
+  groups; separating them needs cause-by-age results (Caspar's machine).
+- Single years, not decades (see above).
+- The split is of the unadjusted pipeline burden, not the Workflow B
+  (adjusted) numbers; the two differ by under 0.15% globally.

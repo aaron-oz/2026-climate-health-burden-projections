@@ -1,0 +1,15 @@
+  ssp126: heat deaths in 2022 and 2050 match national_by_year (worst rel. dev 1.0e-14) PASS
+  ssp126: four parts sum to the change                                   PASS
+  ssp245: heat deaths in 2022 and 2050 match national_by_year (worst rel. dev 1.7e-14) PASS
+  ssp245: four parts sum to the change                                   PASS
+  ssp370: heat deaths in 2022 and 2050 match national_by_year (worst rel. dev 2.3e-14) PASS
+  ssp370: four parts sum to the change                                   PASS
+  ssp585: heat deaths in 2022 and 2050 match national_by_year (worst rel. dev 2.6e-14) PASS
+  ssp585: four parts sum to the change                                   PASS
+  Shapley parts match brute force over 24 orders, 8 samples (worst 3.1e-15 of the change) PASS
+    year total_bn share65
+   <int>    <num>   <num>
+1:  2022     7.95  0.0994
+2:  2050     9.38  0.1705
+  world population 7.5-8.5 bn in 2022 and above that in 2050             PASS
+  share aged 65+ rises                                                   PASS
