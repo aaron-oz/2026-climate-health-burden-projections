@@ -27,8 +27,9 @@
 #                    each period, for the multi-model summary
 #                    (util_pool_workflow_b_draws.R). Comma separated year
 #                    ranges or single years, e.g.
-#                    2022-2030,2031-2040,2041-2050,2030,2040,2050. Default
-#                    empty: no draw export.
+#                    2022-2030,2031-2040,2041-2050,2030,2040,2050, or
+#                    "annual" for every year in --years (the pooling script
+#                    can then form any period). Default empty: no draw export.
 #
 # Outputs, under --out:
 #   national_by_year.csv  (location, model, scenario, year): draw mean, median
@@ -103,8 +104,11 @@ scenarios  <- split_csv(SCENARIOS)
 temp_years <- parse_years(TEMP_YEARS)
 ref_scen   <- as.character(REF_SCENARIO)
 want_years <- parse_years(YEARS)
-# Draw export periods: label -> years. "2022-2030" covers 2022..2030, "2030" one year.
-draw_periods <- setNames(lapply(split_csv(DRAW_PERIODS), parse_years), split_csv(DRAW_PERIODS))
+# Draw export periods: label -> years. "2022-2030" covers 2022..2030, "2030" one
+# year, and "annual" means every year in --years as its own period.
+dp_labels <- split_csv(DRAW_PERIODS)
+if (identical(dp_labels, "annual")) dp_labels <- as.character(want_years)
+draw_periods <- setNames(lapply(dp_labels, parse_years), dp_labels)
 draw_years   <- sort(unique(unlist(draw_periods)))
 export_draws <- length(draw_periods) > 0
 draws_dir    <- file.path(OUT, "draws")

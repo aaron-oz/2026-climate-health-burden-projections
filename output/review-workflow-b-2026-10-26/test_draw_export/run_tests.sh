@@ -17,3 +17,13 @@ for ms in paired common; do
 done
 Rscript $T/check_pool.R "$FX"
 Rscript $T/check_incomplete.R "$FX" "$REPO"
+# Annual export, periods formed by the pooling script (one period per pass):
+# must reproduce the period export's pooled results.
+Rscript global-scripts/util_summarize_workflow_b.R --scenarios=ssp126,ssp585 --ref_scenario=ssp245 \
+  --years=2022,2023,2030 --jobs=2 --draw_periods=annual --out=$FX/output/summary_annual > $FX/summarize_annual.log 2>&1
+for ms in paired common; do
+  Rscript global-scripts/util_pool_workflow_b_draws.R --draws_dir=$FX/output/summary_annual/draws \
+    --periods=2022-2023,2030 --period_batch=1 --model_set=$ms --groups=$FX/groups.csv \
+    --out=$FX/output/pool_annual_$ms > $FX/pool_annual_$ms.log 2>&1
+done
+Rscript $T/check_annual.R "$FX"
