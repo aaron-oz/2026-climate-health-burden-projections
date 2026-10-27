@@ -30,9 +30,9 @@ for (ms in c("paired", "common")) {
     row <- P[unit == cell$u & target == cell$t & period == cell$p & measure == cell$m]
     pmn <- pr[, .(mt = mean(vt), mr = mean(vr)), by = model]
     good <- nrow(row) == 1 && row$n_models == length(M) &&
-      close_(row$target_mean, mean(pr$vt)) && close_(row$target_lower, q(pr$vt, .025)) && close_(row$target_upper, q(pr$vt, .975)) &&
-      close_(row$ref_mean, mean(pr$vr)) && close_(row$diff_lower, q(pr$vt - pr$vr, .025)) &&
-      close_(row$diff_upper, q(pr$vt - pr$vr, .975)) && close_(row$ratio, mean(pr$vt) / mean(pr$vr)) &&
+      close_(row$target_mean, mean(pr$vt)) && close_(row$target_lower95, q(pr$vt, .025)) && close_(row$target_upper95, q(pr$vt, .975)) && close_(row$target_lower66, q(pr$vt, .17)) && close_(row$target_upper66, q(pr$vt, .83)) &&
+      close_(row$ref_mean, mean(pr$vr)) && close_(row$diff_lower95, q(pr$vt - pr$vr, .025)) &&
+      close_(row$diff_upper95, q(pr$vt - pr$vr, .975)) && close_(row$ratio, mean(pr$vt) / mean(pr$vr)) &&
       close_(row$target_model_min, min(pmn$mt)) && close_(row$ratio_model_max, max(pmn$mt / pmn$mr))
     ok(sprintf("cell %s %s %s %s recomputes", cell$u, cell$t, cell$p, cell$m), good)
   }

@@ -35,6 +35,9 @@
 #                    report the draw files' own periods as they are.
 #   --period_batch=  how many reported periods to build per pass over the draw
 #                    files; lower it if memory runs short. Default 4.
+#   --intervals=     central uncertainty intervals to report, in percent.
+#                    Default 95,66: GBD's 95% (2.5th-97.5th percentile) and the
+#                    IPCC "likely" 66% (17th-83rd).
 #   --groups=        optional CSV with columns location_id, group: one row per
 #                    location per group (a location may be in several
 #                    groups). A "World" group of every location in the draw
@@ -44,8 +47,9 @@
 #   pooled.csv      one row per (unit, target scenario, period, measure).
 #                   unit_type is "location" or "group". Every value is per
 #                   year (period total / n_years). Columns: n_years, n_models;
-#                   target_* and ref_* each with mean, lower, upper (pooled
-#                   95% interval), model_min, model_max (range of per-model
+#                   target_* and ref_* each with mean, lowerXX and upperXX
+#                   for each interval XX in --intervals (e.g. lower95,
+#                   upper95), model_min, model_max (range of per-model
 #                   means); diff_* (target minus reference) the same; ratio
 #                   (target_mean / ref_mean) and ratio_model_min/max (range of
 #                   per-model mean ratios). Measures: deaths and YLLs for heat,
@@ -59,7 +63,7 @@ suppressPackageStartupMessages(library(data.table))
 
 defaults <- list(DRAWS_DIR = file.path(OUTPUT_DIR, "summary_workflow_b", "draws"),
                  MODEL_SET = "paired", REF_SCENARIO = "ssp245", GROUPS = "",
-                 PERIODS = "", PERIOD_BATCH = 4,
+                 PERIODS = "", PERIOD_BATCH = 4, INTERVALS = "95,66",
                  OUT = file.path(OUTPUT_DIR, "summary_multimodel"))
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
@@ -120,6 +124,19 @@ if (nzchar(as.character(GROUPS))) {
 gsize <- gmap[, .(size = .N), by = group]
 
 q <- function(x, p) unname(quantile(x, p, names = FALSE))
+levels_pct <- as.numeric(split_csv(INTERVALS))
+if (!length(levels_pct) || any(is.na(levels_pct) | levels_pct <= 0 | levels_pct >= 100))
+  stop("--intervals must be percentages between 0 and 100, e.g. 95,66")
+# Central interval bounds for one vector, named lowerXX / upperXX.
+qint <- function(x, prefix) {
+  out <- list()
+  for (L in levels_pct) {
+    a <- (1 - L / 100) / 2
+    out[[paste0(prefix, "_lower", L)]] <- q(x, a)
+    out[[paste0(prefix, "_upper", L)]] <- q(x, 1 - a)
+  }
+  out
+}
 
 pool_measure <- function(dr, m, sets, targets, excluded_env) {
   v <- dr[, .(location_id, model, scenario, period, n_years, draw, v = get(m))]
@@ -139,10 +156,9 @@ pool_measure <- function(dr, m, sets, targets, excluded_env) {
     p[, d := vt - vr]
     pm <- p[, .(mt = mean(vt), mr = mean(vr), md = mean(d)), by = .(unit_type, unit, period, model)]
     pm[, rat := mt / mr]
-    s <- p[, .(n_years = max(n_years_t), n_models = uniqueN(model),
-               target_mean = mean(vt), target_lower = q(vt, 0.025), target_upper = q(vt, 0.975),
-               ref_mean = mean(vr), ref_lower = q(vr, 0.025), ref_upper = q(vr, 0.975),
-               diff_mean = mean(d), diff_lower = q(d, 0.025), diff_upper = q(d, 0.975)),
+    s <- p[, c(list(n_years = max(n_years_t), n_models = uniqueN(model), target_mean = mean(vt)),
+               qint(vt, "target"), list(ref_mean = mean(vr)), qint(vr, "ref"),
+               list(diff_mean = mean(d)), qint(d, "diff")),
            by = .(unit_type, unit, period)]
     r <- pm[, .(target_model_min = min(mt), target_model_max = max(mt),
                 ref_model_min = min(mr), ref_model_max = max(mr),
