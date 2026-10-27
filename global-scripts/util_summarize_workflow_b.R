@@ -23,6 +23,13 @@
 #   --years=         default 2022-2050, used to report missing years
 #   --jobs=          parallel workers over locations; default half the cores
 #   --out=           output directory; default output/summary_workflow_b
+#   --draw_periods=  optional. Also write per-draw national totals, summed over
+#                    each period, for the multi-model summary
+#                    (util_pool_workflow_b_draws.R). Comma separated year
+#                    ranges or single years, e.g.
+#                    2022-2030,2031-2040,2041-2050,2030,2040,2050, or
+#                    "annual" for every year in --years (the pooling script
+#                    can then form any period). Default empty: no draw export.
 #
 # Outputs, under --out:
 #   national_by_year.csv  (location, model, scenario, year): draw mean, median
@@ -46,6 +53,15 @@
 #                         burden, scaling small)? These are flagged CHECK for a
 #                         person to look at, not failed, since a real result can
 #                         break a rule of thumb.
+#   draws/{LOC}.rds       only with --draw_periods. One row per (model,
+#                         scenario, period, draw): national heat and cold deaths
+#                         and YLLs summed over the period's years, n_years the
+#                         number of years found. Target rows are the scaled
+#                         burden; reference rows (scenario = the reference) are
+#                         its unscaled pipeline burden, which the identity
+#                         check shows equals its scaled burden. Draw d is kept
+#                         as draw d in every year, so period sums and target
+#                         minus reference differences are taken draw by draw.
 #
 # The plausibility section needs the reference scenario's unscaled burden and
 # both scenarios' converted temperature files (data/temperature/cckp/...),
@@ -62,7 +78,8 @@ defaults <- list(SCENARIOS = "ssp245,ssp585", REF_SCENARIO = "ssp245",
                  # Years at which the plausibility section compares population-
                  # weighted temperature between the scenarios (reading every
                  # daily temperature file would dominate the run time).
-                 TEMP_YEARS = "2022,2030,2040,2050")
+                 TEMP_YEARS = "2022,2030,2040,2050",
+                 DRAW_PERIODS = "")
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -87,6 +104,15 @@ scenarios  <- split_csv(SCENARIOS)
 temp_years <- parse_years(TEMP_YEARS)
 ref_scen   <- as.character(REF_SCENARIO)
 want_years <- parse_years(YEARS)
+# Draw export periods: label -> years. "2022-2030" covers 2022..2030, "2030" one
+# year, and "annual" means every year in --years as its own period.
+dp_labels <- split_csv(DRAW_PERIODS)
+if (identical(dp_labels, "annual")) dp_labels <- as.character(want_years)
+draw_periods <- setNames(lapply(dp_labels, parse_years), dp_labels)
+draw_years   <- sort(unique(unlist(draw_periods)))
+export_draws <- length(draw_periods) > 0
+draws_dir    <- file.path(OUT, "draws")
+if (export_draws) dir.create(draws_dir, recursive = TRUE, showWarnings = FALSE)
 wb_root    <- file.path(RESULTS_ROOT, "workflow_b")
 cckp_root  <- file.path(RESULTS_ROOT, "cckp")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
@@ -171,6 +197,16 @@ summarize_combo <- function(loc, model, scen, year, lt) {
     s <- summ(by_draw[[v]])
     for (nm in names(s)) set(nat, j = paste0(v, "_", nm), value = s[[nm]])
   }
+  # Per-draw totals for the draw export (targets only; the reference comes from
+  # its unscaled burden below).
+  tgt_draws <- NULL
+  if (export_draws && year %in% draw_years && scen != ref_scen) {
+    tgt_draws <- by_draw[, .(model = model, scenario = scen, year = year, draw,
+                             deaths_heat = deaths_heat_attrib, deaths_cold = deaths_cold_attrib,
+                             yll_heat = if ("yll_heat" %in% vals) yll_heat else NA_real_,
+                             yll_cold = if ("yll_cold" %in% vals) yll_cold else NA_real_)]
+  }
+  ref_draws <- NULL
 
   # --- the unscaled pipeline burden for the same combo -----------------------
   bf <- file.path(cckp_root, loc, paste0(model, "-", scen), sprintf("burden_%d.rds", year))
@@ -201,6 +237,17 @@ summarize_combo <- function(loc, model, scen, year, lt) {
       set(nat, j = "ref_deaths_heat_mean",   value = mean(rd$h))
       set(nat, j = "ref_deaths_cold_mean",   value = mean(rd$c))
       set(nat, j = "ref_deaths_nonopt_mean", value = mean(rd$n))
+      if (!is.null(tgt_draws)) {
+        # Reference YLLs with the same life-table merge as the target's.
+        if (!is.null(lt)) {
+          rb <- merge(rb, lt, by = c("year", "age_group_id", "sex_id"), all.x = TRUE)
+          rb[is.na(ex), ex := 0]
+          ry <- rb[, .(yh = sum(deaths_heat * ex), yc = sum(deaths_cold * ex)), by = draw]
+          rd <- merge(rd, ry, by = "draw")
+        } else rd[, `:=`(yh = NA_real_, yc = NA_real_)]
+        ref_draws <- rd[, .(model = model, scenario = ref_scen, year = year, draw,
+                            deaths_heat = h, deaths_cold = c, yll_heat = yh, yll_cold = yc)]
+      }
     }
     if (year %in% temp_years) {
       set(nat, j = "temp_popw",     value = popw_temp(loc, model, scen, year))
@@ -218,12 +265,30 @@ summarize_combo <- function(loc, model, scen, year, lt) {
   cause <- cbind(data.table(location_id = loc, model = model, scenario = scen, year = year),
                  merge(cd, cs, by = "acause"))
 
-  list(nat = nat, cause = cause, qa = qa)
+  list(nat = nat, cause = cause, qa = qa, draws = rbind(tgt_draws, ref_draws))
+}
+
+# Sum one location's per-year draw totals over each export period and write
+# them to draws/{LOC}.rds. A reference (model, year) is read once per target
+# that shares it, so duplicates are dropped first.
+write_location_draws <- function(loc, dl) {
+  if (length(dl) == 0) return(invisible(0L))
+  dr <- unique(rbindlist(dl), by = c("model", "scenario", "year", "draw"))
+  if (nrow(dr) == 0) return(invisible(0L))
+  vals <- c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold")
+  per <- rbindlist(lapply(names(draw_periods), function(p)
+    dr[year %in% draw_periods[[p]],
+       c(list(n_years = uniqueN(year)), lapply(.SD, sum)),
+       by = .(model, scenario, draw), .SDcols = vals][, period := p]))
+  per[, location_id := as.integer(loc)]
+  setcolorder(per, c("location_id", "model", "scenario", "period", "n_years", "draw"))
+  saveRDS(per, file.path(draws_dir, paste0(loc, ".rds")))
+  invisible(nrow(per))
 }
 
 summarize_location <- function(loc) {
   lt <- load_lifetable(loc)
-  out_nat <- list(); out_cause <- list(); out_qa <- list(); out_cov <- list()
+  out_nat <- list(); out_cause <- list(); out_qa <- list(); out_cov <- list(); out_draws <- list()
   for (scen in scenarios) {
     wb_dirs  <- list.dirs(file.path(wb_root, loc), recursive = FALSE)
     tgt_dirs <- list.dirs(file.path(cckp_root, loc), recursive = FALSE)
@@ -245,6 +310,7 @@ summarize_location <- function(loc) {
         out_nat[[length(out_nat) + 1L]]     <- r$nat
         out_cause[[length(out_cause) + 1L]] <- r$cause
         out_qa[[length(out_qa) + 1L]]       <- r$qa
+        if (!is.null(r$draws)) out_draws[[length(out_draws) + 1L]] <- r$draws
       }
       out_cov[[length(out_cov) + 1L]] <- data.table(
         location_id = as.integer(loc), model = model, scenario = scen,
@@ -254,6 +320,7 @@ summarize_location <- function(loc) {
         ref_scenario_exists = dir.exists(rd))
     }
   }
+  if (export_draws) write_location_draws(loc, out_draws)
   list(nat = rbindlist(out_nat, fill = TRUE), cause = rbindlist(out_cause, fill = TRUE),
        qa = rbindlist(out_qa, fill = TRUE), cov = rbindlist(out_cov, fill = TRUE))
 }
@@ -493,3 +560,5 @@ for (sc in scenarios) {
 close(con)
 cat(readLines(file.path(OUT, "qa_report.txt")), sep = "\n")
 log_msg("Wrote ", OUT, "/{national_by_year,by_cause,coverage}.csv and qa_report.txt")
+if (export_draws) log_msg("Wrote per-draw period totals for ", length(list.files(draws_dir, "\\.rds$")),
+                          " locations to ", draws_dir, " (periods: ", paste(names(draw_periods), collapse = ","), ")")

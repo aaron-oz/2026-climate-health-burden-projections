@@ -362,3 +362,25 @@ orders of magnitude faster than the burden pipeline itself — probably
 ~minutes per location, ~hour total for all 200 locations × 29 models × 29
 years × 4 targets in parallel. Outputs land at
 `output/results/workflow_b/{LOC}/{model}-{target}/wb_{year}.rds`.
+
+## 10. Summarize Workflow B, with per-draw totals for the multi-model summary
+
+The summarizer collapses the Workflow B files into review tables. With
+`--draw_periods=annual` it also writes, per location, the national heat and
+cold deaths and YLLs for every (model, scenario, year, draw). Those files are
+what the multi-model summary (`global-scripts/util_pool_workflow_b_draws.R`,
+run on our side) pools; it can form any period from the single years.
+
+```bash
+Rscript global-scripts/util_summarize_workflow_b.R \
+  --scenarios=ssp245,ssp126,ssp370,ssp585 --ref_scenario=ssp245 --jobs=16 \
+  --draw_periods=annual \
+  --out=output/summary_workflow_b_v2
+```
+
+Outputs: the usual `national_by_year.csv`, `by_cause.csv`, `coverage.csv`,
+`qa_report.txt`, plus `draws/{LOC}.rds` (one file per location). Measured on a
+small test fixture (2026-10-27), a draw row takes about 30 bytes on disk, so
+29 years for 204 locations come to roughly 9 GB (an extrapolation, not
+measured on the full run). `--draw_periods` also takes explicit periods
+(e.g. `2022-2030,2031-2040,2041-2050`) if a smaller export is ever needed.
