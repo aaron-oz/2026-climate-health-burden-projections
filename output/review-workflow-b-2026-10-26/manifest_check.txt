@@ -1,0 +1,102 @@
+== rows by run day and target
+           day target      N
+        <char> <char>  <int>
+ 1: 2026-09-29 ssp245    696
+ 2: 2026-09-29 ssp585  10092
+ 3: 2026-10-01 ssp585    119
+ 4: 2026-10-23 ssp245     58
+ 5: 2026-10-23 ssp370   3364
+ 6: 2026-10-23 ssp585   3364
+ 7: 2026-10-24 ssp126 171564
+ 8: 2026-10-24 ssp245  23606
+ 9: 2026-10-24 ssp370 168200
+10: 2026-10-24 ssp585 168200
+
+== any fail rows ever
+[1] 0
+
+== ssp585 re-scale of 2026-10-01 (expect the 119 repaired combos: 114 access-cm2 19, 125 x3 models 29+29+15, 145 access-cm2 27)
+   location_id                  model status     N
+         <int>                 <char> <char> <int>
+1:         114    access-cm2-r1i1p1f1     ok    19
+2:         125    access-cm2-r1i1p1f1     ok    29
+3:         125 access-esm1-5-r1i1p1f1     ok    29
+4:         125   bcc-csm2-mr-r1i1p1f1     ok    15
+5:         145    access-cm2-r1i1p1f1     ok    27
+
+== final status by target
+    target         status      N
+    <char>         <char>  <int>
+ 1: ssp126    missing-ref  11832
+ 2: ssp126 missing-target   5916
+ 3: ssp126             ok 153816
+ 4: ssp245    missing-ref    816
+ 5: ssp245           skip  11016
+ 6: ssp370    missing-ref  11832
+ 7: ssp370 missing-target  17748
+ 8: ssp370             ok 141984
+ 9: ssp585    missing-ref  11832
+10: ssp585             ok 150336
+11: ssp585           skip   9396
+
+== final skip with no post-fix ok row (expect none)
+[1] 0
+
+== models with output (final ok/skip), by target
+   target nmodels min_n max_n min_loc min_yr max_yr
+   <char>   <int> <int> <int>   <int>  <int>  <int>
+1: ssp126      26  5916  5916     204     29     29
+2: ssp245      27   408   408     204      2      2
+3: ssp370      24  5916  5916     204     29     29
+4: ssp585      27  5916  5916     204     29     29
+
+== models without output, by target
+    target                    model         status     N  nloc
+    <char>                   <char>         <char> <int> <int>
+ 1: ssp126        gfdl-cm4-r1i1p1f1 missing-target  5916   204
+ 2: ssp126 hadgem3-gc31-mm-r1i1p1f3    missing-ref  5916   204
+ 3: ssp126         taiesm1-r1i1p1f1    missing-ref  5916   204
+ 4: ssp245 hadgem3-gc31-mm-r1i1p1f3    missing-ref   408   204
+ 5: ssp245         taiesm1-r1i1p1f1    missing-ref   408   204
+ 6: ssp370        gfdl-cm4-r1i1p1f1 missing-target  5916   204
+ 7: ssp370 hadgem3-gc31-ll-r1i1p1f3 missing-target  5916   204
+ 8: ssp370 hadgem3-gc31-mm-r1i1p1f3    missing-ref  5916   204
+ 9: ssp370           nesm3-r1i1p1f1 missing-target  5916   204
+10: ssp370         taiesm1-r1i1p1f1    missing-ref  5916   204
+11: ssp585 hadgem3-gc31-mm-r1i1p1f3    missing-ref  5916   204
+12: ssp585         taiesm1-r1i1p1f1    missing-ref  5916   204
+
+== ssp245 self-scaling check: years
+    year      status     N
+   <int>      <char> <int>
+1:  2022        skip  5508
+2:  2050        skip  5508
+3:  2022 missing-ref   408
+4:  2050 missing-ref   408
+
+== run windows (Caspar's clock)
+           day target               first                last
+        <char> <char>              <POSc>              <POSc>
+ 1: 2026-10-24 ssp126 2026-10-24 17:01:00 2026-10-24 21:20:04
+ 2: 2026-09-29 ssp245 2026-09-29 01:04:15 2026-09-29 01:05:40
+ 3: 2026-10-24 ssp245 2026-10-24 00:00:09 2026-10-24 21:20:05
+ 4: 2026-10-24 ssp370 2026-10-24 00:00:20 2026-10-24 07:48:01
+ 5: 2026-09-29 ssp585 2026-09-29 01:00:57 2026-09-29 01:02:21
+ 6: 2026-10-24 ssp585 2026-10-24 00:00:20 2026-10-24 07:48:01
+ 7: 2026-10-23 ssp370 2026-10-23 23:07:07 2026-10-23 23:59:23
+ 8: 2026-10-23 ssp585 2026-10-23 23:07:07 2026-10-23 23:59:23
+ 9: 2026-10-23 ssp245 2026-10-23 23:07:09 2026-10-23 23:07:09
+10: 2026-10-01 ssp585 2026-10-01 00:34:02 2026-10-01 00:42:48
+
+== seconds per ok combo
+          day target    0%   50%   99%  100%
+       <char> <char> <num> <num> <num> <num>
+1: 2026-10-24 ssp126  3.63  4.14  4.98 11.63
+2: 2026-09-29 ssp245  3.53  3.63  4.47  4.98
+3: 2026-10-24 ssp370  3.69  4.15  4.98 16.48
+4: 2026-09-29 ssp585  3.50  3.72  3.89  5.41
+5: 2026-10-24 ssp245  3.53  4.03  5.27  6.65
+6: 2026-10-24 ssp585  3.69  4.08  4.66 14.95
+7: 2026-10-23 ssp370  3.83  4.12  4.91 14.84
+8: 2026-10-23 ssp585  3.80  4.03  4.56  8.57
+9: 2026-10-01 ssp585  3.56  3.61  4.43  4.46

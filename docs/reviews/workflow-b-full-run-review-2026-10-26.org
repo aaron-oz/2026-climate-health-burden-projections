@@ -1,0 +1,212 @@
+#+TITLE: Review of Caspar's full Workflow B run (manifest and summary), 2026-10-26
+
+* Summary
+
+Caspar reported on 2026-10-26 that the full Workflow B scaling (ssp126,
+ssp370 and ssp585 scaled against ssp245, all 204 locations, 2022-2050)
+finished. Two deliveries, both in
+=~/data/wb-temp-attr-projections/review/scenarios-2026-10-20/=:
+
+- the batch manifest, =workflow_b_batch_manifest.csv= (549,263 data rows),
+  plus =joblog.tsv= (GNU parallel's per-location exit codes);
+- the summary, =workflow_b-20261026T172210Z-1-001.zip= (854 MB), extracted
+  to =workflow_b_bundle/workflow_b/= (=national_by_year.csv=, =by_cause.csv=,
+  =coverage.csv=, =qa_report.txt=, all written 2026-10-25 16:11 on Caspar's
+  clock).
+
+Result: everything checked passes. The manifest shows no failures and full
+coverage; the summary's hard checks pass, including scaled ssp245
+reproducing unscaled ssp245 (worst relative deviation 1.1e-14 over 11,016
+combos); its unscaled columns match the three unscaled scenario bundles to
+rounding; the 12 ssp585 test locations match the accepted September test
+bundle exactly. The scaling barely moves global totals (scaled / unscaled
+non-optimal deaths 1.000 to 1.001 per scenario and decade), so the
+scenario contrasts reported for the unscaled bundles carry over.
+
+One problem found, on our side: the summarizer's plausibility section
+(P1 to P6) pooled the three target scenarios together, so the per-location
+plausibility lines in Caspar's =qa_report.txt= mix ssp126, ssp370 and
+ssp585 ("77 models" = 26 + 24 + 27). Fixed in
+=global-scripts/util_summarize_workflow_b.R= (one block per target) and
+re-run locally on Caspar's =national_by_year.csv=, which carries every input
+those checks use. Caspar does not need to re-run anything.
+
+Scripts and printed output: =output/review-workflow-b-2026-10-26/=
+(=manifest_check=, =wb_check=, =wb_scaling_size=, and
+=plausibility_per_scenario.txt=, the corrected P1 to P6 section).
+
+* Manifest
+
+One row per attempt at one combo (location x model x target scenario x
+year), appended by =util_apply_workflow_b_batch.R=. Status is =ok= (written),
+=skip= (output already existed, not rewritten), =missing-ref= (no ssp245
+burden file for that model), =missing-target= (no target-scenario burden
+file) or =fail=. The final state of a combo is its latest row.
+
+| Check                                                    | Result                                                                                 |
+|----------------------------------------------------------+----------------------------------------------------------------------------------------|
+| Any =fail= row, any run                                  | None                                                                                   |
+| Locations per target                                     | 204 for each of ssp126, ssp245, ssp370, ssp585                                         |
+| Scaled models (final ok or skip), each with 204 x 29 yrs | ssp126: 26, ssp370: 24, ssp585: 27; every model has all 5,916 combos                   |
+| Models without output                                    | missing-ref: hadgem3-gc31-mm, taiesm1 (all three targets); missing-target: gfdl-cm4 (ssp126, ssp370), hadgem3-gc31-ll and nesm3 (ssp370) |
+| Final =skip= without a post-fix =ok= row                 | None                                                                                   |
+| ssp585 re-scale on 2026-10-01                            | Exactly the 119 repaired combos (Haiti, Colombia x3 models, Kuwait), all ok            |
+| ssp245 self-scaling check (2022 and 2050)                | 27 models x 204 locations x 2 years written (ok on the first pass, skip on the second) |
+| =joblog.tsv=                                             | 204 location jobs, all exit 0; covers only the ssp126 run (the ssp370/ssp585 run's joblog was overwritten, so for that run the manifest is the record) |
+
+The model counts match expectations: the unscaled bundles have 28 models
+for ssp126, 25 for ssp370 and 29 for ssp585, minus the models with no
+ssp245 run (taiesm1 everywhere, and hadgem3-gc31-mm for ssp126 and ssp585;
+the script tests the reference before the target, so hadgem3-gc31-mm also
+shows as missing-ref for ssp370, a scenario it has no run for). The
+missing-target rows are the grid's 29-model list meeting a scenario that
+model was never run for; they are expected.
+
+Run timing (Caspar's clock): ssp370 + ssp585 on 2026-10-23 23:07 to
+2026-10-24 07:48, ssp126 on 2026-10-24 17:01 to 21:20. Median 4.1 seconds
+per combo. Four locations (33, 101, 102, 349) ran in a first attempt on
+the evening of 2026-10-23 and were not re-run; their rows are ok.
+
+* Summary bundle: integrity
+
+| Check                                                                 | Result                                                              |
+|-----------------------------------------------------------------------+---------------------------------------------------------------------|
+| Caspar's hard checks (heat + cold = non-optimal, finite, no NA scale factors, scale factor 1 for the 4 non-temperature causes, every row matched a life-table ex) | All PASS |
+| Scaled ssp245 = unscaled ssp245 (Caspar's QA)                         | PASS, 11,016 combos, worst relative deviation 1.1e-14               |
+| Rows: (models, locations, years) per scenario                         | ssp126 (26, 204, 29), ssp370 (24, 204, 29), ssp585 (27, 204, 29), ssp245 (27, 204, 2); no duplicate keys |
+| Unscaled target columns vs the unscaled bundles (2026-10-20, -22)     | Every row matched; worst relative deviation 2.2e-12                 |
+| ssp245 reference columns (all targets) vs the ssp245 bundle           | 455,532 of 455,532 rows matched; worst 2.0e-13                      |
+| 12 ssp585 test locations vs accepted test bundle v2                   | 10,044 of 10,044 rows, 41 columns, zero difference                  |
+| =by_cause.csv= sums to =national_by_year.csv= (scaled heat, cold)     | 17 causes per row, worst relative deviation 2.0e-11                 |
+
+* Summary bundle: size of the scaling
+
+Ratio r = scaled / unscaled national non-optimal deaths (draw means), per
+(location, model, year):
+
+| Target | 1st pct | median | 99th pct | min   | max   | share within 5 % | largest change in IHME 17-cause mortality |
+|--------+---------+--------+----------+-------+-------+------------------+-------------------------------------------|
+| ssp126 |   0.981 |  1.000 |    1.025 | 0.925 | 1.160 |            99.9% | 6.1 %                                     |
+| ssp370 |   0.983 |  1.001 |    1.027 | 0.936 | 1.165 |            99.9% | 5.8 %                                     |
+| ssp585 |   0.984 |  1.001 |    1.031 | 0.941 | 1.154 |            99.9% | 4.6 %                                     |
+
+The largest single ratios are all Singapore (location 69), about 1.15 to
+1.17 in individual model-years with 90 to 250 unscaled non-optimal deaths.
+Singapore is hot year-round, so its PAF and hence 1/(1-PAF) moves more
+with temperature; I have not checked further. Location medians furthest
+from 1 are small island states (Kiribati, Nauru, Marshall Islands, Cook
+Islands), within 1 % of 1. No decade-mean ratio is outside 0.90 to 1.10 for
+any location and scenario (corrected P4 check, zero CHECK flags).
+
+* Summary bundle: scenario contrasts after scaling
+
+Global totals, mean over models of the sum over locations, target / ssp245,
+models shared by the two scenarios:
+
+| Target | Decade    | Models | Heat, scaled | Heat, unscaled | Cold, scaled | Models with more heat (scaled) |
+|--------+-----------+--------+--------------+----------------+--------------+--------------------------------|
+| ssp126 | 2022-2030 |     26 |        1.020 |          1.019 |        0.995 | 19                             |
+| ssp126 | 2031-2040 |     26 |        1.016 |          1.015 |        0.995 | 20                             |
+| ssp126 | 2041-2050 |     26 |        0.963 |          0.964 |        1.004 | 7                              |
+| ssp370 | 2022-2030 |     24 |        0.983 |          0.983 |        1.007 | 7                              |
+| ssp370 | 2031-2040 |     24 |        1.008 |          1.006 |        1.006 | 13                             |
+| ssp370 | 2041-2050 |     24 |        1.008 |          1.006 |        1.004 | 13                             |
+| ssp585 | 2022-2030 |     27 |        1.014 |          1.013 |        0.998 | 19                             |
+| ssp585 | 2031-2040 |     27 |        1.066 |          1.064 |        0.990 | 25                             |
+| ssp585 | 2041-2050 |     27 |        1.134 |          1.129 |        0.974 | 27                             |
+
+These agree with the unscaled readings in the 2026-10-20 and 2026-10-22
+reviews (2041-2050 heat 1.13 for ssp585, 1.006 for ssp370, 0.965 for
+ssp126). The scaling adds at most half a percentage point to the heat
+ratios.
+
+* Temperatures (new: the summarizer reads them on Caspar's machine)
+
+Population-weighted annual mean temperature, target minus ssp245 (C), for
+the years the summarizer samples (2022, 2030, 2040, 2050). "Death-weighted"
+averages locations by ssp245 non-optimal deaths, a rough global figure.
+
+| Target | Year | Median over locations | Share of locations warmer | Death-weighted | Models warmer (death-weighted) |
+|--------+------+-----------------------+---------------------------+----------------+--------------------------------|
+| ssp126 | 2022 |                 -0.08 |                       19% |          -0.01 | 12 of 26                       |
+| ssp126 | 2030 |                 +0.04 |                       70% |          +0.11 | 19 of 26                       |
+| ssp126 | 2040 |                 -0.12 |                       16% |          -0.02 | 15 of 26                       |
+| ssp126 | 2050 |                 -0.22 |                        2% |          -0.25 | 6 of 26                        |
+| ssp370 | 2022 |                 -0.06 |                       25% |          -0.11 | 7 of 24                        |
+| ssp370 | 2030 |                 -0.03 |                       39% |          -0.11 | 6 of 24                        |
+| ssp370 | 2040 |                 +0.05 |                       76% |          -0.05 | 11 of 24                       |
+| ssp370 | 2050 |                 +0.14 |                       80% |          -0.01 | 10 of 24                       |
+| ssp585 | 2022 |                 -0.07 |                       19% |          -0.05 | 11 of 27                       |
+| ssp585 | 2030 |                 +0.13 |                       92% |          +0.18 | 19 of 27                       |
+| ssp585 | 2040 |                 +0.28 |                       99% |          +0.30 | 23 of 27                       |
+| ssp585 | 2050 |                 +0.40 |                      100% |          +0.50 | 23 of 27                       |
+
+Readings, all suggestive only (four sampled years, annual means, no
+significance testing):
+
+- ssp585 warms steadily against ssp245, everywhere by 2050, as expected.
+- ssp126 is warmer than ssp245 in 2030 and cooler by 2050. This is
+  consistent with the ssp126 heat excess to about 2036 noted on
+  2026-10-22; an aerosol-reduction effect is one possible explanation, not
+  verified here.
+- ssp370: most locations are slightly warmer by 2040-2050, but the
+  death-weighted mean stays at or below 0 through 2050, so the places with
+  the most deaths are not warmer under ssp370. That fits the near-1 global
+  heat ratio (1.008). Which locations drive the death weighting (India and
+  China, I would guess, unverified) has not been checked.
+- Across models, warming more goes with more heat burden: at 2050 the
+  correlation between the temperature difference and the heat-death
+  difference is positive in 91 % (ssp126), 96 % (ssp370) and 98 % (ssp585)
+  of locations, median r 0.69, 0.80, 0.74.
+
+** The ssp370 Western/Central Europe question (raised 2026-10-20)
+
+| Location    | dT 2040 | dT 2050 | Models warmer 2050 | Heat ratio 2041-2050 | Models with more heat |
+|-------------+---------+---------+--------------------+----------------------+-----------------------|
+| Czechia     |   +0.13 |   +0.15 | 13 of 24           |                0.969 | 7 of 24               |
+| Austria     |   +0.05 |   -0.03 | 13 of 24           |                0.908 | 7 of 24               |
+| Germany     |   +0.06 |   +0.13 | 15 of 24           |                0.969 | 9 of 24               |
+| Netherlands |   +0.07 |   +0.18 | 12 of 24           |                0.899 | 8 of 24               |
+
+So the lower ssp370 heat burden in these four countries does not come with
+lower annual mean temperatures: they are about 0.1 C warmer on average,
+with models split roughly evenly. The temperature data here do not explain
+the heat result. Possible reasons, none tested: annual means can hide
+differences in summer extremes, which drive heat deaths; the four sampled
+years may not represent the decade; or this is model noise (the heat ratio
+uses all ten years, the temperature only two). Settling it would need
+summer or hot-day temperature summaries per model, which only Caspar's
+machine has.
+
+* Corrected plausibility flags (P1 to P6, per target)
+
+Counts of locations flagged CHECK out of 204, from
+=plausibility_per_scenario.txt=. P4 (size of scaling) and P6 (reported
+only) have none.
+
+| Target | P1 temperature | P2 burden direction | P3 warm-more, heat-more | P5 heat share |
+|--------+----------------+---------------------+-------------------------+---------------|
+| ssp126 |            204 |                 200 |                      17 |           196 |
+| ssp370 |            104 |                  56 |                       9 |            36 |
+| ssp585 |             32 |                  10 |                       5 |             3 |
+
+ssp126 flags are expected, since the rules assume a target warmer than
+ssp245. ssp370 flags reflect how close it is to ssp245. For ssp585: 30 of
+the 32 temperature flags are because 2050 is a little below 2040 (single
+sampled years, mostly sub-Saharan Africa), and only Mongolia (-0.11 C in
+2040) and Estonia (-0.02 C in 2040) have a non-positive value; the burden
+direction flags are small or cold places with few heat deaths (Greenland,
+Monaco, Andorra, Singapore, Burundi, Liberia, Japan, Ukraine, Armenia,
+Haiti); five locations have a negative warm-more/heat-more correlation.
+None of these looks like a bug.
+
+* Open, none of it needing Caspar now
+
+- Headline ensemble size for scaled results: 26 models for ssp126 (28
+  unscaled), 24 for ssp370 (25), 27 for ssp585 (29), because models with
+  no ssp245 run cannot be scaled. Deferred by Aaron.
+- The multi-model summary (pool models x draws, decided 2026-09-29) is not
+  built yet; it is ours to build from these CSVs.
+- The Honduras asterisk, deferred.
+- The Europe ssp370 question can only go further with seasonal or
+  hot-day temperature summaries from Caspar; optional.

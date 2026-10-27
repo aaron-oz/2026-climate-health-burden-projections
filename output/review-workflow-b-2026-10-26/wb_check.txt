@@ -1,0 +1,140 @@
+== A. rows per scenario (models x locations x years)
+   scenario   rows models  locs years
+     <char>  <int>  <int> <int> <int>
+1:   ssp126 153816     26   204    29
+2:   ssp245  11016     27   204     2
+3:   ssp370 141984     24   204    29
+4:   ssp585 159732     27   204    29
+duplicate keys: 0 
+
+== B. unscaled columns vs the unscaled scenario bundles (draw means)
+  ssp126 pipeline_* vs ssp126 bundle: 153816 of 153816 rows matched; worst rel. dev heat 2.15e-12 cold 3.63e-14 nonopt 1.00e-14
+  ssp370 pipeline_* vs ssp370 bundle: 141984 of 141984 rows matched; worst rel. dev heat 1.64e-13 cold 4.01e-14 nonopt 1.01e-14
+  ssp585 pipeline_* vs ssp585 bundle: 159732 of 159732 rows matched; worst rel. dev heat 3.09e-13 cold 7.51e-14 nonopt 9.90e-15
+  ssp245 pipeline_* vs ssp245 bundle: 11016 of 11016 rows matched; worst rel. dev heat 9.86e-15 cold 2.53e-14 nonopt 9.45e-15
+  ref_* (all targets) vs ssp245 bundle: 455532 of 455532 rows matched; worst rel. dev heat 1.95e-13 nonopt 9.84e-15
+  scaled ssp245 vs ssp245 bundle: worst rel. dev heat 0.00e+00 nonopt 4.52e-15
+
+== C. 12 ssp585 test locations vs the accepted test bundle v2 (summary_workflow_b)
+  10044 of 10044 test rows matched; columns compared 41; worst absolute difference 0 (n_draws)
+
+== D. by_cause sums to national (scaled heat, cold)
+  rows 466548 of 466548; causes per row 17-17; worst rel. dev heat 2.03e-11 cold 5.42e-13
+
+== E. global totals: mean over models of (sum over locations), scaled vs unscaled, target / ssp245
+   scenario    decade models heat_scaled heat_unscaled cold_scaled
+     <char>    <char>  <int>       <num>         <num>       <num>
+1:   ssp126 2022-2030     26      1.0199        1.0187      0.9951
+2:   ssp126 2031-2040     26      1.0160        1.0147      0.9952
+3:   ssp126 2041-2050     26      0.9631        0.9636      1.0039
+4:   ssp370 2022-2030     24      0.9834        0.9827      1.0067
+5:   ssp370 2031-2040     24      1.0077        1.0062      1.0059
+6:   ssp370 2041-2050     24      1.0080        1.0064      1.0039
+7:   ssp585 2022-2030     27      1.0142        1.0132      0.9978
+8:   ssp585 2031-2040     27      1.0661        1.0635      0.9897
+9:   ssp585 2041-2050     27      1.1343        1.1288      0.9744
+   cold_unscaled models_heat_up_scaled
+           <num>                 <int>
+1:        0.9950                    19
+2:        0.9951                    20
+3:        1.0037                     7
+4:        1.0060                     7
+5:        1.0051                    13
+6:        1.0033                    13
+7:        0.9976                    19
+8:        0.9895                    25
+9:        0.9745                    27
+  global scaled / unscaled non-optimal, by scenario and decade
+   scenario    decade scaled_over_unscaled
+     <char>    <char>                <num>
+1:   ssp126 2022-2030                1.000
+2:   ssp126 2031-2040                1.000
+3:   ssp126 2041-2050                1.000
+4:   ssp370 2022-2030                1.001
+5:   ssp370 2031-2040                1.001
+6:   ssp370 2041-2050                1.001
+7:   ssp585 2022-2030                1.000
+8:   ssp585 2031-2040                1.001
+9:   ssp585 2041-2050                1.001
+
+== F. temperature: population-weighted mean, target minus ssp245 (C), per scenario
+  locations x models with temperatures: 62832 years: 2022,2030,2040,2050 
+    scenario  year median_loc      p10     p90 share_warmer
+      <char> <int>      <num>    <num>   <num>        <num>
+ 1:   ssp126  2022    -0.0815 -0.21681  0.0598       0.1863
+ 2:   ssp126  2030     0.0406 -0.04651  0.1666       0.6961
+ 3:   ssp126  2040    -0.1205 -0.27004  0.0313       0.1618
+ 4:   ssp126  2050    -0.2227 -0.42099 -0.0617       0.0245
+ 5:   ssp370  2022    -0.0598 -0.24563  0.0556       0.2451
+ 6:   ssp370  2030    -0.0260 -0.18044  0.0769       0.3873
+ 7:   ssp370  2040     0.0491 -0.07955  0.1728       0.7647
+ 8:   ssp370  2050     0.1391 -0.03460  0.2653       0.7990
+ 9:   ssp585  2022    -0.0657 -0.19529  0.0456       0.1912
+10:   ssp585  2030     0.1290  0.00515  0.2961       0.9216
+11:   ssp585  2040     0.2758  0.13159  0.4334       0.9902
+12:   ssp585  2050     0.3989  0.24885  0.6247       1.0000
+    scenario  year death_weighted_mean models_warmer models
+      <char> <int>               <num>         <int>  <int>
+ 1:   ssp126  2022             -0.0140            12     26
+ 2:   ssp126  2030              0.1134            19     26
+ 3:   ssp126  2040             -0.0240            15     26
+ 4:   ssp126  2050             -0.2463             6     26
+ 5:   ssp370  2022             -0.1129             7     24
+ 6:   ssp370  2030             -0.1064             6     24
+ 7:   ssp370  2040             -0.0497            11     24
+ 8:   ssp370  2050             -0.0105            10     24
+ 9:   ssp585  2022             -0.0467            11     27
+10:   ssp585  2030              0.1832            19     27
+11:   ssp585  2040              0.2993            23     27
+12:   ssp585  2050              0.4976            23     27
+
+== G. per scenario, models warming more add more heat: correlation across models at 2050 (median over locations)
+   scenario median_r share_positive
+     <char>    <num>          <num>
+1:   ssp126    0.692          0.912
+2:   ssp370    0.795          0.956
+3:   ssp585    0.737          0.975
+
+== H. Western/Central Europe, ssp370 vs ssp245 (Austria 75, Germany 81, Czechia 47, Netherlands 89)
+  ssp126 
+Key: <location_id>
+   location_id dT_2040 dT_2050 models_warmer_2040 models_warmer_2050
+         <int>   <num>   <num>              <int>              <int>
+1:          47 -0.1568  -0.422                 10                  9
+2:          75 -0.0731  -0.313                 10                 11
+3:          81 -0.2086  -0.338                 10                  7
+4:          89 -0.2132  -0.247                 12                  7
+   models_2040 models_2050 heat_ratio_2041_2050 models_heat_up        name
+         <int>       <int>                <num>          <int>      <char>
+1:          26          26                0.933              8     Czechia
+2:          26          26                0.978             11     Austria
+3:          26          26                0.944             10     Germany
+4:          26          26                0.933              8 Netherlands
+  ssp370 
+Key: <location_id>
+   location_id dT_2040 dT_2050 models_warmer_2040 models_warmer_2050
+         <int>   <num>   <num>              <int>              <int>
+1:          47  0.1263  0.1482                 11                 13
+2:          75  0.0534 -0.0295                 13                 13
+3:          81  0.0551  0.1349                 12                 15
+4:          89  0.0728  0.1821                 12                 12
+   models_2040 models_2050 heat_ratio_2041_2050 models_heat_up        name
+         <int>       <int>                <num>          <int>      <char>
+1:          24          24                0.969              7     Czechia
+2:          24          24                0.908              7     Austria
+3:          24          24                0.969              9     Germany
+4:          24          24                0.899              8 Netherlands
+  ssp585 
+Key: <location_id>
+   location_id dT_2040 dT_2050 models_warmer_2040 models_warmer_2050
+         <int>   <num>   <num>              <int>              <int>
+1:          47   0.230   0.668                 18                 21
+2:          75   0.348   0.805                 18                 23
+3:          81   0.250   0.536                 17                 21
+4:          89   0.203   0.457                 17                 20
+   models_2040 models_2050 heat_ratio_2041_2050 models_heat_up        name
+         <int>       <int>                <num>          <int>      <char>
+1:          27          27                 1.18             20     Czechia
+2:          27          27                 1.15             20     Austria
+3:          27          27                 1.10             14     Germany
+4:          27          27                 1.00             14 Netherlands
