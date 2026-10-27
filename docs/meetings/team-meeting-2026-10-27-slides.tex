@@ -11,7 +11,7 @@
 \usetheme{ozlabs}
 
 \renewcommand{\ozfootbrand}{OZ Labs}
-\renewcommand{\ozfooturl}{ozstats.space}
+\renewcommand{\ozfooturl}{ozlabs.tech}
 \renewcommand{\ozeyelogo}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
 
 \usepackage{booktabs}
@@ -19,7 +19,7 @@
 \title{Scenario Runs Complete: Choices and First Results}
 \subtitle{Heat and cold deaths, 204 countries, 2022--2050, four climate scenarios}
 \author{Aaron Osgood-Zimmerman}
-\institute{OZ Labs LLC, for the World Bank climate-health project}
+\institute{OZ Labs, for the World Bank}
 \date{October 27, 2026}
 
 \begin{document}
@@ -33,10 +33,11 @@
     \item All four scenarios (SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5) have
       finished for all 204 countries, 2022--2050, along with the step that
       adjusts each scenario to IHME's mortality forecasts.
+    \item Thanks, Caspar!
     \item I have checked everything Caspar sent. It all passes: the totals
       add up, nothing is missing, and the results match the earlier test
       runs exactly.
-    \item Today: four choices I'd like the team's view on, then four early
+    \item Today: five choices I'd like the team's view on, then four early
       results.
     \item \textbf{Caveat for every number here:} these are averages across
       climate models, global totals, with no uncertainty ranges yet. The
@@ -44,7 +45,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Choice 1: which climate models go into the headline numbers?}
+\begin{frame}{Choice 1: which climate models for the headline numbers?}
   \small
   The adjustment step needs each model's SSP2-4.5 run, and two models don't
   have one. So we have 26 models for SSP1-2.6, 24 for SSP3-7.0 and 27 for
@@ -71,8 +72,7 @@
     \item ``Every model'' compares different sets of models, which adds about
       2 points to the SSP5-8.5 increase. Two of the extra models are among the
       three hottest.
-    \item \textbf{My plan:} same models in both for each scenario against
-      SSP2-4.5, and the common 24 for any table showing all four side by side.
+    \item \textbf{My proposal:} same models everywhere so there are not different ssp245 floating around.
   \end{itemize}
 \end{frame}
 
@@ -122,8 +122,8 @@
       uncertainty range that includes disagreement between climate models
       (agreed in September).
     \item It needs one more run on Caspar's machine. The code is written and
-      tested. I'll ask him for every year, so we can show any period later
-      (single years, five or ten years) without asking him again.
+      tested. I plan to ask for every year, so we can show any period later
+      (single years, five or ten years) without asking Caspar for another rerun.
     \item Questions for the team (none of these hold up Caspar's run):
       \begin{enumerate}
         \item \textbf{Periods:} which years or periods should the tables show?
@@ -132,6 +132,22 @@
         \item \textbf{Measures:} deaths and years of life lost; are rates per
           100,000 people also wanted?
       \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice 5: which uncertainty ranges to show?}
+  \begin{itemize}
+    \item \textbf{My suggestion:} show two ranges for every number, 95\% and
+      66\%.
+    \item \textbf{95\%} (from the 2.5th to the 97.5th percentile) is the GBD
+      convention. It matches Burkart et al.\ and the GBD estimates people
+      will compare us with.
+    \item \textbf{66\%} (from the 17th to the 83rd percentile) is the IPCC's
+      ``likely'' range, the convention climate readers know.
+    \item Both come from the same pooled results, so there's no extra run,
+      and each range rests on many values: 24 models $\times$ 500 draws =
+      12,000 per number.
+    \item Worth fixing the ranges now, before we look at the results.
   \end{itemize}
 \end{frame}
 
