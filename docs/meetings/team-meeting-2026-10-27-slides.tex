@@ -1,0 +1,248 @@
+% team-meeting-2026-10-27-slides.tex -- discussion slides for the team meeting
+% on the finished scenario runs, 2026-10-27.
+% Build (either engine, run twice):
+%   TEXINPUTS=/var/home/aoz/code/oz-templates//: xelatex team-meeting-2026-10-27-slides.tex
+%   TEXINPUTS=/var/home/aoz/code/oz-templates//: pdflatex team-meeting-2026-10-27-slides.tex
+% Numbers come from output/review-workflow-b-2026-10-26/ (paired_headline.txt,
+% model_sets.txt, wb_check.txt) and docs/reviews/workflow-b-full-run-review-2026-10-26.org.
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usetheme{ozlabs}
+
+\renewcommand{\ozfootbrand}{OZ Labs}
+\renewcommand{\ozfooturl}{ozstats.space}
+
+\usepackage{booktabs}
+
+\title{Scenario Runs Complete: Choices and First Results}
+\subtitle{Heat and cold deaths, 204 countries, 2022--2050, four climate scenarios}
+\author{Aaron Osgood-Zimmerman}
+\institute{OZ Labs LLC, for the World Bank climate-health project}
+\date{October 27, 2026}
+
+\begin{document}
+
+\begin{frame}[plain,noframenumbering]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Where we are}
+  \begin{itemize}
+    \item All four scenarios (SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5) have
+      finished for all 204 countries, 2022--2050, along with the step that
+      adjusts each scenario to IHME's mortality forecasts.
+    \item I have checked everything Caspar sent. It all passes: the totals
+      add up, nothing is missing, and the results match the earlier test
+      runs exactly.
+    \item Today: four choices I'd like the team's view on, then four early
+      results.
+    \item \textbf{Caveat for every number here:} these are averages across
+      climate models, global totals, with no uncertainty ranges yet. The
+      ranges come with the combined summary (choice 4).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice 1: which climate models go into the headline numbers?}
+  \small
+  The adjustment step needs each model's SSP2-4.5 run, and two models don't
+  have one. So we have 26 models for SSP1-2.6, 24 for SSP3-7.0 and 27 for
+  SSP5-8.5. Only 24 models were run for all four scenarios.
+
+  \medskip
+  Heat deaths in 2041--2050, relative to SSP2-4.5:
+
+  \medskip
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    & Every model & Same models in both & Same 24 everywhere \\
+    \midrule
+    SSP1-2.6 & 0.985 & 0.963 & 0.964 \\
+    SSP3-7.0 & 1.002 & 1.008 & 1.008 \\
+    SSP5-8.5 & 1.152 & 1.134 & 1.127 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item ``Every model'' compares different sets of models, which adds about
+      2 points to the SSP5-8.5 increase. Two of the extra models are among the
+      three hottest.
+    \item \textbf{My plan:} same models in both for each scenario against
+      SSP2-4.5, and the common 24 for any table showing all four side by side.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice 2: keep the adjustment to IHME's forecasts?}
+  \begin{itemize}
+    \item The adjustment barely moves the results: global deaths change by
+      less than 0.15\% in every scenario and decade.
+    \item For a single country and year it stays within 5\% in 99.9\% of
+      cases. The largest effect is Singapore, up to 16.5\%.
+    \item The cost is losing one or two climate models per scenario
+      (choice 1).
+    \item \textbf{My suggestion:} keep the adjusted numbers as the headline,
+      since that is the method we agreed, and note that the unadjusted
+      numbers agree.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice 3: how to present heat and cold}
+  SSP5-8.5 relative to SSP2-4.5, 2041--2050:
+
+  \medskip
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    & Change & Range across models \\
+    \midrule
+    Heat deaths & +13.4\% & +4\% to +25\% \\
+    Cold deaths & $-2.6$\% & $-5.5$\% to $-1.1$\% \\
+    All temperature deaths & +1.8\% & $-0.3$\% to +4\% \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item Cold deaths are about 2.7 times heat deaths, so the drop in cold
+      deaths largely offsets the rise in heat deaths.
+    \item Reporting only the total would hide the heat increase.
+    \item \textbf{My suggestion:} always show heat, cold and the total side by
+      side.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice 4: what should the combined summary contain?}
+  \begin{itemize}
+    \item The combined summary pools all models and gives each number an
+      uncertainty range that includes disagreement between climate models
+      (agreed in September).
+    \item It needs one more run on Caspar's machine. I'm writing the code now.
+    \item Questions for the team:
+      \begin{enumerate}
+        \item \textbf{Time:} ten-year periods only (2022--2030, 2031--2040,
+          2041--2050), or also single years such as 2030, 2040, 2050?
+          Every year for every country is too large to transfer.
+        \item \textbf{Regions:} GBD regions, World Bank regions, or income
+          groups? This can be decided later; it doesn't hold up Caspar's run.
+        \item \textbf{Measures:} deaths and years of life lost; are rates per
+          100,000 people also wanted?
+      \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Result 1: most of the growth to 2050 happens in every scenario}
+  \small
+  Global heat deaths per year, in millions:
+
+  \medskip
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    & 2022--2030 & 2031--2040 & 2041--2050 \\
+    \midrule
+    SSP1-2.6 & 0.44 & 0.57 & 0.71 \\
+    SSP2-4.5 & 0.44 & 0.56 & 0.74 \\
+    SSP3-7.0 & 0.42 & 0.56 & 0.74 \\
+    SSP5-8.5 & 0.44 & 0.59 & 0.84 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item Heat deaths rise by about 70\% by 2041--2050 even under SSP2-4.5.
+      The gap between scenarios is much smaller.
+    \item My guess is population aging, IHME's mortality trends and warming
+      that is already locked in. I haven't separated these.
+    \item Question: do we lead with the overall rise or with the differences
+      between scenarios?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Result 2: SSP1-2.6 is slightly worse than SSP2-4.5 at first}
+  \begin{itemize}
+    \item By 2041--2050 the scenarios are in the expected order: SSP5-8.5
+      highest, SSP3-7.0 about the same as SSP2-4.5, SSP1-2.6 lowest.
+    \item Before that, SSP1-2.6 has slightly more heat deaths than SSP2-4.5:
+      2\% more in 2022--2030 and 1.6\% more in 2031--2040.
+    \item The temperatures agree. Where most deaths occur, SSP1-2.6 is
+      0.11\,\textcelsius{} warmer than SSP2-4.5 in 2030 and
+      0.25\,\textcelsius{} cooler by 2050.
+    \item One possible reason is faster cuts in air pollution under SSP1-2.6,
+      which removes some cooling haze. I haven't verified this.
+    \item Question: does anyone know this pattern from the climate
+      literature? Explain it, or just footnote it?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Result 3: SSP3-7.0 gives fewer heat deaths in parts of Europe}
+  \small
+  SSP3-7.0 relative to SSP2-4.5 (24 models):
+
+  \medskip
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    & Heat deaths, 2041--2050 & Models with more & Mean temperature, 2050 \\
+    \midrule
+    Austria     & $-9$\% & 7 of 24 & $-0.03$\,\textcelsius{} \\
+    Germany     & $-3$\% & 9 of 24 & +0.13\,\textcelsius{} \\
+    Czechia     & $-3$\% & 7 of 24 & +0.15\,\textcelsius{} \\
+    Netherlands & $-10$\% & 8 of 24 & +0.18\,\textcelsius{} \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item Fewer heat deaths, even though the year-round average temperature is
+      about the same or slightly warmer.
+    \item Possible reasons, none tested: summer heat differs in a way the
+      yearly average hides; I only have temperatures for four sample years;
+      or it's noise between models.
+    \item Question: is it worth asking Caspar for summer temperatures?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Result 4: huge ratios where heat deaths are tiny}
+  \small
+  SSP5-8.5 relative to SSP2-4.5, heat deaths, 2041--2050:
+
+  \medskip
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    & Ratio & Heat deaths per year under SSP2-4.5 \\
+    \midrule
+    Greenland & 3.00 & 0.00001 \\
+    Andorra   & 2.14 & 0.01 \\
+    Monaco    & 2.14 & 0.11 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item These ratios are correct, but they mean little.
+    \item \textbf{My suggestion:} keep every country, show deaths next to
+      every ratio, and flag countries with very few deaths rather than drop
+      them. Where to draw the line is a team call.
+    \item Related, still open: how to mark countries with rare extreme
+      events, such as Haiti (already marked) and Honduras.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Next steps}
+  \begin{itemize}
+    \item Me, now: the code for the combined summary, tested here first.
+    \item Caspar: one more run on his machine once we settle choice 4.
+    \item Me, after his run: combined tables with uncertainty ranges, using
+      whichever model choice the team prefers. Changing the model choice
+      later will not need another run from Caspar.
+  \end{itemize}
+\end{frame}
+
+\end{document}
