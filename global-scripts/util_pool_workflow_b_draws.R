@@ -44,8 +44,10 @@
 #                    files is always added.
 #
 # Outputs, under --out:
-#   pooled.csv      one row per (unit, target scenario, period, measure).
-#                   unit_type is "location" or "group". Every value is per
+#   pooled.csv      one row per (unit, slice, target scenario, period, measure).
+#                   unit_type is "location" or "group". slice is "all" for the
+#                   national totals (draws/), the cause for draws_cause/, and
+#                   e.g. "a65plus_sex2" (age group, sex) for draws_age/. Every value is per
 #                   year (period total / n_years). Columns: n_years, n_models;
 #                   target_* and ref_* each with mean, lowerXX and upperXX
 #                   for each interval XX in --intervals (e.g. lower95,
@@ -53,7 +55,8 @@
 #                   means); diff_* (target minus reference) the same; ratio
 #                   (target_mean / ref_mean) and ratio_model_min/max (range of
 #                   per-model mean ratios). Measures: deaths and YLLs for heat,
-#                   cold and non-optimal (heat + cold).
+#                   cold and non-optimal (heat + cold), and yllref_* (YLLs on
+#                   the reference life table) when the draw files carry them.
 #   model_sets.csv  the models used for each target, and any model left out
 #                   of a group because it lacks some of the group's locations.
 
@@ -83,11 +86,20 @@ dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 files <- list.files(DRAWS_DIR, pattern = "^\\d+\\.rds$", full.names = TRUE)
 if (length(files) == 0) stop("No draw files in ", DRAWS_DIR)
-measures <- c("deaths_heat", "deaths_cold", "deaths_nonopt", "yll_heat", "yll_cold", "yll_nonopt")
-src_vals <- c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold")
-
 # Reported periods -> the draw-file periods each one sums.
 first <- readRDS(files[1])
+# Value columns present (yllref_* only when the summarizer had --ref_lifetable),
+# and the breakdown: draws_cause files carry acause, draws_age files carry
+# age_group and sex_id. Each breakdown cell is pooled separately; the "slice"
+# column names it ("all" for the national totals).
+src_vals <- intersect(c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold", "yllref_heat", "yllref_cold"), names(first))
+measures <- c("deaths_heat", "deaths_cold", "deaths_nonopt", "yll_heat", "yll_cold", "yll_nonopt",
+              if ("yllref_heat" %in% src_vals) c("yllref_heat", "yllref_cold", "yllref_nonopt"))
+slice_of <- function(d) {
+  if ("acause" %in% names(d)) d$acause
+  else if ("age_group" %in% names(d)) paste0(d$age_group, "_sex", d$sex_id)
+  else rep("all", nrow(d))
+}
 src_periods <- unique(first$period)
 want <- split_csv(PERIODS)
 period_map <- if (length(want) == 0) setNames(as.list(src_periods), src_periods) else {
@@ -104,9 +116,10 @@ read_batch <- function(pers) {
   need <- unique(unlist(period_map[pers]))
   rbindlist(lapply(files, function(f) {
     d <- setDT(readRDS(f))[period %in% need]
+    d[, slice := slice_of(d)]
     rbindlist(lapply(pers, function(p)
       d[period %in% period_map[[p]], c(list(n_years = sum(n_years)), lapply(.SD, sum)),
-        by = .(location_id, model, scenario, draw), .SDcols = src_vals][, period := p]))
+        by = .(location_id, model, scenario, slice, draw), .SDcols = src_vals][, period := p]))
   }))
 }
 
@@ -139,32 +152,32 @@ qint <- function(x, prefix) {
 }
 
 pool_measure <- function(dr, m, sets, targets, excluded_env) {
-  v <- dr[, .(location_id, model, scenario, period, n_years, draw, v = get(m))]
-  loc <- v[, .(unit_type = "location", unit = as.character(location_id), model, scenario, period, n_years, draw, v)]
+  v <- dr[, .(location_id, model, scenario, slice, period, n_years, draw, v = get(m))]
+  loc <- v[, .(unit_type = "location", unit = as.character(location_id), model, scenario, slice, period, n_years, draw, v)]
   gv <- merge(v, gmap, by = "location_id", allow.cartesian = TRUE)[
-    , .(v = sum(v), nloc = .N, n_years = max(n_years)), by = .(group, model, scenario, period, draw)]
+    , .(v = sum(v), nloc = .N, n_years = max(n_years)), by = .(group, model, scenario, slice, period, draw)]
   gv <- merge(gv, gsize, by = "group")
   inc <- unique(gv[nloc < size, .(group, model, scenario, period)])
   if (nrow(inc) && m == measures[1]) excluded_env$x[[length(excluded_env$x) + 1L]] <- inc
-  gv <- gv[nloc == size, .(unit_type = "group", unit = group, model, scenario, period, n_years, draw, v)]
+  gv <- gv[nloc == size, .(unit_type = "group", unit = group, model, scenario, slice, period, n_years, draw, v)]
   u <- rbind(loc, gv)
   rbindlist(lapply(targets, function(t) {
     S <- sets[[t]]
     p <- merge(u[scenario == t & model %in% S], u[scenario == ref_scen & model %in% S],
-               by = c("unit_type", "unit", "model", "period", "draw"), suffixes = c("_t", "_r"))
+               by = c("unit_type", "unit", "slice", "model", "period", "draw"), suffixes = c("_t", "_r"))
     p[, `:=`(vt = v_t / n_years_t, vr = v_r / n_years_r)]
     p[, d := vt - vr]
-    pm <- p[, .(mt = mean(vt), mr = mean(vr), md = mean(d)), by = .(unit_type, unit, period, model)]
+    pm <- p[, .(mt = mean(vt), mr = mean(vr), md = mean(d)), by = .(unit_type, unit, slice, period, model)]
     pm[, rat := mt / mr]
     s <- p[, c(list(n_years = max(n_years_t), n_models = uniqueN(model), target_mean = mean(vt)),
                qint(vt, "target"), list(ref_mean = mean(vr)), qint(vr, "ref"),
                list(diff_mean = mean(d)), qint(d, "diff")),
-           by = .(unit_type, unit, period)]
+           by = .(unit_type, unit, slice, period)]
     r <- pm[, .(target_model_min = min(mt), target_model_max = max(mt),
                 ref_model_min = min(mr), ref_model_max = max(mr),
                 diff_model_min = min(md), diff_model_max = max(md),
-                ratio_model_min = min(rat), ratio_model_max = max(rat)), by = .(unit_type, unit, period)]
-    s <- merge(s, r, by = c("unit_type", "unit", "period"))
+                ratio_model_min = min(rat), ratio_model_max = max(rat)), by = .(unit_type, unit, slice, period)]
+    s <- merge(s, r, by = c("unit_type", "unit", "slice", "period"))
     s[, `:=`(ratio = target_mean / ref_mean, target = t, measure = m)]
     s
   }))
@@ -176,10 +189,11 @@ out <- list(); sets0 <- NULL; excluded_env <- new.env(); excluded_env$x <- list(
 for (b in batches) {
   dr <- read_batch(b)
   dr[, `:=`(deaths_nonopt = deaths_heat + deaths_cold, yll_nonopt = yll_heat + yll_cold)]
+  if ("yllref_heat" %in% names(dr)) dr[, yllref_nonopt := yllref_heat + yllref_cold]
   if (!ref_scen %in% dr$scenario) stop("No reference (", ref_scen, ") rows in the draw files")
   targets <- setdiff(sort(unique(dr$scenario)), ref_scen)
   # Equal weight per model needs the same number of draws in every model.
-  nd <- dr[, .(n = uniqueN(draw)), by = .(location_id, model, scenario, period)]
+  nd <- dr[, .(n = uniqueN(draw)), by = .(location_id, model, scenario, slice, period)]
   if (uniqueN(nd$n) != 1) stop("Draw counts differ across models: ", paste(sort(unique(nd$n)), collapse = ","))
   # A reported period should have all its years in every model.
   exp_n <- vapply(b, function(p) length(range_years(p)), integer(1))
@@ -201,8 +215,8 @@ for (b in batches) {
   rm(dr); invisible(gc())
 }
 out <- rbindlist(out)
-setcolorder(out, c("unit_type", "unit", "target", "period", "measure", "n_years", "n_models"))
-setorder(out, unit_type, unit, target, period, measure)
+setcolorder(out, c("unit_type", "unit", "slice", "target", "period", "measure", "n_years", "n_models"))
+setorder(out, unit_type, unit, slice, target, period, measure)
 fwrite(out, file.path(OUT, "pooled.csv"))
 
 ms <- rbindlist(lapply(names(sets0), function(t) data.table(target = t, model_set = model_set, model = sets0[[t]], note = "used")))

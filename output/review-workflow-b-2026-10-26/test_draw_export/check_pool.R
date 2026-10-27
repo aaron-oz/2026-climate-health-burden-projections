@@ -16,7 +16,7 @@ for (ms in c("paired", "common")) {
   want <- if (ms == "paired") list(ssp126 = c("m1", "m2"), ssp585 = c("m1", "m2", "m3")) else list(ssp126 = c("m1", "m2"), ssp585 = c("m1", "m2"))
   ok("model sets as expected", all(sapply(names(want), function(t) setequal(S[target == t & note == "used", model], want[[t]]))))
   ok("units: 2 locations + World + groups A, B", setequal(unique(P$unit), c("125", "126", "World", "A", "B")))
-  ok("rows: 5 units x 2 targets x 2 periods x 6 measures", nrow(P) == 120)
+  ok("rows: 5 units x 2 targets x 2 periods x measures", nrow(P) == 5 * 2 * 2 * uniqueN(P$measure) && uniqueN(P$measure) %in% c(6, 9))
   # location 125, ssp585, 2022-2023, heat deaths
   for (cell in list(list(u = "125", locs = 125L, t = "ssp585", p = "2022-2023", m = "deaths_heat"),
                     list(u = "A", locs = c(125L, 126L), t = "ssp126", p = "2030", m = "deaths_nonopt"),

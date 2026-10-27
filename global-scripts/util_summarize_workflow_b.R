@@ -30,6 +30,15 @@
 #                    2022-2030,2031-2040,2041-2050,2030,2040,2050, or
 #                    "annual" for every year in --years (the pooling script
 #                    can then form any period). Default empty: no draw export.
+#   --breakdown_periods= optional. Also write per-draw national totals by cause
+#                    (draws_cause/) and by age group and sex (draws_age/),
+#                    summed over these periods (same syntax as --draw_periods).
+#                    Age groups: under 5, 15-49, 65+ (overlapping is allowed).
+#   --ref_lifetable= optional CSV with columns age_start, ex (a standard
+#                    reference life table, e.g. GBD's). Adds yllref_heat and
+#                    yllref_cold to every draw export: deaths x reference life
+#                    expectancy at the start of the 5-year age group (80+ uses
+#                    age 80).
 #
 # Outputs, under --out:
 #   national_by_year.csv  (location, model, scenario, year): draw mean, median
@@ -62,6 +71,11 @@
 #                         check shows equals its scaled burden. Draw d is kept
 #                         as draw d in every year, so period sums and target
 #                         minus reference differences are taken draw by draw.
+#   draws_cause/{LOC}.rds, draws_age/{LOC}.rds
+#                         only with --breakdown_periods. The same, with an
+#                         acause column, or age_group and sex_id columns.
+#   All draw exports round values to 6 significant digits (relative error at
+#   most 5e-6), which halves their size.
 #
 # The plausibility section needs the reference scenario's unscaled burden and
 # both scenarios' converted temperature files (data/temperature/cckp/...),
@@ -79,7 +93,7 @@ defaults <- list(SCENARIOS = "ssp245,ssp585", REF_SCENARIO = "ssp245",
                  # weighted temperature between the scenarios (reading every
                  # daily temperature file would dominate the run time).
                  TEMP_YEARS = "2022,2030,2040,2050",
-                 DRAW_PERIODS = "")
+                 DRAW_PERIODS = "", BREAKDOWN_PERIODS = "", REF_LIFETABLE = "")
 for (k in names(defaults)) {
   if (!exists(k, envir = globalenv())) assign(k, defaults[[k]], envir = globalenv())
 }
@@ -106,13 +120,29 @@ ref_scen   <- as.character(REF_SCENARIO)
 want_years <- parse_years(YEARS)
 # Draw export periods: label -> years. "2022-2030" covers 2022..2030, "2030" one
 # year, and "annual" means every year in --years as its own period.
-dp_labels <- split_csv(DRAW_PERIODS)
-if (identical(dp_labels, "annual")) dp_labels <- as.character(want_years)
-draw_periods <- setNames(lapply(dp_labels, parse_years), dp_labels)
-draw_years   <- sort(unique(unlist(draw_periods)))
+period_list <- function(spec) {
+  l <- split_csv(spec)
+  if (identical(l, "annual")) l <- as.character(want_years)
+  setNames(lapply(l, parse_years), l)
+}
+draw_periods <- period_list(DRAW_PERIODS)
+bd_periods   <- period_list(BREAKDOWN_PERIODS)
 export_draws <- length(draw_periods) > 0
+export_bd    <- length(bd_periods) > 0
+draw_years   <- sort(unique(c(unlist(draw_periods), unlist(bd_periods))))
 draws_dir    <- file.path(OUT, "draws")
+draws_cause_dir <- file.path(OUT, "draws_cause")
+draws_age_dir   <- file.path(OUT, "draws_age")
 if (export_draws) dir.create(draws_dir, recursive = TRUE, showWarnings = FALSE)
+if (export_bd) for (d_ in c(draws_cause_dir, draws_age_dir)) dir.create(d_, recursive = TRUE, showWarnings = FALSE)
+# Age groups for the age breakdown, by age_group_id (= start of the 5-year group).
+AGE_SLICES <- list(under5 = 0, a15_49 = seq(15, 45, 5), a65plus = seq(65, 80, 5))
+ref_lt <- NULL
+if (nzchar(as.character(REF_LIFETABLE))) {
+  ref_lt <- fread(as.character(REF_LIFETABLE))
+  stopifnot(all(c("age_start", "ex") %in% names(ref_lt)))
+  ref_lt <- ref_lt[, .(age_group_id = as.integer(age_start), exr = as.numeric(ex))]
+}
 wb_root    <- file.path(RESULTS_ROOT, "workflow_b")
 cckp_root  <- file.path(RESULTS_ROOT, "cckp")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
@@ -154,7 +184,7 @@ summ <- function(x) {
     lower = q[1], upper = q[2])
 }
 
-summarize_combo <- function(loc, model, scen, year, lt) {
+summarize_combo <- function(loc, model, scen, year, lt, want_ref = TRUE) {
   f <- file.path(wb_root, loc, paste0(model, "-", scen), sprintf("wb_%d.rds", year))
   d <- tryCatch(setDT(readRDS(f)), error = function(e) NULL)
   if (is.null(d) || nrow(d) == 0) return(NULL)
@@ -197,14 +227,15 @@ summarize_combo <- function(loc, model, scen, year, lt) {
     s <- summ(by_draw[[v]])
     for (nm in names(s)) set(nat, j = paste0(v, "_", nm), value = s[[nm]])
   }
-  # Per-draw totals for the draw export (targets only; the reference comes from
-  # its unscaled burden below).
+  # Per-draw tables for the draw exports (targets only; the reference comes
+  # from its unscaled burden below).
+  do_export <- (export_draws || export_bd) && year %in% draw_years && scen != ref_scen
   tgt_draws <- NULL
-  if (export_draws && year %in% draw_years && scen != ref_scen) {
-    tgt_draws <- by_draw[, .(model = model, scenario = scen, year = year, draw,
-                             deaths_heat = deaths_heat_attrib, deaths_cold = deaths_cold_attrib,
-                             yll_heat = if ("yll_heat" %in% vals) yll_heat else NA_real_,
-                             yll_cold = if ("yll_cold" %in% vals) yll_cold else NA_real_)]
+  if (do_export) {
+    tgt_draws <- draw_tables(d[, .(acause, age_group_id, sex_id, draw,
+                                   h = deaths_heat_attrib, c = deaths_cold_attrib,
+                                   ex = if ("ex" %in% names(d)) ex else NA_real_)],
+                             model, scen, year)
   }
   ref_draws <- NULL
 
@@ -237,16 +268,14 @@ summarize_combo <- function(loc, model, scen, year, lt) {
       set(nat, j = "ref_deaths_heat_mean",   value = mean(rd$h))
       set(nat, j = "ref_deaths_cold_mean",   value = mean(rd$c))
       set(nat, j = "ref_deaths_nonopt_mean", value = mean(rd$n))
-      if (!is.null(tgt_draws)) {
+      if (!is.null(tgt_draws) && want_ref) {
         # Reference YLLs with the same life-table merge as the target's.
         if (!is.null(lt)) {
           rb <- merge(rb, lt, by = c("year", "age_group_id", "sex_id"), all.x = TRUE)
           rb[is.na(ex), ex := 0]
-          ry <- rb[, .(yh = sum(deaths_heat * ex), yc = sum(deaths_cold * ex)), by = draw]
-          rd <- merge(rd, ry, by = "draw")
-        } else rd[, `:=`(yh = NA_real_, yc = NA_real_)]
-        ref_draws <- rd[, .(model = model, scenario = ref_scen, year = year, draw,
-                            deaths_heat = h, deaths_cold = c, yll_heat = yh, yll_cold = yc)]
+        } else rb[, ex := NA_real_]
+        ref_draws <- draw_tables(rb[, .(acause, age_group_id, sex_id, draw, h = deaths_heat,
+                                        c = deaths_cold, ex)], model, ref_scen, year)
       }
     }
     if (year %in% temp_years) {
@@ -265,30 +294,68 @@ summarize_combo <- function(loc, model, scen, year, lt) {
   cause <- cbind(data.table(location_id = loc, model = model, scenario = scen, year = year),
                  merge(cd, cs, by = "acause"))
 
-  list(nat = nat, cause = cause, qa = qa, draws = rbind(tgt_draws, ref_draws))
+  list(nat = nat, cause = cause, qa = qa, draws = tgt_draws, ref_draws = ref_draws)
 }
 
-# Sum one location's per-year draw totals over each export period and write
-# them to draws/{LOC}.rds. A reference (model, year) is read once per target
-# that shares it, so duplicates are dropped first.
-write_location_draws <- function(loc, dl) {
-  if (length(dl) == 0) return(invisible(0L))
-  dr <- unique(rbindlist(dl), by = c("model", "scenario", "year", "draw"))
-  if (nrow(dr) == 0) return(invisible(0L))
-  vals <- c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold")
-  per <- rbindlist(lapply(names(draw_periods), function(p)
-    dr[year %in% draw_periods[[p]],
-       c(list(n_years = uniqueN(year)), lapply(.SD, sum)),
-       by = .(model, scenario, draw), .SDcols = vals][, period := p]))
-  per[, location_id := as.integer(loc)]
-  setcolorder(per, c("location_id", "model", "scenario", "period", "n_years", "draw"))
-  saveRDS(per, file.path(draws_dir, paste0(loc, ".rds")))
-  invisible(nrow(per))
+# Per-draw sums of heat and cold deaths and YLLs for one combo: national
+# total, by cause, and by age group x sex. x has columns acause, age_group_id,
+# sex_id, draw, h, c (heat and cold deaths) and ex (life expectancy, or NA).
+DRAW_VALS <- c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold")
+draw_tables <- function(x, model, scen, year) {
+  x[, `:=`(yll_heat = h * ex, yll_cold = c * ex)]
+  setnames(x, c("h", "c"), c("deaths_heat", "deaths_cold"))
+  vals <- DRAW_VALS
+  if (!is.null(ref_lt)) {
+    x <- merge(x, ref_lt, by = "age_group_id", all.x = TRUE)
+    x[is.na(exr), exr := 0]
+    x[, `:=`(yllref_heat = deaths_heat * exr, yllref_cold = deaths_cold * exr)]
+    vals <- c(vals, "yllref_heat", "yllref_cold")
+  }
+  keys <- data.table(model = model, scenario = scen, year = year)
+  out <- list(total = cbind(keys, x[, lapply(.SD, sum), by = draw, .SDcols = vals]))
+  if (export_bd) {
+    out$cause <- cbind(keys, x[, lapply(.SD, sum), by = .(acause, draw), .SDcols = vals])
+    out$age <- cbind(keys, rbindlist(lapply(names(AGE_SLICES), function(a)
+      x[age_group_id %in% AGE_SLICES[[a]], lapply(.SD, sum), by = .(sex_id, draw), .SDcols = vals][
+        , age_group := a])))
+  }
+  out
+}
+
+# Sum per-year draw tables over each period; n_years is the number of years found.
+collapse_periods <- function(dt, periods, extra_keys) {
+  if (is.null(dt) || nrow(dt) == 0) return(NULL)
+  vals <- intersect(c(DRAW_VALS, "yllref_heat", "yllref_cold"), names(dt))
+  rbindlist(lapply(names(periods), function(p)
+    dt[year %in% periods[[p]], c(list(n_years = uniqueN(year)), lapply(.SD, sum)),
+       by = c("model", "scenario", extra_keys, "draw"), .SDcols = vals][, period := p]))
+}
+
+write_draw_file <- function(dt, loc, dir, extra_keys) {
+  if (is.null(dt) || nrow(dt) == 0) return(invisible(0L))
+  vals <- intersect(c(DRAW_VALS, "yllref_heat", "yllref_cold"), names(dt))
+  for (v in vals) set(dt, j = v, value = signif(dt[[v]], 6))
+  dt[, location_id := as.integer(loc)]
+  setcolorder(dt, c("location_id", "model", "scenario", "period", extra_keys, "n_years", "draw"))
+  saveRDS(dt, file.path(dir, paste0(loc, ".rds")))
+  invisible(nrow(dt))
 }
 
 summarize_location <- function(loc) {
   lt <- load_lifetable(loc)
-  out_nat <- list(); out_cause <- list(); out_qa <- list(); out_cov <- list(); out_draws <- list()
+  out_nat <- list(); out_cause <- list(); out_qa <- list(); out_cov <- list()
+  ex_tot <- list(); ex_cause <- list(); ex_age <- list(); ref_done <- character(0)
+  # Collapse one run's per-year draw tables (a list of draw_tables() results)
+  # to periods and file them.
+  stash <- function(lst) {
+    if (!length(lst)) return(invisible())
+    pick <- function(k) rbindlist(lapply(lst, `[[`, k))
+    if (export_draws) ex_tot[[length(ex_tot) + 1L]] <<- collapse_periods(pick("total"), draw_periods, character(0))
+    if (export_bd) {
+      ex_cause[[length(ex_cause) + 1L]] <<- collapse_periods(pick("cause"), bd_periods, "acause")
+      ex_age[[length(ex_age) + 1L]]     <<- collapse_periods(pick("age"), bd_periods, c("age_group", "sex_id"))
+    }
+  }
   for (scen in scenarios) {
     wb_dirs  <- list.dirs(file.path(wb_root, loc), recursive = FALSE)
     tgt_dirs <- list.dirs(file.path(cckp_root, loc), recursive = FALSE)
@@ -304,14 +371,19 @@ summarize_location <- function(loc) {
       tgt_years <- as.integer(sub("^burden_(\\d+)\\.rds$", "\\1",
                                   grep("^burden_\\d+\\.rds$", list.files(td), value = TRUE)))
       tgt_years <- intersect(tgt_years, want_years)
+      want_ref <- !model %in% ref_done   # the reference's draws are written once per model
+      tgt_l <- list(); ref_l <- list()
       for (y in intersect(sort(wb_years), want_years)) {
-        r <- summarize_combo(loc, model, scen, y, lt)
+        r <- summarize_combo(loc, model, scen, y, lt, want_ref)
         if (is.null(r)) next
         out_nat[[length(out_nat) + 1L]]     <- r$nat
         out_cause[[length(out_cause) + 1L]] <- r$cause
         out_qa[[length(out_qa) + 1L]]       <- r$qa
-        if (!is.null(r$draws)) out_draws[[length(out_draws) + 1L]] <- r$draws
+        if (!is.null(r$draws))     tgt_l[[length(tgt_l) + 1L]] <- r$draws
+        if (!is.null(r$ref_draws)) ref_l[[length(ref_l) + 1L]] <- r$ref_draws
       }
+      stash(tgt_l); stash(ref_l)
+      if (length(ref_l)) ref_done <- c(ref_done, model)
       out_cov[[length(out_cov) + 1L]] <- data.table(
         location_id = as.integer(loc), model = model, scenario = scen,
         years_wb = length(intersect(wb_years, want_years)),
@@ -320,7 +392,11 @@ summarize_location <- function(loc) {
         ref_scenario_exists = dir.exists(rd))
     }
   }
-  if (export_draws) write_location_draws(loc, out_draws)
+  if (export_draws) write_draw_file(rbindlist(ex_tot), loc, draws_dir, character(0))
+  if (export_bd) {
+    write_draw_file(rbindlist(ex_cause), loc, draws_cause_dir, "acause")
+    write_draw_file(rbindlist(ex_age), loc, draws_age_dir, c("age_group", "sex_id"))
+  }
   list(nat = rbindlist(out_nat, fill = TRUE), cause = rbindlist(out_cause, fill = TRUE),
        qa = rbindlist(out_qa, fill = TRUE), cov = rbindlist(out_cov, fill = TRUE))
 }
@@ -562,3 +638,6 @@ cat(readLines(file.path(OUT, "qa_report.txt")), sep = "\n")
 log_msg("Wrote ", OUT, "/{national_by_year,by_cause,coverage}.csv and qa_report.txt")
 if (export_draws) log_msg("Wrote per-draw period totals for ", length(list.files(draws_dir, "\\.rds$")),
                           " locations to ", draws_dir, " (periods: ", paste(names(draw_periods), collapse = ","), ")")
+if (export_bd) log_msg("Wrote per-draw cause and age breakdowns for ", length(list.files(draws_cause_dir, "\\.rds$")),
+                       " locations to ", draws_cause_dir, " and ", draws_age_dir,
+                       " (periods: ", paste(names(bd_periods), collapse = ","), ")")
