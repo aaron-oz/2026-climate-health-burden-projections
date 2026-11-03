@@ -1,0 +1,36 @@
+#+TITLE: Project status: wbg-climate-health-burden-projections
+#+STARTUP: content
+
+Living index of this project's lines of work. Each entry is updated in
+place by /end-session or /handoff and points to that line's latest dated
+status doc in this directory. Git history holds older versions of this file.
+
+* Active lines of work
+** multimodel-summary
+- Latest status doc: [[file:2026-11-03a-multimodel-summary.org]] (2026-11-03)
+- State: Caspar ran the Workflow B summary with per-draw exports (yearly
+  totals, 17 causes, under 5 / 15-49 / 65+ by sex); Aaron is downloading the
+  ~23 GB output. Pooling, benchmark and test code are on main.
+- Next agent action: check the downloaded output (204 files in each of
+  draws/, draws_cause/, draws_age/; national tables match the 2026-10-25
+  summary), then pool with global-scripts/util_pool_workflow_b_draws.R on the
+  24 common models.
+- Open Aaron todos: finish the download and say where it is; pick reporting
+  periods (default decades); supply or approve a World Bank income-group
+  mapping for high income vs LMIC.
+- Still running: nothing on this machine.
+
+* Dormant or closed
+
+* All status docs (newest first)
+- [[file:2026-11-03a-multimodel-summary.org]] 2026-11-03 multimodel-summary:
+  Workflow B full-run review, draw export and pooling code, Caspar's run
+  done, download in progress.
+
+* Earlier handoffs (before docs/status/)
+- docs/handoffs/handoff-cckp-run-failures-2026-07-31.md 2026-07-31 cckp run failures
+- docs/handoffs/handoff-historical-retrospective-options.md (undated) historical retrospective options
+- docs/handoffs/handoff-ihme-temp-unscaling-validity.md (undated) IHME temperature unscaling validity
+- docs/handoffs/handoff-pipeline-vs-samuel-comparison.md (undated) pipeline vs Samuel comparison
+- docs/handoffs/handoff-run-samuel-with-checkpoints.md (undated) running Samuel's scripts with checkpoints
+- docs/handoffs/handoff-uncertainty-draws-plan-2026-08-20.md 2026-08-20 uncertainty draws plan

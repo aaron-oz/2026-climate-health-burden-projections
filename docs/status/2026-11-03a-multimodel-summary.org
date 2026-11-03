@@ -1,0 +1,213 @@
+#+TITLE: Status: multimodel-summary (2026-11-03)
+#+DATE: 2026-11-03
+
+* Read this first
+- This line of work takes the finished scenario runs (four climate
+  scenarios, SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5, abbreviated ssp126,
+  ssp245, ssp370, ssp585; 204 countries; 2022-2050; heat and cold deaths
+  and years of life lost, YLLs) to final multi-model results. "Workflow B"
+  is the step that rescales each scenario's burden to IHME's mortality
+  forecasts. The multi-model summary pools every (climate model, draw)
+  value into one uncertainty interval per number, so disagreement between
+  climate models is part of the interval (method decided 2026-09-29, in
+  =docs/reviews/ssp585-test-review-2026-09-29.org=).
+- Where it stands: Caspar ran the new Workflow B summary with per-draw
+  exports on his machine (go-ahead sent 2026-11-02); as of 2026-11-03 Aaron
+  is downloading the output (about 23 GB, Google Drive split it into
+  several zips).
+- Single most important next action: when the download is complete, check
+  it, then pool it with =global-scripts/util_pool_workflow_b_draws.R= (todo
+  list below, first item).
+- Previous status doc in this line of work: none (first doc in
+  =docs/status/=; earlier context in project memory and =docs/reviews/=).
+- Session ended with: /end-session. Session notes: no compaction; the
+  session ran 2026-10-26 to 2026-11-03. All results below were verified by
+  running code or reading files, except where marked "Caspar reported".
+
+* What this session accomplished
+- Reviewed Caspar's full Workflow B run (2026-10-23/24): batch manifest
+  clean, summary hard checks pass, scaled ssp245 reproduces unscaled ssp245
+  (worst relative deviation 1.1e-14 over 11,016 combos). Fixed a bug in our
+  summarizer: its plausibility checks pooled the three target scenarios
+  together. Review: =docs/reviews/workflow-b-full-run-review-2026-10-26.org=.
+- Model-set comparison (every model / models paired with ssp245 / the 24
+  models common to all four scenarios):
+  =output/review-workflow-b-2026-10-26/model_sets.txt=,
+  =paired_headline.txt=.
+- Team meeting deck: =docs/meetings/team-meeting-2026-10-27-slides.tex=
+  (builds from emacs with no TEXINPUTS: the OZ Labs theme files in
+  =docs/meetings/= are symlinks to =~/code/oz-templates/=).
+- Per-draw export added to =global-scripts/util_summarize_workflow_b.R=
+  (verified on a test fixture, 43 checks pass:
+  =output/review-workflow-b-2026-10-26/test_draw_export/run_tests.sh=):
+  - =--draw_periods=annual= writes =draws/{LOC}.rds=: national heat and cold
+    deaths and YLLs per (model, scenario, year, draw).
+  - =--breakdown_periods=...= writes =draws_cause/= (17 causes) and
+    =draws_age/= (under 5, 15-49, 65+, each by sex) per (model, scenario,
+    period, draw), for six periods: 2022-2025, then five-year blocks to
+    2046-2050.
+  - Values rounded to 6 significant digits, xz-compressed. Reference rows
+    (scenario = ssp245) are the unscaled ssp245 burden, written once per
+    model.
+  - Optional =--ref_lifetable= (a GBD-style reference life table); not used.
+  - Without the new flags, and with them, =national_by_year.csv=,
+    =by_cause.csv= and =coverage.csv= are byte-identical to the previous
+    version (checked on the fixture).
+- New pooling script =global-scripts/util_pool_workflow_b_draws.R=: pools
+  models x draws per country and per group of countries ("World" always,
+  others from a CSV of location_id, group); model sets =common= (24 models
+  in all four scenarios) or =paired= (models with both target and ssp245);
+  forms any period from the yearly files (=--periods=), in batches
+  (=--period_batch=); intervals 95, 80, 66% by default; pools cause and age
+  breakdowns per slice.
+- New benchmark script =global-scripts/util_benchmark_workflow_b_summary.R=.
+  Caspar's benchmark (Caspar reported, 2026-10-27; 3 sample countries,
+  about 3 hours): about 52 GB of input per country, 51 to 53 seconds per
+  GB, about 2 GB of memory per worker, no slowdown with 3 running at once;
+  estimate 153 CPU-hours in total, about 10 hours on 16 workers (34 GB
+  memory) or 5 hours on 32 (67 GB); output about 23 GB.
+- Heat-rise decomposition (Shapley/Das Gupta split of the change in heat
+  deaths into population size, age structure, death rates, heat share):
+  =docs/reviews/heat-rise-decomposition-2026-10-27.org=. Under ssp245, 2022
+  to 2050: +106% = population +23, aging +106, death rates -70, heat share
+  +47 percentage points (model means, single years only).
+- First looks at (a) scenario departures vs model noise and (b) the year
+  heat deaths overtake cold deaths per country:
+  =docs/reviews/scenario-noise-and-crossover-2026-10-27.org=.
+- Instructions for Caspar (benchmark, then full run):
+  =docs/ops/caspar-workflow.md= section 10.
+
+* Decisions made, and why
+- Headline model set: the 24 models common to all four scenarios, plus a
+  sensitivity analysis across model-set options (common / paired / all
+  available). Team, 2026-10-27; Aaron prefers one number per quantity.
+- Keep the Workflow B scaling for headline numbers (team, 2026-10-27). It
+  moves global totals by under 0.15%.
+- Show heat, cold and net side by side, plus breakdowns by cause (team
+  priority) and by age group (under 5, 15-49, 65+; by sex). Team and Aaron,
+  2026-10-27.
+- Measures: deaths, YLLs, rates per 100,000. YLLs keep our national
+  definition (deaths x the country's UN WPP remaining life expectancy at the
+  start of the 5-year age group; 80+ uses age 80). Not comparable with GBD's
+  YLLs, which use a reference life table. Aaron skipped the GBD reference
+  life table (GHDx download site down, 2026-10-28).
+- Uncertainty intervals: 66%, 80% and 95% (team, 2026-10-27).
+- Results shown as trends and decade averages, not single years
+  (interannual noise; Caspar's suggestion, team agreed).
+- Export design "option B": yearly totals plus cause and age breakdowns in
+  the six blocks (Aaron, 2026-10-28). Rejected: cause every year (about 74
+  GB more), cause groups instead of 17 causes (forecloses per-cause
+  results), pooling the breakdowns on Caspar's machine (needs his machine
+  for every later change).
+- 6 significant digits rather than 5 (Aaron): about 4 GB more (about 22
+  against 18 GB, fixture extrapolation) for a 10x smaller rounding error
+  (at most 5e-6 of each value).
+
+* Tried and ruled out
+- Labels (country, model, cause columns) are not what makes the export big:
+  a cause file with only its four value columns is the same size (17.0
+  against 17.2 bytes per row on the fixture). Not worth optimizing.
+- Wide-by-draw layout (one row per key, 500 draw columns): no smaller than
+  the long layout on the fixture (17.7 against 17.2 bytes per row at 6
+  digits, gzip).
+
+* Current state
+** Git
+- =~/code/wbg-climate-health-burden-projections=, main at a586d57 (pushed):
+  holds everything from this session. Aaron's checkout was pulled to
+  6d9aa7e on 2026-11-03; two documentation merges have landed since
+  (42900a0, a586d57), so pull again before editing.
+- Branch =worktree-ssp126-review= (this session's worktree,
+  =.claude/worktrees/ssp126-review=): fully merged into main, pushed. The
+  worktree goes when the session exits.
+- Removed: worktree =~/code/wbg-climate-health-burden-projections-worktrees/scenario-bundles-review=
+  (its branch was merged on 2026-10-20). Its one untracked file, the
+  2026-10-20 email draft, was saved first to
+  =docs/reviews/caspar-scenarios-workflow-b-email-draft.org= on main. The
+  local branch =scenario-bundles-review= still exists (merged).
+- Untouched, not from this session: local branches
+  =samuel-verification-patches= and =verification-depto-day= (no upstream).
+** Running or scheduled
+- Caspar's full summary run: finished (Aaron reported, 2026-11-03); Aaron is
+  downloading the output from Google Drive (2026-11-03). Nothing runs on
+  this machine.
+** Flagged before shutdown but not done
+- None.
+** Permissions Aaron granted this session
+- Merges to main of this session's branch, each approved explicitly. Do
+  not assume they carry over.
+
+* Todos for the next agent
+1. Check the download. Aaron extracts the Drive zips into one empty folder
+   (each zip holds part of the same tree). Then confirm =draws/=,
+   =draws_cause/= and =draws_age/= each hold 204 =.rds= files, and that
+   =national_by_year.csv=, =by_cause.csv=, =coverage.csv= match the
+   2026-10-25 summary at
+   =~/data/wb-temp-attr-projections/review/scenarios-2026-10-20/workflow_b_bundle/workflow_b/=
+   (they should be identical apart from row order; any difference needs
+   explaining before pooling). Read its =qa_report.txt= hard checks. Done
+   when all pass.
+2. Pool the totals: =Rscript global-scripts/util_pool_workflow_b_draws.R
+   --draws_dir=<download>/draws --model_set=common --periods=2022-2030,2031-2040,2041-2050=
+   (plus whatever periods Aaron picks). Use =--period_batch= of 2 to 4
+   (memory: each pass holds 204 countries x 104 model-scenario runs x 500
+   draws per period, about 10.6 million rows). Then the sensitivity runs:
+   =--model_set=paired=, and add an "all available" option to the script
+   (not built yet). Trap: the paired set gives ssp245 a different value per
+   target, which Aaron wants to avoid in headline tables.
+3. Pool the breakdowns: the same script on =draws_cause/= and =draws_age/=;
+   output has a =slice= column (cause name, or e.g. =a65plus_sex2=).
+4. Rates per 100,000 from IHME's population forecast
+   (=~/data/wb-temp-attr-projections/gbd-forecasts/population.csv=, mean of
+   draws; location names need matching to GBD ids, see
+   =output/analysis-heat-decomposition-2026-10-27/decompose_heat.R= for the
+   crosswalk of the three names that differ).
+5. Country groups: high income vs low and middle income needs a World Bank
+   income-group mapping (not in the repo); as a CSV of location_id, group
+   for =--groups=.
+6. Redo on the pooled draws: the heat-overtakes-cold year (trends with
+   uncertainty instead of per-model straight lines) and the scenario-noise
+   check (scripts in =output/analysis-heat-decomposition-2026-10-27/=).
+7. The heat-rise decomposition by decade needs heat and 17-cause deaths by
+   all 17 age groups for every year; the new export has only three age
+   groups. It would need Caspar to re-run =util_summarize_run.R= with
+   =--age_years=2022-2050=. Ask Aaron before requesting it.
+
+* Todos for Aaron
+1. Finish the download and extract the zips into one empty folder (for
+   example =~/data/wb-temp-attr-projections/review/summary_workflow_b_v2/=),
+   then tell the next agent where it is. Blocks every next-agent todo.
+2. Pick the reporting periods (decades 2022-2030, 2031-2040, 2041-2050 are
+   the default; any others are free to add later, since every year was
+   exported). Blocks final tables, not the checks.
+3. Supply or approve a World Bank income-group mapping for "high income vs
+   LMIC". Option: I (the next agent) build it from the World Bank's public
+   country classification; cost: an hour or so (rough guess) plus your
+   check of the country matches. Blocks regional results only.
+
+* Documentation updated this session
+- =docs/reviews/workflow-b-full-run-review-2026-10-26.org=: full-run review
+  (merged 870e793).
+- =docs/reviews/heat-rise-decomposition-2026-10-27.org=: decomposition
+  (merged 6d9aa7e).
+- =docs/reviews/scenario-noise-and-crossover-2026-10-27.org=: first looks
+  (merged 42900a0).
+- =docs/reviews/caspar-scenarios-workflow-b-email-draft.org=: saved from the
+  removed worktree (merged a586d57).
+- =docs/ops/caspar-workflow.md= section 10: benchmark and full-run commands
+  (merged 6d9aa7e).
+- =docs/meetings/team-meeting-2026-10-27-slides.tex=: meeting deck.
+- Project memory: =team-meeting-2026-10-27.md= (decisions and the
+  post-data todo list), =model-set-paired-plan.md=,
+  =oz-slides-build-recipe.md=, =scenario-bundles-2026-10-20.md= updated.
+
+* Key files
+- =global-scripts/util_summarize_workflow_b.R=: summarizer with the draw exports.
+- =global-scripts/util_pool_workflow_b_draws.R=: the multi-model pooling.
+- =global-scripts/util_benchmark_workflow_b_summary.R=: run-time benchmark.
+- =output/review-workflow-b-2026-10-26/test_draw_export/run_tests.sh=: tests
+  (run from the repo root inside the emacs-r distrobox; arguments: the
+  ssp585 test bundle sample dir, a scratch dir).
+- =docs/ops/caspar-workflow.md=: Caspar's instructions, section 10.
+- =docs/reviews/workflow-b-full-run-review-2026-10-26.org=: what the
+  2026-10-25 summary showed.
