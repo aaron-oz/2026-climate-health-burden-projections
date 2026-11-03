@@ -1,0 +1,73 @@
+#+TITLE: First looks: scenario departures vs model noise, and the year heat overtakes cold (2026-10-27)
+
+Two quick analyses from the Workflow B (scaled) summary of 2026-10-25
+(=~/data/wb-temp-attr-projections/review/scenarios-2026-10-20/workflow_b_bundle/workflow_b/national_by_year.csv=),
+done for the 2026-10-27 team meeting. Both use draw means only (no pooled
+uncertainty intervals) and the 24 climate models run for all four
+scenarios. Both should be redone on the pooled draws from Caspar's
+2026-11 run (=output/summary_workflow_b_v2=). Scripts and printed output:
+=output/analysis-heat-decomposition-2026-10-27/scenario_noise.{R,txt}= and
+=heat_cold_crossover.{R,txt}=.
+
+* Are the ssp126 and ssp370 departures from ssp245 larger than model noise?
+
+Question (Caspar's view: probably not; if any scenario has oddities, ssp370).
+Per climate model, global heat deaths per decade under the target scenario
+divided by those under ssp245 (same model). Tests across the 24 models: a
+sign test (how many models have a ratio above 1) and a t-test on the log
+ratios. Models are treated as independent, which overstates the evidence:
+several pairs share code (two EC-Earth, two MPI, two NorESM, two INM, two
+CNRM, two MIROC, and the HadGEM/UKESM family). Many tests were run, so no
+single p-value should be read as decisive.
+
+| Target | Decade    | Mean heat ratio vs ssp245 | Models above 1 (of 24) | Sign test p | t-test p |
+|--------+-----------+---------------------------+------------------------+-------------+----------|
+| ssp126 | 2022-2030 | 1.020                     | 17                     | 0.064       | 0.040    |
+| ssp126 | 2031-2040 | 1.015                     | 19                     | 0.0066      | 0.0080   |
+| ssp126 | 2041-2050 | 0.965                     | 7                      | 0.064       | 0.0012   |
+| ssp370 | 2022-2030 | 0.983                     | 7                      | 0.064       | 0.0039   |
+| ssp370 | 2031-2040 | 1.005                     | 13                     | 0.84        | 0.55     |
+| ssp370 | 2041-2050 | 1.006                     | 13                     | 0.84        | 0.57     |
+| ssp585 | 2022-2030 | 1.017                     | 17                     | 0.064       | 0.069    |
+| ssp585 | 2031-2040 | 1.062                     | 22                     | 3.6e-05     | 1.5e-06  |
+| ssp585 | 2041-2050 | 1.124                     | 24                     | 1.2e-07     | 7.2e-12  |
+
+Readings (suggestive, not established):
+- ssp126's excess heat over ssp245 before 2040 looks somewhat larger than
+  model-to-model noise, most clearly in 2031-2040 (19 of 24 models).
+- ssp370 is slightly below ssp245 in 2022-2030 and indistinguishable from it
+  from 2031 on.
+- In 2022-2030, ssp126 and ssp585 both sit above ssp245 and ssp370 below.
+  That pattern is consistent with differing aerosol (air pollution)
+  pathways, ssp370 keeping more cooling aerosols, but this was not checked.
+- Western/Central Europe under ssp370 (Austria, Germany, Czechia,
+  Netherlands; 4 countries x 3 decades = 12 tests): a few p-values of about
+  0.02 to 0.06, roughly what chance alone would give. Consistent with
+  Caspar's view that the lower ssp370 heat burden there is noise; not proven.
+
+* The year heat deaths overtake cold deaths, by country (Samuel's question)
+
+Method (deliberately crude first pass): per country and model, straight
+lines fitted to annual heat deaths and to annual cold deaths over
+2022-2050 (scaled draw means; ssp245 from its unscaled bundle, which the
+identity check shows equals its scaled burden); the crossover year is
+where the lines cross; reported as the median over the 24 models. Straight
+lines are a strong simplification, and there is no uncertainty beyond the
+model spread.
+
+Countries (of 204) by when the median crossover falls:
+
+| When                               | ssp126 | ssp245 | ssp370 | ssp585 |
+|------------------------------------+--------+--------+--------+--------|
+| Heat already above cold by 2022    | 83     | 83     | 80     | 78     |
+| Heat overtakes cold in 2022-2050   | 4      | 6      | 9      | 13     |
+| Not by 2050                        | 117    | 115    | 115    | 113    |
+
+ssp245 crossovers within 2022-2050 (median year; share of models crossing
+by 2050): Sao Tome and Principe 2028 (92%), Dominican Republic 2035 (71%),
+Iraq 2035 (71%), Lao PDR 2036 (67%), Vanuatu 2037 (67%), Niue 2041 (63%).
+Per-country table: =heat_cold_crossover_by_location.csv= (written next to
+the script when it runs; not in git).
+
+Next version: use pooled trends with uncertainty (from the yearly totals in
+the 2026-11 draw export) instead of per-model straight lines.
