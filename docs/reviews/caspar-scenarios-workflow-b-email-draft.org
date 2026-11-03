@@ -1,0 +1,72 @@
+#+TITLE: Draft email to Caspar: scenario bundles, Workflow B directions
+#+DATE: 2026-10-20
+
+-----
+
+Subject: Scenario bundles look good; Workflow B next
+
+Hi Caspar,
+
+Thanks for the four scenario bundles. Here is where they stand.
+
+What looks good:
+
+ssp370 and ssp585 both pass everything I checked. Your QA reports are clean (hard checks, provenance, full coverage of 204 locations x 29 years). The model sets are exactly what we expected: 25 for ssp370 and 29 for ssp585. On my side, the cause and age-sex tables add up to the national table, the baseline deaths match ssp245 exactly, and the full ssp585 run reproduces all 10,092 rows of the 12-location test bundle with zero difference.
+
+The scenarios also behave sensibly. Averaged over the models the scenarios share, global heat deaths in 2041-2050 are 13% higher under ssp585 than ssp245, and every one of the 27 shared models goes the same way, with cold deaths lower in all 27. ssp245 is unchanged from the version I checked in September.
+
+ssp126: the zip came through empty, and the Drive folder looks empty to me too. I assume that run isn't finished yet. Can you confirm?
+
+One thing I'd like your thoughts on:
+
+ssp370 comes out very close to ssp245 through 2050. Globally, heat deaths in 2041-2050 are only 0.6% higher, and 13 of the 24 shared models go up while 11 go down. I think that is plausible, since the two scenarios barely differ in warming before mid-century. What surprised me is Western and Central Europe, where most models give less heat burden under ssp370 than under ssp245. Over 2041-2050, ssp370 has more heat deaths than ssp245 in only 7 of 24 models for Austria, 9 for Germany, 7 for Czechia and 8 for the Netherlands. My guess is aerosols (ssp370 keeps more of them) or just model noise, but I haven't checked the temperatures themselves. Does that match anything you've seen in the CCKP data? The Workflow B summary below will also print the population-weighted temperature difference between the two scenarios for each location, which should tell us whether it is coming from the temperatures.
+
+Workflow B for ssp370 and ssp585:
+
+This is the same scaling you ran in the ssp585 test, now for all locations. Please run these in order from the repo root, after pulling main.
+
+1. Remove any Workflow B output from before the formula fix on 28 September 2026. Old files would be skipped silently, just like the stale burden files were. The first command lists them so you can check (I expect it to print nothing); the second deletes them:
+
+```
+find output/results/workflow_b -type f ! -newermt 2026-09-28
+find output/results/workflow_b -type f ! -newermt 2026-09-28 -delete
+```
+
+2. Check disk space. In the Colombia sample from the test, a Workflow B file was about 1.2 times the size of the matching burden file, so the output will take roughly 1.2 times the space of your ssp370 and ssp585 burden files:
+
+```
+du -sh output/results/cckp
+df -h output/results
+```
+
+3. Run the scaling. For every location this scales ssp370 and ssp585 against ssp245 for all years, and also scales ssp245 against itself for 2022 and 2050 as a check (it must reproduce the unscaled ssp245 exactly). Your test run took 3.7 seconds per combo, and this is about 310,000 combos, so roughly 320 CPU-hours in total. At 40 at once that is about 8 hours if it scales evenly, which I haven't verified. Set -j to whatever your machine handles comfortably.
+
+```
+. ./run_env.sh
+mkdir -p output/logs/wb_full
+parallel -j 40 --joblog output/logs/wb_full/joblog.tsv \
+  "Rscript global-scripts/util_apply_workflow_b_batch.R --location_id={} --ref_scenario=ssp245 --target_scenarios=ssp370,ssp585 --years=2022-2050 > output/logs/wb_full/loc_{}.log 2>&1 && \
+   Rscript global-scripts/util_apply_workflow_b_batch.R --location_id={} --ref_scenario=ssp245 --target_scenarios=ssp245 --years=2022,2050 > output/logs/wb_full/loc_{}_ref.log 2>&1" \
+  ::: $(Rscript -e 'cat(readRDS("output/intermediate/ihme_loc_map.rds")$loc_id)')
+```
+
+Each location's log ends with a line like "Done: N ok, N skip, N fail, N missing-ref". Expect "missing-ref" only for the models with no ssp245 run: taiesm1 for ssp370, and taiesm1 and hadgem3-gc31-mm for ssp585. Any "fail" is worth a look. This prints the last line for every location:
+
+```
+for f in output/logs/wb_full/loc_*.log; do echo "$f: $(tail -1 $f)"; done
+```
+
+4. Summarize:
+
+```
+Rscript global-scripts/util_summarize_workflow_b.R --scenarios=ssp245,ssp370,ssp585 --ref_scenario=ssp245 --jobs=16 --out=output/summary_workflow_b
+```
+
+The QA report is in output/summary_workflow_b/qa_report.txt. The hard checks at the top should all say PASS. Further down, the plausibility checks will flag CHECK for many ssp370 locations because ssp370 is so close to ssp245. That is expected and isn't a failure, so no need to act on it; I'll go through it.
+
+5. Please send me the output/summary_workflow_b folder plus output/workflow_b_batch_manifest.csv, zipped the same way as the bundles you just sent.
+
+Once ssp126 is done, the same steps 3 to 5 apply with --target_scenarios=ssp126 and ssp126 added to --scenarios.
+
+Thanks,
+Aaron
