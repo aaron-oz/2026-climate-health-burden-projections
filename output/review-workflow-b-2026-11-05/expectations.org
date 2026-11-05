@@ -1,0 +1,45 @@
+#+TITLE: Expectations written before reading the pooled results (2026-11-05)
+
+Written while the full pass over the draw files was running, before any pooled
+number was read. Sources: =output/review-workflow-b-2026-10-26/model_sets.txt=,
+=docs/reviews/scenario-noise-and-crossover-2026-10-27.org=, the earlier reviews.
+"Common 24" = the 24 models run under all four scenarios. Deaths are per year,
+World = sum over 204 locations.
+
+* Must hold exactly, or the export is wrong (rounding tolerance 5e-6 relative)
+1. Every draw file: 104 model-scenario runs (26 ssp126, 27 ssp245, 24 ssp370,
+   27 ssp585), 500 draws, 29 years (totals) or 6 blocks (breakdowns), 17 causes,
+   6 age-sex slices, no duplicates, no non-finite values.
+2. Draw means and 2.5/50/97.5% quantiles of the yearly totals match
+   =national_by_year.csv= (targets) and the unscaled ssp245 bundle (reference).
+3. Block means by cause match =by_cause.csv= summed over the block's years.
+4. In every draw, annual totals summed to a block = causes summed over that block.
+5. Under-5 YLLs / deaths lies within that sex's life expectancy at age 0 (one
+   5-year age group, so no mixing), whenever deaths have one sign; male below female.
+
+* Should hold approximately: these are the things that would surprise me
+6. World heat, common 24, 2041-2050, per year: ssp126 about 703,000, ssp245 about
+   730,000, ssp370 about 735,000, ssp585 about 822,000 (from model_sets.txt, means).
+7. World heat ratio to ssp245, common 24: ssp126 about 1.02 / 1.015 / 0.964,
+   ssp370 about 0.98 / 1.005 / 1.008, ssp585 about 1.02 / 1.06 / 1.127, for
+   2022-2030 / 2031-2040 / 2041-2050. Scaling moves these by at most 0.5 points.
+8. Draw pairing works: target and reference draws within a model are strongly
+   correlated (rough guess: above 0.9 at World level), and the 95% interval of
+   target minus reference is much narrower than the interval of either alone.
+9. Draw d means the same exposure-response draw across years and countries: draw
+   correlation across adjacent years near 1, positive between large countries.
+10. Cold above heat at World level throughout 2022-2050, under every scenario;
+    heat rising, cold fairly flat (aging pushes both up, warming pulls cold down).
+11. ssp585 gives the highest World heat and lowest cold by 2041-2050, ssp126 the
+    lowest heat; net non-optimal closer across scenarios than heat alone.
+12. YLLs per attributable death: under 5 about 65-80 years, 15-49 about 35-50,
+    65+ about 8-18 (rough guesses from WPP life expectancy at those ages), except
+    where deaths nearly cancel by sign.
+13. Causes: ischemic heart disease and stroke largest for both heat and cold;
+    injury causes contribute more to heat than cold, some with negative cold values
+    (relative risk below 1 in cold). Many single-cause, single-country 95% intervals
+    include zero; I do not have a number for how many.
+14. Age: 65+ holds most deaths (rough guess: above 60%); under 5 and 15-49 small
+    in deaths but larger in YLLs.
+15. Widest country intervals relative to the mean: Haiti (the 2010 earthquake's
+    inj_disaster tail) and Honduras, then countries with small burdens.

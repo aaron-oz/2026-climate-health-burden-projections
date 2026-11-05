@@ -1,0 +1,104 @@
+
+
+================  A. Lower-quantile disagreements with national_by_year.csv, against the rounding bound  ================
+loc 161: rows 2233; worst |dev| / rounding bound = 0.921 (<= 1 means rounding explains it)
+loc 11: rows 2233; worst |dev| / rounding bound = 0.817 (<= 1 means rounding explains it)
+loc 18: rows 2233; worst |dev| / rounding bound = 0.885 (<= 1 means rounding explains it)
+loc 201: rows 2233; worst |dev| / rounding bound = 0.792 (<= 1 means rounding explains it)
+
+
+================  B. Single-draw outliers in the yearly totals, and (C) with and without inj_disaster  ================
+yearly non-optimal deaths, common 24, all scenarios and years; outlier size = (max - median) / IQR
+                     name location_id    mean     q50    q999      max  rmax top_scen top_year top_draw n_draws_top
+                   <char>       <int>   <num>   <num>   <num>    <num> <num>   <char>   <char>    <int>       <int>
+ 1:                 Haiti         114  2072.3   538.6 80424.4 115656.0 424.5   ssp585     2026      255          62
+ 2:           Puerto Rico         385   143.5   129.2   619.1  19041.3 306.8   ssp585     2042      209          55
+ 3: Sao Tome and Principe         215     4.0     3.4    17.7    103.3  45.1   ssp585     2050      181         194
+ 4:              Honduras         129   682.6   578.4  5264.0   7645.4  28.7   ssp370     2025      378          42
+ 5:              Dominica         110     1.7     1.4     9.4     26.4  27.4   ssp585     2047      384         138
+ 6:             Singapore          69   169.3   103.3  1946.7   3495.4  26.6   ssp585     2050      134          11
+ 7:                 Samoa          27     4.2     3.4    26.3     73.8  25.9   ssp585     2045        9          65
+ 8:            Seychelles         186     3.8     3.2    21.2     63.7  25.2   ssp370     2050      181          74
+ 9:   Antigua and Barbuda         105     3.4     2.8    17.9     46.4  19.3   ssp585     2044      384          96
+10:               Liberia         210   127.2    97.1   847.7   1797.4  18.2   ssp585     2050      119         312
+11: Saint Kitts and Nevis         393     2.2     1.9    10.5     26.8  17.2   ssp370     2049      181          96
+12:             Nicaragua         131   555.3   466.0  2879.3   6834.4  17.1   ssp370     2049      384          81
+13:               Myanmar          15 12134.0 11516.1 40591.8  81968.4  16.7   ssp585     2047        9          36
+14:                  Niue         374     0.1     0.1     0.4      0.8  16.4   ssp126     2023      420           8
+15:              Maldives          14    14.7    10.0   107.2    197.7  15.4   ssp370     2050      287         220
+quantiles of rmax: 3.1 5.5 17.2 424.5 
+Countries with fewer than 10 distinct draws holding the top 0.1% of values (top 0.1% = 696 rows of a 696,000-row pool):
+          name n_draws_top  rmax
+        <char>       <int> <num>
+1:    Mongolia           5   4.6
+2: Timor-Leste           7  11.7
+3:        Niue           8  16.4
+4:   Mauritius           9  14.8
+5:   Greenland           9   3.5
+
+With and without inj_disaster, reference ssp245, 2041-2050, non-optimal deaths per year: countries where the upper 95% bound moves most
+                   name all_mean all_l95 all_u95 all_max no_dis_mean no_dis_l95 no_dis_u95 no_dis_max m_ratio u_ratio
+                 <char>    <num>   <num>   <num>   <num>       <num>      <num>      <num>      <num>   <num>   <num>
+ 1:               Haiti   2031.5   417.2  8575.3   17611       496.8     -460.8     1093.0       1648   4.089   7.846
+ 2:            Honduras    817.8   530.1  1216.4    1881       701.5      349.0     1051.4       1452   1.166   1.157
+ 3:            Dominica      1.9     0.9     3.9       8         1.8        0.8        3.7          8   1.050   1.053
+ 4:               Samoa      5.5     2.4    11.5      22         5.2        2.1       11.1         22   1.059   1.037
+ 5:           Nicaragua    772.2   398.6  1355.4    2173       741.8      365.1     1320.2       2107   1.041   1.027
+ 6:         Puerto Rico    160.0    89.5   271.9    1230       155.6       85.3      265.5        430   1.028   1.024
+ 7: Antigua and Barbuda      4.2     1.6     8.4      17         4.2        1.6        8.3         16   1.020   1.024
+ 8:             Myanmar  14056.9  9408.7 20261.1   31395     13762.9     8923.1    19854.7      26825   1.021   1.020
+ 9:           Sri Lanka   3039.6  1909.6  4664.9    6237      2993.8     1869.5     4601.0       6108   1.015   1.014
+10:             Vanuatu     14.1     8.9    22.4      32        13.9        8.8       22.3         32   1.009   1.007
+11:             Somalia   3766.8  1688.6  7105.9   11635      3753.9     1673.7     7059.6      11496   1.003   1.007
+12:      American Samoa      3.0     1.1     6.4      12         3.0        1.0        6.3         11   1.011   1.006
+13:        Cook Islands      1.2     0.7     2.2       5         1.2        0.6        2.2          5   1.021   1.006
+14:           Indonesia  21040.5 11423.9 36361.1   52876     20941.4    11239.4    36212.5      52796   1.005   1.004
+countries with upper bound moved by more than 2%: 8 ; by more than 10%: 2 
+
+
+================  D. Growth in IHME 17-cause deaths, 2022 to 2050, per country (same in every model and scenario)  ================
+World:  1.52 ; quantiles: 0.93 1.6 2.66 
+                    name deaths_2022 deaths_2050 ratio pop_2022 pop_2050 pop65_2022 pop65_2050 rate_per_100k_65plus_ratio
+                  <char>       <num>       <num> <num>    <num>    <num>      <num>      <num>                      <num>
+ 1: United Arab Emirates       10961      116058 10.59  9992267 19791213     198137    4717387                       0.44
+ 2:                Qatar        2819       23126  8.20  3105534  7030294      45924    1086206                       0.35
+ 3:                 Oman        8228       35488  4.31  4787042  7192367     122464    1098219                       0.48
+ 4:              Bahrain        2894       11912  4.12  1554160  2218489      59786     408899                       0.60
+ 5:               Kuwait        6621       27158  4.10  4766656  7100332     185082    1679893                       0.45
+ 6:               Jordan       19507       62304  3.19 12613097 22950669     542766    2813355                       0.62
+ 7:         Saudi Arabia      111193      353769  3.18 38247283 45955568    1111293    9207237                       0.38
+ 8:             Maldives         856        2699  3.15   527685   800303      23544     157535                       0.47
+ 9:    Equatorial Guinea        3142        8712  2.77  1553192  3179169      34563     159726                       0.60
+10:            Singapore       12197       33248  2.73  5803954  7623601     814798    2256179                       0.98
+11:            Nicaragua       13582       36249  2.67  6717932  7768574     405621    1246514                       0.87
+12:    Brunei Darussalam         954        2514  2.63   454896   453059      26226     102337                       0.68
+
+
+================  E. Lithuania and Myanmar: why is the cold draw correlation across years low?  ================
+Lithuania : cor all draws 0.322 ; Spearman 0.305 
+    draw     2030    2031
+   <int>    <num>   <num>
+1:   457  788.171 1266.00
+2:   196 2065.810 1693.13
+3:    33 2050.720 1670.04
+      med30   med31   max30   max31   min30   min31
+      <num>   <num>   <num>   <num>   <num>   <num>
+1: 1439.155 1483.67 2065.81 2188.26 788.171 760.591
+Myanmar : cor all draws 0.306 ; Spearman 0.917 
+    draw     2030    2031
+   <int>    <num>   <num>
+1:    75 25510.30 2147.44
+2:   454  5600.35 2391.62
+3:   251   535.12 1637.76
+     med30   med31   max30   max31  min30    min31
+     <num>   <num>   <num>   <num>  <num>    <num>
+1: 2559.09 2541.24 25510.3 6007.17 535.12 -8.38059
+Nicaragua : cor all draws 0.055 ; Spearman 0.865 
+    draw    2030    2031
+   <int>   <num>   <num>
+1:   331 728.722 54.1735
+2:   382 672.646 45.1824
+3:    17 229.882 36.5116
+      med30    med31   max30   max31   min30   min31
+      <num>    <num>   <num>   <num>   <num>   <num>
+1: 34.21635 39.76955 728.722 946.216 3.29361 10.4086

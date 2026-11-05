@@ -1,0 +1,82 @@
+
+
+================  A. Adjacent-year draw correlation, ssp245, median of 3 models and 3 year pairs  ================
+     p_c   s_c   p_h   s_h
+   <num> <num> <num> <num>
+1: 0.722 0.809 0.444 0.574
+2: 0.971 0.968 0.949 0.946
+lowest Spearman, cold, cold deaths above 100/yr:
+                          name location_id  cold   p_c   s_c  heat   p_h   s_h
+                        <char>       <int> <num> <num> <num> <num> <num> <num>
+ 1:                    Estonia          58   636  0.65  0.62     3  0.29  0.38
+ 2:                Netherlands          89  7025  0.78  0.76    35  0.58  0.61
+ 3:                      Haiti         114   359 -0.01  0.78  1707  0.10  0.78
+ 4:                    Armenia          33  1347  0.81  0.80    87  0.44  0.44
+ 5:                    Denmark          78  2669  0.82  0.81     5  0.52  0.72
+ 6:                    Belarus          57  4959  0.81  0.81   119  0.88  0.89
+ 7: Iran (Islamic Republic of)         142 24212  0.68  0.82  5045  0.75  0.83
+ 8:                  Lithuania          60  1366  0.83  0.83    20  0.72  0.56
+ 9:                     Poland          51 17765  0.84  0.84   373  0.52  0.57
+10:                   Honduras         129   352  0.57  0.85   300  0.07  0.82
+11:                    Croatia          46  2361  0.87  0.85    77  0.56  0.58
+12:                    Hungary          48  5915  0.86  0.85   266  0.65  0.63
+lowest Spearman, heat, heat deaths above 100/yr:
+        name location_id  heat   p_h   s_h
+      <char>       <int> <num> <num> <num>
+1:    Greece          82   473  0.42  0.37
+2:    Poland          51   373  0.52  0.57
+3:   Czechia          47   123  0.60  0.59
+4:   Hungary          48   266  0.65  0.63
+5: Palestine         149   237  0.67  0.67
+6:     Haiti         114  1707  0.10  0.78
+7:   Germany          81   603  0.77  0.79
+8:    France          80   231  0.78  0.80
+Pearson well below Spearman (outlier draws), cold deaths above 100/yr:
+        name  cold   p_c   s_c
+      <char> <num> <num> <num>
+ 1:    Haiti   359 -0.01  0.78
+ 2:  Myanmar  3171  0.39  0.91
+ 3: Honduras   352  0.57  0.85
+ 4:     <NA>    NA    NA    NA
+ 5:     <NA>    NA    NA    NA
+ 6:     <NA>    NA    NA    NA
+ 7:     <NA>    NA    NA    NA
+ 8:     <NA>    NA    NA    NA
+ 9:     <NA>    NA    NA    NA
+10:     <NA>    NA    NA    NA
+11:     <NA>    NA    NA    NA
+12:     <NA>    NA    NA    NA
+
+
+================  B. Puerto Rico, draw 209 and the next few, by year (ssp585, mean over common 24)  ================
+    year      h      c    hmax  hmin
+   <num>  <num>  <num>   <num> <num>
+1:  2042 3490.6 2736.4 18000.6 700.5
+2:  2048 1794.2 1416.4  4619.1 190.1
+3:  2049  197.1   30.4   525.3  63.9
+4:  2047  189.8   32.7   640.4  14.5
+5:  2046  185.8   29.8   462.9  48.7
+6:  2050  158.0   31.3   392.1  82.8
+7:  2045  149.2   39.4   438.6  78.6
+8:  2044  144.2   37.5   497.2  46.6
+          h        c    hmax
+      <num>    <num>   <num>
+1: 106.2331 47.23829 2552.99
+   models    hm209 hm_other nabove
+    <num>    <num>    <num>  <int>
+1:     24 3490.568 123.6594     13
+      period       acause   heat   cold
+      <char>       <char>  <num>  <num>
+1: 2041-2045 inj_disaster 4085.6 3576.6
+2: 2041-2045      cvd_ihd -223.6  -89.5
+3: 2041-2045     diabetes  187.4  -53.4
+
+
+================  C. Lithuania: cold deaths in a run vs IHME all-cause draws  ================
+Warning message:
+In fread(tmp, header = FALSE) :
+  File '/tmp/RtmpCqsGTC/filef9587603cd446' has size 0. Returning a NULL data.table.
+Error in setnames(ac, hdr) : 
+  Can't assign 504 names to a 0-column data.table
+Calls: setnames -> stopf -> raise_condition -> signal
+Execution halted
