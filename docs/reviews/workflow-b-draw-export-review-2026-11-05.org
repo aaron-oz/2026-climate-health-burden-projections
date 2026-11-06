@@ -38,6 +38,18 @@ Scripts and printed output: =output/review-workflow-b-2026-11-05/=.
 Expectations written before reading pooled results: =expectations.org= there.
 Large intermediates: =~/data/wb-temp-attr-projections/review/workflow-b-2026-11-05-review/=.
 
+* Update, 2026-11-06
+
+Aaron decided: asterisk both Haiti and Honduras with a side-by-side column without
+=inj_disaster=; country by cause in an appendix only; reporting decades as proposed; I
+build the income-group mapping and he checks it. The two gaps in the pooling script
+listed below are closed: =--periods= now forms any exact union of file periods, and
+locations are pooled one at a time (=--jobs=), so all 204 cause files took 19 minutes 54
+seconds on 8 workers at 4.2 GB per process, against the extrapolated 100 GB. =--model_set=all=
+also exists. On all 204 locations its results match my independent code to 3.3e-11 (253,368
+country cells). The report and slides are =docs/reports/multimodel-2026-11/multimodel-summary.tex=
+and =docs/meetings/team-meeting-2026-11-09-slides.tex=.
+
 * Mechanical checks
 
 | Check                                                                                             | Result                                                       |

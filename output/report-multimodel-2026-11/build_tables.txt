@@ -1,0 +1,579 @@
+totals_common : rows 11394 ; reference cells with more than one value: 0 
+age : rows 68364 ; reference cells with more than one value: 0 
+cause : rows 193698 ; reference cells with more than one value: 0 
+
+== checks ==
+World totals vs independent code: 72 rows; worst rel mean 0 l95 3.46e-15 u95 8.3e-15 
+World cause heat vs independent: 204 rows; worst rel mean 0 l95 1.68e-14 u95 7.86e-15 
+World cause cold vs independent: 204 rows; worst rel mean 0 l95 7.58e-15 u95 4.52e-15 
+World age heat vs independent: 72 rows; worst rel mean 0 l95 7.49e-15 u95 0 
+Country x cause vs independent: 187272 rows; worst rel mean 5.2e-15 l95 3.27e-11 u95 5.07e-15 
+Country x age vs independent: 66096 rows; worst rel mean 5.12e-15 l95 6.23e-12 u95 4.78e-15 
+Income groups sum to World, worst rel: 3.69e-15 
+Three middle/low groups sum to Low and middle income, worst rel: 4.98e-15 
+Causes sum to totals within groups, worst rel: 2.02e-08 
+Population: World 2022-2030 8.22; 2031-2040 8.79; 2041-2050 9.24 billion
+
+== World and income groups, deaths and rate, all scenarios ==
+                      unit       measure scenario    period      mean       l95       u95       l66       u66  rate r_l95 r_u95 ratio
+                    <char>        <char>   <char>    <char>    <char>    <char>    <char>    <char>    <char> <num> <num> <num> <num>
+  1:           High income   deaths_cold   ssp126 2022-2030   477,711   400,536   528,518   450,380   506,625  33.8  28.4  37.4 1.000
+  2:           High income   deaths_cold   ssp126 2031-2040   534,182   439,078   602,824   499,447   572,086  37.2  30.5  41.9 0.999
+  3:           High income   deaths_cold   ssp126 2041-2050   579,326   460,304   671,640   531,232   628,771  40.3  32.0  46.7 1.002
+  4:           High income   deaths_cold   ssp245 2022-2030   477,912   401,002   528,641   450,511   506,892  33.8  28.4  37.4    NA
+  5:           High income   deaths_cold   ssp245 2031-2040   534,703   439,872   603,417   500,483   572,425  37.2  30.6  42.0    NA
+  6:           High income   deaths_cold   ssp245 2041-2050   578,046   459,855   670,551   530,314   627,228  40.2  32.0  46.6    NA
+  7:           High income   deaths_cold   ssp370 2022-2030   478,805   402,024   529,757   451,244   507,998  33.9  28.5  37.5 1.002
+  8:           High income   deaths_cold   ssp370 2031-2040   535,811   439,796   604,474   501,299   573,863  37.3  30.6  42.1 1.002
+  9:           High income   deaths_cold   ssp370 2041-2050   577,645   459,642   670,566   529,766   627,229  40.2  32.0  46.6 0.999
+ 10:           High income   deaths_cold   ssp585 2022-2030   477,459   400,554   528,049   450,115   506,403  33.8  28.4  37.4 0.999
+ 11:           High income   deaths_cold   ssp585 2031-2040   534,559   439,513   603,449   500,028   572,216  37.2  30.6  42.0 1.000
+ 12:           High income   deaths_cold   ssp585 2041-2050   575,162   458,013   668,327   527,650   624,242  40.0  31.8  46.5 0.995
+ 13:           High income   deaths_heat   ssp126 2022-2030    31,960    22,883    43,896    26,852    36,945   2.3   1.6   3.1 1.008
+ 14:           High income   deaths_heat   ssp126 2031-2040    42,806    30,077    60,786    35,448    49,975   3.0   2.1   4.2 0.984
+ 15:           High income   deaths_heat   ssp126 2041-2050    56,011    37,691    80,869    45,509    66,256   3.9   2.6   5.6 0.945
+ 16:           High income   deaths_heat   ssp245 2022-2030    31,701    22,462    43,767    26,472    36,845   2.2   1.6   3.1    NA
+ 17:           High income   deaths_heat   ssp245 2031-2040    43,481    31,195    62,136    36,347    50,100   3.0   2.2   4.3    NA
+ 18:           High income   deaths_heat   ssp245 2041-2050    59,262    39,949    87,263    47,950    70,084   4.1   2.8   6.1    NA
+ 19:           High income   deaths_heat   ssp370 2022-2030    31,475    22,392    44,817    26,192    36,605   2.2   1.6   3.2 0.993
+ 20:           High income   deaths_heat   ssp370 2031-2040    44,438    31,417    66,513    36,588    51,785   3.1   2.2   4.6 1.022
+ 21:           High income   deaths_heat   ssp370 2041-2050    60,423    40,332    90,698    48,581    71,476   4.2   2.8   6.3 1.020
+ 22:           High income   deaths_heat   ssp585 2022-2030    32,416    22,981    45,135    26,904    37,967   2.3   1.6   3.2 1.023
+ 23:           High income   deaths_heat   ssp585 2031-2040    46,344    32,385    67,260    38,153    54,348   3.2   2.3   4.7 1.066
+ 24:           High income   deaths_heat   ssp585 2041-2050    65,708    43,060    98,198    52,639    78,468   4.6   3.0   6.8 1.109
+ 25:           High income deaths_nonopt   ssp126 2022-2030   509,670   429,159   561,666   480,901   539,232  36.1  30.4  39.8 1.000
+ 26:           High income deaths_nonopt   ssp126 2031-2040   576,988   476,293   651,545   540,626   617,452  40.1  33.1  45.3 0.998
+ 27:           High income deaths_nonopt   ssp126 2041-2050   635,337   508,484   735,662   583,379   689,421  44.2  35.3  51.1 0.997
+ 28:           High income deaths_nonopt   ssp245 2022-2030   509,613   430,075   562,445   480,930   539,157  36.1  30.5  39.8    NA
+ 29:           High income deaths_nonopt   ssp245 2031-2040   578,185   477,495   653,267   541,525   618,713  40.2  33.2  45.4    NA
+ 30:           High income deaths_nonopt   ssp245 2041-2050   637,308   509,826   738,439   585,367   691,756  44.3  35.4  51.3    NA
+ 31:           High income deaths_nonopt   ssp370 2022-2030   510,280   429,915   562,392   481,176   540,193  36.1  30.4  39.8 1.001
+ 32:           High income deaths_nonopt   ssp370 2031-2040   580,249   479,006   655,069   543,740   620,883  40.4  33.3  45.6 1.004
+ 33:           High income deaths_nonopt   ssp370 2041-2050   638,068   510,635   740,275   585,853   692,565  44.4  35.5  51.5 1.001
+ 34:           High income deaths_nonopt   ssp585 2022-2030   509,876   429,627   562,086   481,086   539,527  36.1  30.4  39.8 1.001
+ 35:           High income deaths_nonopt   ssp585 2031-2040   580,903   479,840   655,758   544,216   621,209  40.4  33.4  45.6 1.005
+ 36:           High income deaths_nonopt   ssp585 2041-2050   640,871   512,642   744,822   588,490   695,242  44.5  35.6  51.8 1.006
+ 37: Low and middle income   deaths_cold   ssp126 2022-2030   998,987   874,713 1,132,660   937,785 1,061,771  14.7  12.9  16.6 0.993
+ 38: Low and middle income   deaths_cold   ssp126 2031-2040 1,198,174 1,000,355 1,414,425 1,095,866 1,301,751  16.3  13.6  19.2 0.994
+ 39: Low and middle income   deaths_cold   ssp126 2041-2050 1,426,332 1,124,789 1,769,568 1,261,808 1,588,389  18.3  14.4  22.7 1.004
+ 40: Low and middle income   deaths_cold   ssp245 2022-2030 1,005,760   873,681 1,143,883   942,022 1,070,864  14.8  12.8  16.8    NA
+ 41: Low and middle income   deaths_cold   ssp245 2031-2040 1,205,674 1,009,569 1,424,732 1,103,154 1,309,437  16.4  13.7  19.4    NA
+ 42: Low and middle income   deaths_cold   ssp245 2041-2050 1,420,889 1,113,763 1,767,708 1,255,295 1,584,108  18.2  14.3  22.7    NA
+ 43: Low and middle income   deaths_cold   ssp370 2022-2030 1,014,763   878,736 1,155,849   949,350 1,081,764  14.9  12.9  17.0 1.009
+ 44: Low and middle income   deaths_cold   ssp370 2031-2040 1,214,775 1,007,294 1,440,166 1,108,983 1,322,505  16.5  13.7  19.6 1.008
+ 45: Low and middle income   deaths_cold   ssp370 2041-2050 1,429,127 1,116,222 1,779,765 1,261,458 1,596,469  18.3  14.3  22.8 1.006
+ 46: Low and middle income   deaths_cold   ssp585 2022-2030 1,001,701   876,499 1,136,836   939,965 1,064,936  14.7  12.9  16.7 0.996
+ 47: Low and middle income   deaths_cold   ssp585 2031-2040 1,189,726   990,152 1,416,900 1,085,617 1,294,353  16.2  13.5  19.3 0.987
+ 48: Low and middle income   deaths_cold   ssp585 2041-2050 1,375,596 1,072,469 1,717,920 1,213,144 1,537,765  17.6  13.7  22.0 0.968
+ 49: Low and middle income   deaths_heat   ssp126 2022-2030   407,604   309,653   536,380   353,735   460,227   6.0   4.6   7.9 1.020
+ 50: Low and middle income   deaths_heat   ssp126 2031-2040   517,012   374,531   725,991   433,499   599,728   7.0   5.1   9.9 1.019
+ 51: Low and middle income   deaths_heat   ssp126 2041-2050   647,138   441,308   936,895   526,741   765,476   8.3   5.7  12.0 0.966
+ 52: Low and middle income   deaths_heat   ssp245 2022-2030   399,543   303,151   530,679   346,004   452,830   5.9   4.5   7.8    NA
+ 53: Low and middle income   deaths_heat   ssp245 2031-2040   507,357   366,921   704,534   427,777   586,095   6.9   5.0   9.6    NA
+ 54: Low and middle income   deaths_heat   ssp245 2041-2050   670,244   455,997   992,219   543,660   795,922   8.6   5.8  12.7    NA
+ 55: Low and middle income   deaths_heat   ssp370 2022-2030   392,599   291,883   521,997   337,203   447,077   5.8   4.3   7.7 0.983
+ 56: Low and middle income   deaths_heat   ssp370 2031-2040   510,648   367,284   747,132   426,480   592,752   6.9   5.0  10.2 1.006
+ 57: Low and middle income   deaths_heat   ssp370 2041-2050   674,893   450,420 1,031,461   542,205   804,452   8.6   5.8  13.2 1.007
+ 58: Low and middle income   deaths_heat   ssp585 2022-2030   405,616   312,141   526,231   354,402   456,916   6.0   4.6   7.7 1.015
+ 59: Low and middle income   deaths_heat   ssp585 2031-2040   539,870   375,472   761,652   449,453   629,977   7.3   5.1  10.4 1.064
+ 60: Low and middle income   deaths_heat   ssp585 2041-2050   756,240   495,234 1,150,153   601,258   909,655   9.7   6.3  14.7 1.128
+ 61: Low and middle income deaths_nonopt   ssp126 2022-2030 1,406,591 1,251,837 1,563,017 1,328,680 1,486,978  20.7  18.4  23.0 1.001
+ 62: Low and middle income deaths_nonopt   ssp126 2031-2040 1,715,185 1,457,940 2,007,569 1,573,083 1,858,174  23.3  19.8  27.3 1.001
+ 63: Low and middle income deaths_nonopt   ssp126 2041-2050 2,073,471 1,664,180 2,565,554 1,835,737 2,310,450  26.6  21.3  32.9 0.992
+ 64: Low and middle income deaths_nonopt   ssp245 2022-2030 1,405,303 1,250,973 1,560,733 1,328,915 1,485,310  20.7  18.4  22.9    NA
+ 65: Low and middle income deaths_nonopt   ssp245 2031-2040 1,713,030 1,455,631 2,002,361 1,572,265 1,855,856  23.3  19.8  27.2    NA
+ 66: Low and middle income deaths_nonopt   ssp245 2041-2050 2,091,133 1,672,010 2,593,632 1,850,002 2,330,805  26.8  21.4  33.2    NA
+ 67: Low and middle income deaths_nonopt   ssp370 2022-2030 1,407,363 1,254,649 1,561,498 1,331,406 1,487,546  20.7  18.4  23.0 1.001
+ 68: Low and middle income deaths_nonopt   ssp370 2031-2040 1,725,423 1,463,258 2,022,474 1,582,442 1,871,200  23.5  19.9  27.5 1.007
+ 69: Low and middle income deaths_nonopt   ssp370 2041-2050 2,104,020 1,681,422 2,615,675 1,862,008 2,346,463  27.0  21.6  33.5 1.006
+ 70: Low and middle income deaths_nonopt   ssp585 2022-2030 1,407,316 1,254,343 1,562,663 1,330,316 1,487,711  20.7  18.4  23.0 1.001
+ 71: Low and middle income deaths_nonopt   ssp585 2031-2040 1,729,596 1,465,278 2,029,961 1,585,554 1,875,569  23.5  19.9  27.6 1.010
+ 72: Low and middle income deaths_nonopt   ssp585 2041-2050 2,131,835 1,689,475 2,671,504 1,880,764 2,384,062  27.3  21.7  34.2 1.019
+ 73:            Low income   deaths_cold   ssp126 2022-2030    41,515    35,308    48,659    38,286    44,855   5.6   4.8   6.6 0.995
+ 74:            Low income   deaths_cold   ssp126 2031-2040    50,058    41,114    60,877    45,248    54,922   5.4   4.4   6.6 1.007
+ 75:            Low income   deaths_cold   ssp126 2041-2050    63,369    49,327    80,615    55,432    71,151   5.5   4.3   7.1 1.025
+ 76:            Low income   deaths_cold   ssp245 2022-2030    41,739    35,408    48,980    38,444    45,133   5.7   4.8   6.6    NA
+ 77:            Low income   deaths_cold   ssp245 2031-2040    49,697    41,049    60,365    44,990    54,410   5.4   4.4   6.5    NA
+ 78:            Low income   deaths_cold   ssp245 2041-2050    61,852    48,101    78,813    54,116    69,525   5.4   4.2   6.9    NA
+ 79:            Low income   deaths_cold   ssp370 2022-2030    41,560    35,362    48,715    38,332    44,886   5.6   4.8   6.6 0.996
+ 80:            Low income   deaths_cold   ssp370 2031-2040    49,503    40,685    60,108    44,776    54,258   5.3   4.4   6.5 0.996
+ 81:            Low income   deaths_cold   ssp370 2041-2050    60,935    47,362    77,605    53,297    68,455   5.3   4.1   6.8 0.985
+ 82:            Low income   deaths_cold   ssp585 2022-2030    41,475    35,385    48,463    38,316    44,767   5.6   4.8   6.6 0.994
+ 83:            Low income   deaths_cold   ssp585 2031-2040    49,393    40,633    60,150    44,663    54,107   5.3   4.4   6.5 0.994
+ 84:            Low income   deaths_cold   ssp585 2041-2050    60,157    46,754    76,738    52,594    67,635   5.3   4.1   6.7 0.973
+ 85:            Low income   deaths_heat   ssp126 2022-2030    34,098    21,754    49,253    27,564    40,603   4.6   3.0   6.7 1.017
+ 86:            Low income   deaths_heat   ssp126 2031-2040    43,683    27,786    63,875    34,837    52,418   4.7   3.0   6.9 1.002
+ 87:            Low income   deaths_heat   ssp126 2041-2050    56,287    35,093    84,614    44,006    68,447   4.9   3.1   7.4 0.955
+ 88:            Low income   deaths_heat   ssp245 2022-2030    33,523    21,510    48,241    27,183    39,832   4.5   2.9   6.5    NA
+ 89:            Low income   deaths_heat   ssp245 2031-2040    43,603    27,938    63,680    34,899    52,219   4.7   3.0   6.9    NA
+ 90:            Low income   deaths_heat   ssp245 2041-2050    58,916    36,139    89,608    45,670    72,099   5.2   3.2   7.8    NA
+ 91:            Low income   deaths_heat   ssp370 2022-2030    33,608    21,624    48,183    27,274    39,856   4.6   2.9   6.5 1.003
+ 92:            Low income   deaths_heat   ssp370 2031-2040    44,109    28,033    65,969    35,004    53,046   4.8   3.0   7.1 1.012
+ 93:            Low income   deaths_heat   ssp370 2041-2050    61,175    37,369    94,033    47,442    74,619   5.4   3.3   8.2 1.038
+ 94:            Low income   deaths_heat   ssp585 2022-2030    34,009    21,989    48,540    27,718    40,263   4.6   3.0   6.6 1.014
+ 95:            Low income   deaths_heat   ssp585 2031-2040    44,837    28,362    65,728    35,611    53,802   4.8   3.1   7.1 1.028
+ 96:            Low income   deaths_heat   ssp585 2041-2050    63,977    39,200    98,000    49,589    78,418   5.6   3.4   8.6 1.086
+ 97:            Low income deaths_nonopt   ssp126 2022-2030    75,612    62,154    91,943    68,416    82,544  10.3   8.4  12.5 1.005
+ 98:            Low income deaths_nonopt   ssp126 2031-2040    93,741    75,186   117,180    83,149   104,169  10.1   8.1  12.6 1.005
+ 99:            Low income deaths_nonopt   ssp126 2041-2050   119,656    90,692   155,744   103,240   135,881  10.5   7.9  13.6 0.991
+100:            Low income deaths_nonopt   ssp245 2022-2030    75,262    62,024    91,160    68,224    82,034  10.2   8.4  12.4    NA
+101:            Low income deaths_nonopt   ssp245 2031-2040    93,300    74,976   116,560    82,663   103,772  10.1   8.1  12.6    NA
+102:            Low income deaths_nonopt   ssp245 2041-2050   120,768    91,081   158,830   103,842   137,688  10.6   8.0  13.9    NA
+103:            Low income deaths_nonopt   ssp370 2022-2030    75,168    61,981    91,084    68,137    81,935  10.2   8.4  12.4 0.999
+104:            Low income deaths_nonopt   ssp370 2031-2040    93,612    74,952   117,872    82,811   104,199  10.1   8.1  12.7 1.003
+105:            Low income deaths_nonopt   ssp370 2041-2050   122,110    91,777   161,219   104,718   139,511  10.7   8.0  14.1 1.011
+106:            Low income deaths_nonopt   ssp585 2022-2030    75,484    62,040    91,348    68,319    82,289  10.2   8.4  12.4 1.003
+107:            Low income deaths_nonopt   ssp585 2031-2040    94,230    75,434   118,241    83,370   104,944  10.2   8.1  12.7 1.010
+108:            Low income deaths_nonopt   ssp585 2041-2050   124,135    92,937   164,559   106,203   142,199  10.9   8.1  14.4 1.028
+109:   Lower middle income   deaths_cold   ssp126 2022-2030   196,993   154,750   240,446   175,972   218,006   6.6   5.2   8.1 0.982
+110:   Lower middle income   deaths_cold   ssp126 2031-2040   231,337   168,902   296,878   200,401   263,101   7.0   5.1   9.0 0.984
+111:   Lower middle income   deaths_cold   ssp126 2041-2050   266,183   183,050   360,931   221,011   311,277   7.5   5.2  10.2 1.005
+112:   Lower middle income   deaths_cold   ssp245 2022-2030   200,624   157,151   248,312   179,042   222,656   6.8   5.3   8.4    NA
+113:   Lower middle income   deaths_cold   ssp245 2031-2040   234,991   174,014   303,369   203,535   266,868   7.2   5.3   9.2    NA
+114:   Lower middle income   deaths_cold   ssp245 2041-2050   264,871   178,319   363,316   218,529   310,780   7.5   5.0  10.3    NA
+115:   Lower middle income   deaths_cold   ssp370 2022-2030   203,852   158,083   253,060   181,405   226,682   6.9   5.3   8.5 1.016
+116:   Lower middle income   deaths_cold   ssp370 2031-2040   236,218   169,831   307,658   202,718   270,181   7.2   5.2   9.4 1.005
+117:   Lower middle income   deaths_cold   ssp370 2041-2050   266,570   179,516   368,763   219,698   313,288   7.5   5.1  10.4 1.006
+118:   Lower middle income   deaths_cold   ssp585 2022-2030   200,647   156,331   247,905   178,725   222,809   6.8   5.3   8.3 1.000
+119:   Lower middle income   deaths_cold   ssp585 2031-2040   230,857   166,923   311,349   196,836   264,443   7.0   5.1   9.5 0.982
+120:   Lower middle income   deaths_cold   ssp585 2041-2050   250,369   165,071   349,799   204,743   296,607   7.1   4.7   9.9 0.945
+121:   Lower middle income   deaths_heat   ssp126 2022-2030   241,998   180,195   320,357   207,926   275,584   8.1   6.1  10.8 1.022
+122:   Lower middle income   deaths_heat   ssp126 2031-2040   299,316   211,189   425,517   248,698   348,642   9.1   6.4  13.0 1.028
+123:   Lower middle income   deaths_heat   ssp126 2041-2050   369,672   248,065   548,969   298,107   439,444  10.4   7.0  15.5 0.972
+124:   Lower middle income   deaths_heat   ssp245 2022-2030   236,732   174,538   319,164   202,225   270,219   8.0   5.9  10.7    NA
+125:   Lower middle income   deaths_heat   ssp245 2031-2040   291,215   205,220   406,421   243,892   338,170   8.9   6.2  12.4    NA
+126:   Lower middle income   deaths_heat   ssp245 2041-2050   380,137   249,013   572,661   303,961   455,040  10.7   7.0  16.2    NA
+127:   Lower middle income   deaths_heat   ssp370 2022-2030   232,642   165,165   313,615   196,726   267,647   7.8   5.6  10.6 0.983
+128:   Lower middle income   deaths_heat   ssp370 2031-2040   294,482   204,566   431,503   242,375   345,415   9.0   6.2  13.1 1.011
+129:   Lower middle income   deaths_heat   ssp370 2041-2050   378,519   243,216   581,350   300,101   456,375  10.7   6.9  16.4 0.996
+130:   Lower middle income   deaths_heat   ssp585 2022-2030   238,252   179,166   310,089   206,248   269,422   8.0   6.0  10.4 1.006
+131:   Lower middle income   deaths_heat   ssp585 2031-2040   306,416   201,160   439,787   251,082   361,345   9.3   6.1  13.4 1.052
+132:   Lower middle income   deaths_heat   ssp585 2041-2050   422,242   264,848   665,415   329,013   513,401  11.9   7.5  18.8 1.111
+133:   Lower middle income deaths_nonopt   ssp126 2022-2030   438,991   366,617   522,837   401,604   474,273  14.8  12.3  17.6 1.004
+134:   Lower middle income deaths_nonopt   ssp126 2031-2040   530,653   414,440   672,821   469,466   592,687  16.2  12.6  20.5 1.008
+135:   Lower middle income deaths_nonopt   ssp126 2041-2050   635,855   462,092   851,927   540,907   732,800  18.0  13.1  24.1 0.986
+136:   Lower middle income deaths_nonopt   ssp245 2022-2030   437,357   365,929   522,466   400,314   471,945  14.7  12.3  17.6    NA
+137:   Lower middle income deaths_nonopt   ssp245 2031-2040   526,206   414,669   660,456   466,829   585,419  16.0  12.6  20.1    NA
+138:   Lower middle income deaths_nonopt   ssp245 2041-2050   645,009   467,391   868,980   548,224   744,824  18.2  13.2  24.6    NA
+139:   Lower middle income deaths_nonopt   ssp370 2022-2030   436,494   363,725   521,368   398,886   471,828  14.7  12.2  17.5 0.998
+140:   Lower middle income deaths_nonopt   ssp370 2031-2040   530,700   415,185   672,498   468,546   591,878  16.2  12.6  20.5 1.009
+141:   Lower middle income deaths_nonopt   ssp370 2041-2050   645,089   466,127   875,733   547,634   745,468  18.2  13.2  24.7 1.000
+142:   Lower middle income deaths_nonopt   ssp585 2022-2030   438,899   367,889   519,979   402,438   473,204  14.8  12.4  17.5 1.004
+143:   Lower middle income deaths_nonopt   ssp585 2031-2040   537,273   417,319   682,332   473,987   600,597  16.4  12.7  20.8 1.021
+144:   Lower middle income deaths_nonopt   ssp585 2041-2050   672,611   475,672   935,274   564,997   782,342  19.0  13.4  26.4 1.043
+145:        Not classified   deaths_cold   ssp126 2022-2030         1         1         2         1         1   5.0   2.5   9.7 1.027
+146:        Not classified   deaths_cold   ssp126 2031-2040         1         0         2         1         1   4.9   2.1   9.6 1.003
+147:        Not classified   deaths_cold   ssp126 2041-2050         1         0         2         1         1   5.4   2.3  11.3 1.054
+148:        Not classified   deaths_cold   ssp245 2022-2030         1         1         2         1         1   4.9   2.5   9.2    NA
+149:        Not classified   deaths_cold   ssp245 2031-2040         1         0         2         1         1   4.8   2.2   9.5    NA
+150:        Not classified   deaths_cold   ssp245 2041-2050         1         0         2         1         1   5.1   2.2  10.7    NA
+151:        Not classified   deaths_cold   ssp370 2022-2030         1         1         2         1         1   4.9   2.5   9.5 1.008
+152:        Not classified   deaths_cold   ssp370 2031-2040         1         0         2         1         1   5.0   2.3   9.8 1.035
+153:        Not classified   deaths_cold   ssp370 2041-2050         1         0         2         1         1   4.8   2.1  10.3 0.941
+154:        Not classified   deaths_cold   ssp585 2022-2030         1         1         2         1         1   5.0   2.5   9.7 1.030
+155:        Not classified   deaths_cold   ssp585 2031-2040         1         0         2         1         1   4.7   2.1   9.4 0.973
+156:        Not classified   deaths_cold   ssp585 2041-2050         1         0         2         1         1   4.5   1.9   9.8 0.885
+157:        Not classified   deaths_heat   ssp126 2022-2030         0         0         0         0         0   0.9   0.4   2.0 0.978
+158:        Not classified   deaths_heat   ssp126 2031-2040         0         0         1         0         0   1.2   0.4   2.8 0.941
+159:        Not classified   deaths_heat   ssp126 2041-2050         0         0         1         0         0   1.4   0.4   3.3 0.811
+160:        Not classified   deaths_heat   ssp245 2022-2030         0         0         0         0         0   1.0   0.4   2.0    NA
+161:        Not classified   deaths_heat   ssp245 2031-2040         0         0         1         0         0   1.3   0.4   3.0    NA
+162:        Not classified   deaths_heat   ssp245 2041-2050         0         0         1         0         1   1.7   0.5   4.2    NA
+163:        Not classified   deaths_heat   ssp370 2022-2030         0         0         0         0         0   1.0   0.4   2.0 0.999
+164:        Not classified   deaths_heat   ssp370 2031-2040         0         0         1         0         0   1.3   0.4   3.0 1.030
+165:        Not classified   deaths_heat   ssp370 2041-2050         0         0         1         0         1   2.0   0.6   4.7 1.186
+166:        Not classified   deaths_heat   ssp585 2022-2030         0         0         0         0         0   1.0   0.4   2.1 1.048
+167:        Not classified   deaths_heat   ssp585 2031-2040         0         0         1         0         0   1.6   0.5   3.7 1.213
+168:        Not classified   deaths_heat   ssp585 2041-2050         0         0         1         0         1   2.3   0.7   5.2 1.367
+169:        Not classified deaths_nonopt   ssp126 2022-2030         1         1         2         1         1   5.9   3.8  10.2 1.019
+170:        Not classified deaths_nonopt   ssp126 2031-2040         1         1         2         1         2   6.1   3.8  10.4 0.990
+171:        Not classified deaths_nonopt   ssp126 2041-2050         1         1         3         1         2   6.8   4.1  12.2 0.993
+172:        Not classified deaths_nonopt   ssp245 2022-2030         1         1         2         1         1   5.8   3.8   9.7    NA
+173:        Not classified deaths_nonopt   ssp245 2031-2040         1         1         2         1         2   6.1   3.9  10.3    NA
+174:        Not classified deaths_nonopt   ssp245 2041-2050         1         1         2         1         2   6.8   4.1  11.8    NA
+175:        Not classified deaths_nonopt   ssp370 2022-2030         1         1         2         1         1   5.9   3.8  10.1 1.006
+176:        Not classified deaths_nonopt   ssp370 2031-2040         1         1         2         1         2   6.3   3.9  10.6 1.034
+177:        Not classified deaths_nonopt   ssp370 2041-2050         1         1         2         1         2   6.8   4.1  11.7 1.002
+178:        Not classified deaths_nonopt   ssp585 2022-2030         1         1         2         1         1   6.0   3.9  10.3 1.033
+179:        Not classified deaths_nonopt   ssp585 2031-2040         1         1         2         1         2   6.3   3.9  10.4 1.023
+180:        Not classified deaths_nonopt   ssp585 2041-2050         1         1         2         1         2   6.9   4.3  11.3 1.005
+181:   Upper middle income   deaths_cold   ssp126 2022-2030   760,479   665,287   870,060   711,665   810,799  24.6  21.5  28.1 0.996
+182:   Upper middle income   deaths_cold   ssp126 2031-2040   916,779   771,890 1,074,208   842,534   992,794  29.2  24.5  34.2 0.995
+183:   Upper middle income   deaths_cold   ssp126 2041-2050 1,096,780   872,832 1,345,068   980,328 1,216,035  35.1  28.0  43.1 1.002
+184:   Upper middle income   deaths_cold   ssp245 2022-2030   763,396   663,455   874,775   712,933   814,435  24.7  21.4  28.3    NA
+185:   Upper middle income   deaths_cold   ssp245 2031-2040   920,985   776,408 1,079,699   846,920   996,766  29.3  24.7  34.3    NA
+186:   Upper middle income   deaths_cold   ssp245 2041-2050 1,094,165   870,019 1,345,439   977,483 1,214,264  35.1  27.9  43.1    NA
+187:   Upper middle income   deaths_cold   ssp370 2022-2030   769,351   667,388   882,447   718,596   819,729  24.9  21.6  28.5 1.008
+188:   Upper middle income   deaths_cold   ssp370 2031-2040   929,053   780,586 1,090,429   853,768 1,006,376  29.5  24.8  34.7 1.009
+189:   Upper middle income   deaths_cold   ssp370 2041-2050 1,101,622   873,776 1,354,993   983,059 1,224,272  35.3  28.0  43.4 1.007
+190:   Upper middle income   deaths_cold   ssp585 2022-2030   759,579   663,927   869,489   710,761   809,023  24.5  21.5  28.1 0.995
+191:   Upper middle income   deaths_cold   ssp585 2031-2040   909,476   763,874 1,067,156   835,192   985,693  28.9  24.3  33.9 0.988
+192:   Upper middle income   deaths_cold   ssp585 2041-2050 1,065,069   839,942 1,314,248   946,926 1,183,702  34.1  26.9  42.1 0.973
+193:   Upper middle income   deaths_heat   ssp126 2022-2030   131,509    93,505   190,982   108,982   152,938   4.2   3.0   6.2 1.017
+194:   Upper middle income   deaths_heat   ssp126 2031-2040   174,012   118,624   261,636   140,173   208,772   5.5   3.8   8.3 1.009
+195:   Upper middle income   deaths_heat   ssp126 2041-2050   221,180   141,239   335,861   173,948   267,736   7.1   4.5  10.8 0.957
+196:   Upper middle income   deaths_heat   ssp245 2022-2030   129,288    92,871   185,809   107,457   151,925   4.2   3.0   6.0    NA
+197:   Upper middle income   deaths_heat   ssp245 2031-2040   172,539   118,467   261,101   139,696   205,625   5.5   3.8   8.3    NA
+198:   Upper middle income   deaths_heat   ssp245 2041-2050   231,191   152,141   367,991   183,377   277,680   7.4   4.9  11.8    NA
+199:   Upper middle income   deaths_heat   ssp370 2022-2030   126,350    89,689   187,592   104,692   147,419   4.1   2.9   6.1 0.977
+200:   Upper middle income   deaths_heat   ssp370 2031-2040   172,058   118,081   275,683   139,451   201,968   5.5   3.8   8.8 0.997
+201:   Upper middle income   deaths_heat   ssp370 2041-2050   235,199   149,779   391,223   182,398   284,081   7.5   4.8  12.5 1.017
+202:   Upper middle income   deaths_heat   ssp585 2022-2030   133,355    95,267   192,145   110,729   156,238   4.3   3.1   6.2 1.031
+203:   Upper middle income   deaths_heat   ssp585 2031-2040   188,617   128,716   288,426   152,267   225,863   6.0   4.1   9.2 1.093
+204:   Upper middle income   deaths_heat   ssp585 2041-2050   270,021   172,464   425,927   210,116   329,959   8.7   5.5  13.6 1.168
+205:   Upper middle income deaths_nonopt   ssp126 2022-2030   891,988   789,686 1,011,285   840,013   946,750  28.8  25.5  32.7 0.999
+206:   Upper middle income deaths_nonopt   ssp126 2031-2040 1,090,792   929,020 1,266,118 1,009,609 1,175,298  34.7  29.5  40.3 0.998
+207:   Upper middle income deaths_nonopt   ssp126 2041-2050 1,317,960 1,061,955 1,610,410 1,186,080 1,454,140  42.2  34.0  51.6 0.994
+208:   Upper middle income deaths_nonopt   ssp245 2022-2030   892,684   790,564 1,011,901   840,810   947,008  28.8  25.5  32.7    NA
+209:   Upper middle income deaths_nonopt   ssp245 2031-2040 1,093,524   931,700 1,270,428 1,011,985 1,179,318  34.8  29.6  40.4    NA
+210:   Upper middle income deaths_nonopt   ssp245 2041-2050 1,325,356 1,066,641 1,621,269 1,192,791 1,462,110  42.5  34.2  51.9    NA
+211:   Upper middle income deaths_nonopt   ssp370 2022-2030   895,701   793,144 1,014,766   843,691   950,174  28.9  25.6  32.8 1.003
+212:   Upper middle income deaths_nonopt   ssp370 2031-2040 1,101,111   935,701 1,282,160 1,018,253 1,187,534  35.0  29.8  40.8 1.007
+213:   Upper middle income deaths_nonopt   ssp370 2041-2050 1,336,821 1,076,040 1,635,175 1,201,471 1,474,731  42.8  34.5  52.4 1.009
+214:   Upper middle income deaths_nonopt   ssp585 2022-2030   892,934   790,265 1,012,679   841,112   947,687  28.9  25.5  32.7 1.000
+215:   Upper middle income deaths_nonopt   ssp585 2031-2040 1,098,093   934,036 1,276,443 1,015,509 1,183,608  34.9  29.7  40.6 1.004
+216:   Upper middle income deaths_nonopt   ssp585 2041-2050 1,335,090 1,075,653 1,635,406 1,198,974 1,474,021  42.8  34.5  52.4 1.007
+217:                 World   deaths_cold   ssp126 2022-2030 1,476,698 1,300,283 1,649,518 1,396,045 1,558,300  18.0  15.8  20.1 0.995
+218:                 World   deaths_cold   ssp126 2031-2040 1,732,357 1,464,364 2,010,174 1,601,700 1,864,426  19.7  16.7  22.9 0.995
+219:                 World   deaths_cold   ssp126 2041-2050 2,005,660 1,610,224 2,429,040 1,800,614 2,208,318  21.7  17.4  26.3 1.003
+220:                 World   deaths_cold   ssp245 2022-2030 1,483,673 1,302,682 1,661,329 1,401,447 1,567,548  18.1  15.9  20.2    NA
+221:                 World   deaths_cold   ssp245 2031-2040 1,740,378 1,473,028 2,020,121 1,610,563 1,872,675  19.8  16.7  23.0    NA
+222:                 World   deaths_cold   ssp245 2041-2050 1,998,935 1,602,802 2,423,909 1,792,883 2,202,615  21.6  17.3  26.2    NA
+223:                 World   deaths_cold   ssp370 2022-2030 1,493,569 1,309,047 1,672,803 1,409,601 1,578,587  18.2  15.9  20.4 1.007
+224:                 World   deaths_cold   ssp370 2031-2040 1,750,587 1,475,667 2,036,943 1,618,225 1,886,922  19.9  16.8  23.2 1.006
+225:                 World   deaths_cold   ssp370 2041-2050 2,006,773 1,607,553 2,435,824 1,799,552 2,214,053  21.7  17.4  26.4 1.004
+226:                 World   deaths_cold   ssp585 2022-2030 1,479,161 1,302,715 1,651,236 1,398,348 1,560,712  18.0  15.9  20.1 0.997
+227:                 World   deaths_cold   ssp585 2031-2040 1,724,286 1,455,503 2,010,306 1,593,516 1,857,563  19.6  16.6  22.9 0.991
+228:                 World   deaths_cold   ssp585 2041-2050 1,950,759 1,559,517 2,374,196 1,744,700 2,151,321  21.1  16.9  25.7 0.976
+229:                 World   deaths_heat   ssp126 2022-2030   439,564   335,071   577,145   382,052   495,707   5.4   4.1   7.0 1.019
+230:                 World   deaths_heat   ssp126 2031-2040   559,818   406,659   783,095   470,558   648,651   6.4   4.6   8.9 1.016
+231:                 World   deaths_heat   ssp126 2041-2050   703,149   482,305 1,014,120   574,030   830,636   7.6   5.2  11.0 0.964
+232:                 World   deaths_heat   ssp245 2022-2030   431,244   328,460   570,407   374,219   488,293   5.2   4.0   6.9    NA
+233:                 World   deaths_heat   ssp245 2031-2040   550,839   401,464   763,498   465,395   634,245   6.3   4.6   8.7    NA
+234:                 World   deaths_heat   ssp245 2041-2050   729,507   499,064 1,074,365   593,357   865,107   7.9   5.4  11.6    NA
+235:                 World   deaths_heat   ssp370 2022-2030   424,074   317,094   563,785   365,345   481,764   5.2   3.9   6.9 0.983
+236:                 World   deaths_heat   ssp370 2031-2040   555,087   401,912   810,299   465,151   643,233   6.3   4.6   9.2 1.008
+237:                 World   deaths_heat   ssp370 2041-2050   735,317   495,059 1,116,333   593,217   875,362   8.0   5.4  12.1 1.008
+238:                 World   deaths_heat   ssp585 2022-2030   438,032   337,926   566,727   383,316   493,128   5.3   4.1   6.9 1.016
+239:                 World   deaths_heat   ssp585 2031-2040   586,214   411,226   827,779   489,221   682,668   6.7   4.7   9.4 1.064
+240:                 World   deaths_heat   ssp585 2041-2050   821,948   542,817 1,243,627   655,970   986,615   8.9   5.9  13.5 1.127
+241:                 World deaths_nonopt   ssp126 2022-2030 1,916,262 1,710,301 2,108,140 1,819,751 2,017,424  23.3  20.8  25.7 1.001
+242:                 World deaths_nonopt   ssp126 2031-2040 2,292,174 1,953,869 2,641,967 2,120,581 2,465,933  26.1  22.2  30.0 1.000
+243:                 World deaths_nonopt   ssp126 2041-2050 2,708,809 2,185,166 3,285,540 2,423,627 2,990,952  29.3  23.6  35.6 0.993
+244:                 World deaths_nonopt   ssp245 2022-2030 1,914,917 1,709,009 2,106,891 1,819,375 2,016,524  23.3  20.8  25.6    NA
+245:                 World deaths_nonopt   ssp245 2031-2040 2,291,217 1,955,573 2,640,692 2,120,007 2,465,201  26.1  22.2  30.0    NA
+246:                 World deaths_nonopt   ssp245 2041-2050 2,728,442 2,197,956 3,315,938 2,440,927 3,015,052  29.5  23.8  35.9    NA
+247:                 World deaths_nonopt   ssp370 2022-2030 1,917,644 1,708,095 2,107,858 1,821,881 2,018,774  23.3  20.8  25.7 1.001
+248:                 World deaths_nonopt   ssp370 2031-2040 2,305,673 1,964,279 2,664,307 2,131,053 2,482,825  26.2  22.3  30.3 1.006
+249:                 World deaths_nonopt   ssp370 2041-2050 2,742,090 2,209,346 3,336,578 2,453,998 3,032,026  29.7  23.9  36.1 1.005
+250:                 World deaths_nonopt   ssp585 2022-2030 1,917,193 1,712,835 2,107,675 1,821,832 2,018,158  23.3  20.8  25.7 1.001
+251:                 World deaths_nonopt   ssp585 2031-2040 2,310,500 1,967,530 2,671,937 2,134,899 2,489,099  26.3  22.4  30.4 1.008
+252:                 World deaths_nonopt   ssp585 2041-2050 2,772,707 2,224,938 3,394,792 2,472,950 3,071,703  30.0  24.1  36.7 1.016
+                      unit       measure scenario    period      mean       l95       u95       l66       u66  rate r_l95 r_u95 ratio
+                    <char>        <char>   <char>    <char>    <char>    <char>    <char>    <char>    <char> <num> <num> <num> <num>
+
+== World and income groups, YLLs (2041-2050) ==
+                     unit    measure scenario       mean        l95        u95  rate ratio
+                   <char>     <char>   <char>     <char>     <char>     <char> <num> <num>
+ 1:           High income   yll_cold   ssp126  7,123,083  5,748,941  8,329,401   495 1.002
+ 2:           High income   yll_cold   ssp245  7,109,114  5,739,070  8,305,526   494    NA
+ 3:           High income   yll_cold   ssp370  7,105,802  5,732,351  8,305,162   494 1.000
+ 4:           High income   yll_cold   ssp585  7,076,092  5,710,391  8,285,443   492 0.995
+ 5:           High income   yll_heat   ssp126  1,003,952    680,762  1,441,484    70 0.948
+ 6:           High income   yll_heat   ssp245  1,058,522    715,944  1,537,307    74    NA
+ 7:           High income   yll_heat   ssp370  1,080,307    722,320  1,600,271    75 1.021
+ 8:           High income   yll_heat   ssp585  1,163,874    765,605  1,720,262    81 1.100
+ 9:           High income yll_nonopt   ssp126  8,127,035  6,609,283  9,522,837   565 0.995
+10:           High income yll_nonopt   ssp245  8,167,636  6,648,728  9,582,551   568    NA
+11:           High income yll_nonopt   ssp370  8,186,109  6,658,907  9,597,744   569 1.002
+12:           High income yll_nonopt   ssp585  8,239,966  6,710,651  9,682,932   573 1.009
+13: Low and middle income   yll_cold   ssp126 16,771,524 13,016,372 21,333,796   215 1.005
+14: Low and middle income   yll_cold   ssp245 16,695,682 12,893,209 21,265,217   214    NA
+15: Low and middle income   yll_cold   ssp370 16,785,171 12,916,424 21,429,373   215 1.005
+16: Low and middle income   yll_cold   ssp585 16,152,303 12,368,623 20,649,246   207 0.967
+17: Low and middle income   yll_heat   ssp126 11,297,200  7,673,485 16,584,816   145 0.965
+18: Low and middle income   yll_heat   ssp245 11,703,749  7,890,455 17,461,636   150    NA
+19: Low and middle income   yll_heat   ssp370 11,810,343  7,853,709 18,034,021   151 1.009
+20: Low and middle income   yll_heat   ssp585 13,111,109  8,590,950 20,042,180   168 1.120
+21: Low and middle income yll_nonopt   ssp126 28,068,725 21,886,260 35,865,212   360 0.988
+22: Low and middle income yll_nonopt   ssp245 28,399,431 22,037,591 36,481,800   364    NA
+23: Low and middle income yll_nonopt   ssp370 28,595,514 22,215,473 36,831,423   367 1.007
+24: Low and middle income yll_nonopt   ssp585 29,263,413 22,477,409 37,981,936   375 1.030
+25:            Low income   yll_cold   ssp126    766,963    561,068  1,035,193    67 1.029
+26:            Low income   yll_cold   ssp245    745,049    545,342  1,009,084    65    NA
+27:            Low income   yll_cold   ssp370    732,080    535,208    990,662    64 0.983
+28:            Low income   yll_cold   ssp585    720,964    524,736    976,710    63 0.968
+29:            Low income   yll_heat   ssp126  1,357,719    759,954  2,194,652   119 0.955
+30:            Low income   yll_heat   ssp245  1,421,484    786,721  2,334,624   124    NA
+31:            Low income   yll_heat   ssp370  1,475,700    816,176  2,431,312   129 1.038
+32:            Low income   yll_heat   ssp585  1,540,343    854,075  2,543,625   135 1.084
+33:            Low income yll_nonopt   ssp126  2,124,682  1,439,052  3,071,308   186 0.981
+34:            Low income yll_nonopt   ssp245  2,166,533  1,451,707  3,174,821   190    NA
+35:            Low income yll_nonopt   ssp370  2,207,780  1,470,413  3,251,506   193 1.019
+36:            Low income yll_nonopt   ssp585  2,261,308  1,497,478  3,352,365   198 1.044
+37:   Lower middle income   yll_cold   ssp126  3,264,917  2,132,700  4,612,773    92 1.005
+38:   Lower middle income   yll_cold   ssp245  3,249,961  2,080,209  4,655,318    92    NA
+39:   Lower middle income   yll_cold   ssp370  3,270,578  2,100,224  4,725,144    92 1.006
+40:   Lower middle income   yll_cold   ssp585  3,071,147  1,915,178  4,480,320    87 0.945
+41:   Lower middle income   yll_heat   ssp126  6,661,120  4,439,884  9,977,336   188 0.973
+42:   Lower middle income   yll_heat   ssp245  6,843,501  4,500,967 10,381,461   193    NA
+43:   Lower middle income   yll_heat   ssp370  6,821,595  4,386,010 10,521,761   193 0.997
+44:   Lower middle income   yll_heat   ssp585  7,555,547  4,755,743 11,921,193   214 1.104
+45:   Lower middle income yll_nonopt   ssp126  9,926,037  6,970,646 13,829,118   280 0.983
+46:   Lower middle income yll_nonopt   ssp245 10,093,462  7,035,684 14,132,560   285    NA
+47:   Lower middle income yll_nonopt   ssp370 10,092,173  7,015,018 14,188,852   285 1.000
+48:   Lower middle income yll_nonopt   ssp585 10,626,694  7,239,809 15,270,610   300 1.053
+49:        Not classified   yll_cold   ssp126         11          4         25    52 1.070
+50:        Not classified   yll_cold   ssp245         10          4         23    49    NA
+51:        Not classified   yll_cold   ssp370         10          3         22    46 0.936
+52:        Not classified   yll_cold   ssp585          9          3         21    43 0.879
+53:        Not classified   yll_heat   ssp126          6          2         13    28 0.832
+54:        Not classified   yll_heat   ssp245          7          2         17    33    NA
+55:        Not classified   yll_heat   ssp370          8          3         19    39 1.163
+56:        Not classified   yll_heat   ssp585          9          3         20    44 1.332
+57:        Not classified yll_nonopt   ssp126         17         10         30    80 0.974
+58:        Not classified yll_nonopt   ssp245         17         10         30    82    NA
+59:        Not classified yll_nonopt   ssp370         18         10         31    85 1.028
+60:        Not classified yll_nonopt   ssp585         18         11         31    87 1.063
+61:   Upper middle income   yll_cold   ssp126 12,739,644 10,086,817 15,878,711   408 1.003
+62:   Upper middle income   yll_cold   ssp245 12,700,672 10,011,129 15,848,295   407    NA
+63:   Upper middle income   yll_cold   ssp370 12,782,513 10,063,785 15,936,609   410 1.006
+64:   Upper middle income   yll_cold   ssp585 12,360,192  9,680,740 15,465,228   396 0.973
+65:   Upper middle income   yll_heat   ssp126  3,278,361  2,128,729  4,927,847   105 0.953
+66:   Upper middle income   yll_heat   ssp245  3,438,764  2,296,384  5,367,745   110    NA
+67:   Upper middle income   yll_heat   ssp370  3,513,048  2,281,111  5,780,515   113 1.022
+68:   Upper middle income   yll_heat   ssp585  4,015,219  2,603,448  6,247,751   129 1.168
+69:   Upper middle income yll_nonopt   ssp126 16,018,005 12,985,782 19,903,667   513 0.992
+70:   Upper middle income yll_nonopt   ssp245 16,139,437 13,078,411 20,070,485   517    NA
+71:   Upper middle income yll_nonopt   ssp370 16,295,561 13,161,768 20,249,780   522 1.010
+72:   Upper middle income yll_nonopt   ssp585 16,375,411 13,237,143 20,381,986   525 1.015
+73:                 World   yll_cold   ssp126 23,894,619 19,036,792 29,520,052   259 1.004
+74:                 World   yll_cold   ssp245 23,804,806 18,948,269 29,396,079   258    NA
+75:                 World   yll_cold   ssp370 23,890,983 18,941,850 29,540,808   259 1.004
+76:                 World   yll_cold   ssp585 23,228,405 18,426,160 28,780,573   251 0.976
+77:                 World   yll_heat   ssp126 12,301,158  8,399,925 17,959,322   133 0.964
+78:                 World   yll_heat   ssp245 12,762,278  8,673,086 18,919,999   138    NA
+79:                 World   yll_heat   ssp370 12,890,658  8,643,318 19,555,639   139 1.010
+80:                 World   yll_heat   ssp585 14,274,993  9,418,992 21,685,746   154 1.119
+81:                 World yll_nonopt   ssp126 36,195,777 28,864,582 45,255,541   392 0.990
+82:                 World yll_nonopt   ssp245 36,567,084 29,051,993 45,815,084   396    NA
+83:                 World yll_nonopt   ssp370 36,781,641 29,234,823 46,212,797   398 1.006
+84:                 World yll_nonopt   ssp585 37,503,398 29,573,446 47,444,826   406 1.026
+                     unit    measure scenario       mean        l95        u95  rate ratio
+                   <char>     <char>   <char>     <char>     <char>     <char> <num> <num>
+
+== ssp585 vs ssp245 differences, groups ==
+                     unit       measure scenario ratio r_min r_max       d    d_l95   d_u95   d_l66   d_u66
+                   <char>        <char>   <char> <num> <num> <num>  <char>   <char>  <char>  <char>  <char>
+ 1:           High income   deaths_cold   ssp126 1.002 0.990 1.013   1,281   -7,181   9,809  -2,505   5,369
+ 2:           High income   deaths_cold   ssp370 0.999 0.981 1.016    -401  -10,924   8,827  -5,405   3,797
+ 3:           High income   deaths_cold   ssp585 0.995 0.980 1.011  -2,883  -13,520   8,513  -7,813   1,852
+ 4:           High income   deaths_heat   ssp126 0.945 0.884 1.025  -3,251   -8,682   1,509  -5,676  -1,219
+ 5:           High income   deaths_heat   ssp370 1.020 0.914 1.096   1,161   -5,298   7,368  -1,336   3,944
+ 6:           High income   deaths_heat   ssp585 1.109 1.006 1.206   6,446      374  14,987   3,661   9,037
+ 7:           High income deaths_nonopt   ssp126 0.997 0.981 1.012  -1,971  -12,532   7,847  -6,213   2,200
+ 8:           High income deaths_nonopt   ssp370 1.001 0.984 1.013     760  -10,307   9,604  -3,648   5,294
+ 9:           High income deaths_nonopt   ssp585 1.006 0.994 1.021   3,563   -5,923  16,069  -1,825   9,194
+10: Low and middle income   deaths_cold   ssp126 1.004 0.957 1.035   5,444  -59,973  51,225 -15,322  34,100
+11: Low and middle income   deaths_cold   ssp370 1.006 0.965 1.030   8,239  -44,448  48,934 -19,303  34,564
+12: Low and middle income   deaths_cold   ssp585 0.968 0.930 0.987 -45,293  -95,871 -15,642 -63,921 -25,709
+13: Low and middle income   deaths_heat   ssp126 0.966 0.894 1.057 -23,106 -100,574  37,916 -54,967  11,041
+14: Low and middle income   deaths_heat   ssp370 1.007 0.892 1.089   4,649  -76,703  79,807 -27,642  37,169
+15: Low and middle income   deaths_heat   ssp585 1.128 1.036 1.246  85,995   21,251 199,104  42,436 124,932
+16: Low and middle income deaths_nonopt   ssp126 0.992 0.973 1.013 -17,662  -69,359  29,239 -39,172   6,238
+17: Low and middle income deaths_nonopt   ssp370 1.006 0.982 1.025  12,888  -37,546  60,247  -4,682  34,253
+18: Low and middle income deaths_nonopt   ssp585 1.019 0.995 1.049  40,702  -15,578 137,701   2,689  79,170
+19:            Low income   deaths_cold   ssp126 1.025 0.994 1.073   1,517     -425   4,366     456   2,374
+20:            Low income   deaths_cold   ssp370 0.985 0.954 1.022    -917   -2,790   1,261  -1,963     221
+21:            Low income   deaths_cold   ssp585 0.973 0.937 1.001  -1,695   -3,953      83  -2,540    -778
+22:            Low income   deaths_heat   ssp126 0.955 0.866 1.070  -2,629   -8,240   3,100  -5,298    -320
+23:            Low income   deaths_heat   ssp370 1.038 0.964 1.118   2,260   -2,227   8,027    -404   4,646
+24:            Low income   deaths_heat   ssp585 1.086 1.028 1.206   5,061    1,286  11,414   2,427   7,735
+25:            Low income deaths_nonopt   ssp126 0.991 0.965 1.041  -1,112   -5,345   4,337  -3,066     736
+26:            Low income deaths_nonopt   ssp370 1.011 0.991 1.041   1,342   -1,550   5,717    -593   3,139
+27:            Low income deaths_nonopt   ssp585 1.028 1.004 1.058   3,367       -6   8,419   1,222   5,505
+28:   Lower middle income   deaths_cold   ssp126 1.005 0.928 1.088   1,311  -23,651  25,944 -11,198  14,011
+29:   Lower middle income   deaths_cold   ssp370 1.006 0.940 1.084   1,699  -15,679  25,301  -5,292   9,394
+30:   Lower middle income   deaths_cold   ssp585 0.945 0.895 0.991 -14,502  -36,171     118 -23,107  -4,949
+31:   Lower middle income   deaths_heat   ssp126 0.972 0.863 1.079 -10,465  -67,227  31,985 -34,812  12,265
+32:   Lower middle income   deaths_heat   ssp370 0.996 0.879 1.085  -1,618  -52,994  36,683 -23,372  20,675
+33:   Lower middle income   deaths_heat   ssp585 1.111 0.988 1.235  42,105   -2,950 119,510  14,038  69,738
+34:   Lower middle income deaths_nonopt   ssp126 0.986 0.939 1.039  -9,154  -55,321  27,271 -23,124   7,786
+35:   Lower middle income deaths_nonopt   ssp370 1.000 0.944 1.044      81  -42,773  33,997 -15,512  17,695
+36:   Lower middle income deaths_nonopt   ssp585 1.043 0.982 1.128  27,602  -12,100 102,445   1,031  52,631
+37:        Not classified   deaths_cold   ssp126 1.054 0.724 1.527       0       -0       1      -0       0
+38:        Not classified   deaths_cold   ssp370 0.941 0.782 1.218      -0       -0       0      -0       0
+39:        Not classified   deaths_cold   ssp585 0.885 0.619 1.134      -0       -1       0      -0       0
+40:        Not classified   deaths_heat   ssp126 0.811 0.623 1.027      -0       -0       0      -0      -0
+41:        Not classified   deaths_heat   ssp370 1.186 0.810 1.602       0       -0       0       0       0
+42:        Not classified   deaths_heat   ssp585 1.367 0.978 1.845       0       -0       0       0       0
+43:        Not classified deaths_nonopt   ssp126 0.993 0.780 1.354      -0       -0       1      -0       0
+44:        Not classified deaths_nonopt   ssp370 1.002 0.796 1.158       0       -0       0      -0       0
+45:        Not classified deaths_nonopt   ssp585 1.005 0.802 1.202       0       -0       0      -0       0
+46:   Upper middle income   deaths_cold   ssp126 1.002 0.959 1.026   2,615  -42,410  29,341 -10,685  18,683
+47:   Upper middle income   deaths_cold   ssp370 1.007 0.960 1.037   7,457  -40,002  42,469 -16,103  23,905
+48:   Upper middle income   deaths_cold   ssp585 0.973 0.931 0.993 -29,096  -70,781  -5,986 -43,803 -13,109
+49:   Upper middle income   deaths_heat   ssp126 0.957 0.860 1.077 -10,011  -42,061  18,832 -23,933   4,611
+50:   Upper middle income   deaths_heat   ssp370 1.017 0.846 1.187   4,008  -40,335  50,026 -10,613  23,239
+51:   Upper middle income   deaths_heat   ssp585 1.168 1.080 1.303  38,830   14,824  80,114  21,997  54,269
+52:   Upper middle income deaths_nonopt   ssp126 0.994 0.979 1.014  -7,396  -34,518  17,719 -21,435   6,287
+53:   Upper middle income deaths_nonopt   ssp370 1.009 0.993 1.032  11,465  -13,255  42,749  -4,230  26,261
+54:   Upper middle income deaths_nonopt   ssp585 1.007 0.992 1.025   9,734  -14,779  41,668  -4,203  27,352
+55:                 World   deaths_cold   ssp126 1.003 0.968 1.028   6,725  -61,798  57,261 -15,390  36,548
+56:                 World   deaths_cold   ssp370 1.004 0.970 1.021   7,838  -53,872  50,423 -21,838  36,459
+57:                 World   deaths_cold   ssp585 0.976 0.945 0.989 -48,176 -106,725 -16,804 -69,295 -26,537
+58:                 World   deaths_heat   ssp126 0.964 0.896 1.053 -26,357 -106,815  36,835 -60,149   7,889
+59:                 World   deaths_heat   ssp370 1.008 0.894 1.087   5,810  -82,064  86,069 -26,780  39,701
+60:                 World   deaths_heat   ssp585 1.127 1.040 1.236  92,442   24,344 206,886  47,387 132,662
+61:                 World deaths_nonopt   ssp126 0.993 0.977 1.009 -19,633  -76,956  27,716 -42,823   6,182
+62:                 World deaths_nonopt   ssp370 1.005 0.983 1.022  13,648  -42,317  64,657  -4,901  33,823
+63:                 World deaths_nonopt   ssp585 1.016 0.997 1.038  44,266  -14,239 141,455   4,571  84,480
+                     unit       measure scenario ratio r_min r_max       d    d_l95   d_u95   d_l66   d_u66
+                   <char>        <char>   <char> <num> <num> <num>  <char>   <char>  <char>  <char>  <char>
+
+== cause by income group, ssp245, 2041-2050, deaths ==
+Key: <slice>
+              slice High income_deaths_cold High income_deaths_heat Low and middle income_deaths_cold Low and middle income_deaths_heat Low income_deaths_cold
+             <char>                   <num>                   <num>                             <num>                             <num>                  <num>
+ 1:             ckd                   75670                    7197                            100706                             38957                   6902
+ 2:         cvd_cmp                   13731                    1544                             13278                             -1986                    547
+ 3:         cvd_htn                   49988                    3359                            132894                             23431                   7821
+ 4:         cvd_ihd                  140555                   15116                            421627                            153776                  19219
+ 5:      cvd_stroke                   95317                    6586                            317684                            137617                  14165
+ 6:        diabetes                   23452                    5791                             60672                             79693                   3122
+ 7:      inj_animal                    -240                      23                             -4640                              2503                   -796
+ 8:    inj_disaster                    -293                      38                             -1467                              2723                   -174
+ 9:    inj_drowning                   -4446                     516                            -19157                              7029                  -1756
+10:    inj_homicide                   -2321                     541                             -8805                             14106                  -1179
+11:        inj_mech                    -940                     206                             -3783                              2955                   -605
+12: inj_othunintent                    -666                      59                             -2952                               776                   -834
+13:     inj_suicide                  -11269                    1429                            -25479                             20369                  -1906
+14: inj_trans_other                   -1196                     125                             -2414                              1603                   -251
+15:  inj_trans_road                   -5646                    4017                            -23112                             45969                  -2195
+16:             lri                  100834                    8759                             96337                             66037                   8272
+17:       resp_copd                  105515                    3955                            369499                             74686                  11499
+    Low income_deaths_heat Lower middle income_deaths_cold Lower middle income_deaths_heat Not classified_deaths_cold Not classified_deaths_heat
+                     <num>                           <num>                           <num>                      <num>                      <num>
+ 1:                   3264                           26888                           20203                          0                          0
+ 2:                   -718                            3977                           -2638                          0                          0
+ 3:                   2361                           20616                           11043                          0                          0
+ 4:                  10733                          131000                           95526                          0                          0
+ 5:                   9839                           35844                           63860                          0                          0
+ 6:                   5532                           18747                           52076                          0                          0
+ 7:                    154                           -2808                            2148                          0                          0
+ 8:                     50                             -94                            2233                          0                          0
+ 9:                    768                           -4455                            3550                          0                          0
+10:                   3443                           -3054                            7032                          0                          0
+11:                    697                            -744                            1397                          0                          0
+12:                    138                            -741                             400                          0                          0
+13:                   2290                           -8509                           13648                          0                          0
+14:                    173                            -786                            1054                          0                          0
+15:                   8621                          -11094                           27200                          0                          0
+16:                  10028                           10816                           38431                          0                          0
+17:                   1542                           49269                           42974                          0                          0
+    Upper middle income_deaths_cold Upper middle income_deaths_heat World_deaths_cold World_deaths_heat
+                              <num>                           <num>             <num>             <num>
+ 1:                           66916                           15490            176376             46154
+ 2:                            8754                            1371             27009              -442
+ 3:                          104457                           10026            182882             26790
+ 4:                          271408                           47517            562182            168892
+ 5:                          267676                           63918            413001            144203
+ 6:                           38803                           22085             84124             85485
+ 7:                           -1036                             201             -4881              2527
+ 8:                           -1199                             440             -1759              2761
+ 9:                          -12947                            2711            -23603              7545
+10:                           -4572                            3631            -11125             14647
+11:                           -2434                             861             -4723              3161
+12:                           -1377                             238             -3618               835
+13:                          -15065                            4430            -36748             21798
+14:                           -1377                             376             -3610              1728
+15:                           -9823                           10148            -28758             49986
+16:                           77250                           17578            197171             74796
+17:                          308731                           30170            475014             78641
+
+== age sex by group, ssp245 2041-2050, deaths, rates ==
+                     unit     measure        slice    mean     l95       u95  rate
+                   <char>      <char>       <char>  <char>  <char>    <char> <num>
+ 1:           High income deaths_cold  a15_49_sex1  -2,491  -4,259      -966  -0.8
+ 2:           High income deaths_cold  a15_49_sex2     552     115       990   0.2
+ 3:           High income deaths_cold a65plus_sex1 254,669 214,302   288,421 153.3
+ 4:           High income deaths_cold a65plus_sex2 298,343 223,950   351,082 149.2
+ 5:           High income deaths_cold  under5_sex1      27       6        47   0.1
+ 6:           High income deaths_cold  under5_sex2      26      13        41   0.1
+ 7:           High income deaths_heat  a15_49_sex1   3,401   2,250     5,136   1.1
+ 8:           High income deaths_heat  a15_49_sex2     989     633     1,504   0.3
+ 9:           High income deaths_heat a65plus_sex1  25,627  17,382    37,460  15.4
+10:           High income deaths_heat a65plus_sex2  21,102  13,419    32,393  10.6
+11:           High income deaths_heat  under5_sex1      27      17        40   0.1
+12:           High income deaths_heat  under5_sex2      20      12        31   0.1
+13: Low and middle income deaths_cold  a15_49_sex1  -4,625  -9,816       569  -0.2
+14: Low and middle income deaths_cold  a15_49_sex2   5,376   3,020     8,721   0.3
+15: Low and middle income deaths_cold a65plus_sex1 647,781 525,599   781,950 128.5
+16: Low and middle income deaths_cold a65plus_sex2 652,253 494,084   824,032 108.3
+17: Low and middle income deaths_cold  under5_sex1     946     144     2,085   0.3
+18: Low and middle income deaths_cold  under5_sex2   1,033     226     2,149   0.4
+19: Low and middle income deaths_heat  a15_49_sex1  55,708  37,556    84,351   2.9
+20: Low and middle income deaths_heat  a15_49_sex2  18,117  11,002    29,325   1.0
+21: Low and middle income deaths_heat a65plus_sex1 245,033 169,837   360,072  48.6
+22: Low and middle income deaths_heat a65plus_sex2 230,380 151,281   348,304  38.3
+23: Low and middle income deaths_heat  under5_sex1   5,816   1,662    12,032   2.1
+24: Low and middle income deaths_heat  under5_sex2   4,903   1,144    10,264   1.9
+25:                 World deaths_cold  a15_49_sex1  -7,116 -13,182      -725  -0.3
+26:                 World deaths_cold  a15_49_sex2   5,928   3,350     9,598   0.3
+27:                 World deaths_cold a65plus_sex1 902,450 750,280 1,064,557 134.7
+28:                 World deaths_cold a65plus_sex2 950,596 728,685 1,170,536 118.5
+29:                 World deaths_cold  under5_sex1     972     162     2,113   0.3
+30:                 World deaths_cold  under5_sex2   1,059     251     2,177   0.4
+31:                 World deaths_heat  a15_49_sex1  59,110  40,119    89,142   2.6
+32:                 World deaths_heat  a15_49_sex2  19,106  11,687    30,639   0.9
+33:                 World deaths_heat a65plus_sex1 270,661 188,786   395,895  40.4
+34:                 World deaths_heat a65plus_sex2 251,482 166,278   379,694  31.4
+35:                 World deaths_heat  under5_sex1   5,843   1,684    12,067   1.9
+36:                 World deaths_heat  under5_sex2   4,923   1,160    10,292   1.7
+                     unit     measure        slice    mean     l95       u95  rate
+                   <char>      <char>       <char>  <char>  <char>    <char> <num>
+
+== model set sensitivity, World and two groups, ratio to ssp245, 2041-2050 ==
+Key: <unit, measure, target>
+                     unit       measure target   all common paired
+                   <char>        <char> <char> <num>  <num>  <num>
+ 1:           High income   deaths_cold ssp126 1.002  1.002  1.003
+ 2:           High income   deaths_cold ssp370 1.000  0.999  0.999
+ 3:           High income   deaths_cold ssp585 0.994  0.995  0.994
+ 4:           High income   deaths_heat ssp126 0.941  0.945  0.944
+ 5:           High income   deaths_heat ssp370 1.008  1.020  1.020
+ 6:           High income   deaths_heat ssp585 1.113  1.109  1.113
+ 7:           High income deaths_nonopt ssp126 0.997  0.997  0.997
+ 8:           High income deaths_nonopt ssp370 1.001  1.001  1.001
+ 9:           High income deaths_nonopt ssp585 1.006  1.006  1.006
+10: Low and middle income   deaths_cold ssp126 1.004  1.004  1.004
+11: Low and middle income   deaths_cold ssp370 1.008  1.006  1.006
+12: Low and middle income   deaths_cold ssp585 0.966  0.968  0.966
+13: Low and middle income   deaths_heat ssp126 0.966  0.966  0.965
+14: Low and middle income   deaths_heat ssp370 0.997  1.007  1.007
+15: Low and middle income   deaths_heat ssp585 1.136  1.128  1.136
+16: Low and middle income deaths_nonopt ssp126 0.992  0.992  0.992
+17: Low and middle income deaths_nonopt ssp370 1.005  1.006  1.006
+18: Low and middle income deaths_nonopt ssp585 1.021  1.019  1.021
+19:                 World   deaths_cold ssp126 1.004  1.003  1.004
+20:                 World   deaths_cold ssp370 1.006  1.004  1.004
+21:                 World   deaths_cold ssp585 0.974  0.976  0.974
+22:                 World   deaths_heat ssp126 0.964  0.964  0.963
+23:                 World   deaths_heat ssp370 0.998  1.008  1.008
+24:                 World   deaths_heat ssp585 1.134  1.127  1.134
+25:                 World deaths_nonopt ssp126 0.993  0.993  0.993
+26:                 World deaths_nonopt ssp370 1.004  1.005  1.005
+27:                 World deaths_nonopt ssp585 1.018  1.016  1.018
+                     unit       measure target   all common paired
+                   <char>        <char> <char> <num>  <num>  <num>
+      set target n_models n_models_ref
+   <char> <char>    <int>        <int>
+1: common ssp126       24           24
+2: common ssp370       24           24
+3: common ssp585       24           24
+4: paired ssp126       26           26
+5: paired ssp370       24           24
+6: paired ssp585       27           27
+7:    all ssp126       26           27
+8:    all ssp370       24           27
+9:    all ssp585       27           27
