@@ -7,22 +7,25 @@ status doc in this directory. Git history holds older versions of this file.
 
 * Active lines of work
 ** multimodel-summary
-- Latest status doc: [[file:2026-11-03a-multimodel-summary.org]] (2026-11-03)
-- State: Caspar ran the Workflow B summary with per-draw exports (yearly
-  totals, 17 causes, under 5 / 15-49 / 65+ by sex); Aaron is downloading the
-  ~23 GB output. Pooling, benchmark and test code are on main.
-- Next agent action: check the downloaded output (204 files in each of
-  draws/, draws_cause/, draws_age/; national tables match the 2026-10-25
-  summary), then pool with global-scripts/util_pool_workflow_b_draws.R on the
-  24 common models.
-- Open Aaron todos: finish the download and say where it is; pick reporting
-  periods (default decades); supply or approve a World Bank income-group
-  mapping for high income vs LMIC.
-- Still running: nothing on this machine.
+- Latest status doc: [[file:2026-11-06a-multimodel-summary.org]] (2026-11-06)
+- State: Caspar's per-draw export passes review; all of it is pooled on the 24
+  climate models common to the four scenarios. A draft report
+  (docs/reports/multimodel-2026-11/) and slides for the team meeting of
+  2026-11-09 (docs/meetings/team-meeting-2026-11-09-slides.tex) are on main.
+- Next agent action: after the 2026-11-09 meeting, revise the report from the
+  team's answers to the questions on the slides.
+- Open Aaron todos: put the income-group questions to Charlie on 2026-11-09
+  (which vintage of the World Bank classification; Venezuela; Taiwan; Cook
+  Islands, Niue and Tokelau; groups fixed through 2050); decide whether
+  colleagues stay named if the report goes beyond the team.
+- Still running: nothing.
 
 * Dormant or closed
 
 * All status docs (newest first)
+- [[file:2026-11-06a-multimodel-summary.org]] 2026-11-06 multimodel-summary:
+  per-draw export reviewed, full pooling, income groups, draft report and
+  slides for the 2026-11-09 meeting.
 - [[file:2026-11-03a-multimodel-summary.org]] 2026-11-03 multimodel-summary:
   Workflow B full-run review, draw export and pooling code, Caspar's run
   done, download in progress.

@@ -1,0 +1,119 @@
+#+TITLE: Status: multimodel-summary (2026-11-06)
+#+DATE: 2026-11-06
+
+* Read this first
+- This line of work takes the finished scenario runs (four climate scenarios, SSP1-2.6,
+  SSP2-4.5, SSP3-7.0, SSP5-8.5, abbreviated ssp126, ssp245, ssp370, ssp585; 204 countries;
+  2022-2050; heat and cold deaths and years of life lost, YLLs) to final multi-model results.
+  "Workflow B" is the step that rescales each scenario's burden to IHME's mortality forecasts.
+- Where it stands: Caspar's per-draw export (run 2026-10-29) was reviewed and passes; all of
+  it has been pooled on the 24 climate models common to all four scenarios; a draft report and
+  slides for the team meeting of Monday 2026-11-09 are on main.
+- Single most important next action: after the 2026-11-09 meeting, apply the team's answers
+  (the five questions on the "Questions for the team" slide and the five on the income-group
+  slide for Charlie) to the report.
+- Previous status doc in this line of work: =docs/status/2026-11-03a-multimodel-summary.org=.
+- Session ended with: /end-session. Session notes: no compaction; the session ran 2026-11-05
+  to 2026-11-06. Everything below was verified by running code or reading files; nothing came
+  from a sub-agent (none was used).
+
+* What this session accomplished
+- Review of the export: =docs/reviews/workflow-b-draw-export-review-2026-11-05.org=, scripts
+  and output in =output/review-workflow-b-2026-11-05/= (merged, main). All 612 draw files read;
+  summary tables byte-identical to the 2026-10-25 summary; draw means and quantiles match the
+  tables within the export's 6-digit rounding (bound tested on the worst 3 to 4 locations);
+  expectations written first in =expectations.org= there. Nothing needed from Caspar.
+- =global-scripts/util_pool_workflow_b_draws.R= rewritten (merged, main): =--periods= forms any
+  exact union of the files' periods, so decades can be built from the 5-year cause and age
+  blocks; locations pooled one at a time with =--jobs=; new =--model_set=all=. All 204 cause
+  files took 19 minutes 54 seconds on 8 workers, 4.2 GB per process (measured). Matches
+  independent code to 3.3e-11 over 253,368 country cells. Fixture tests:
+  =output/review-workflow-b-2026-10-26/test_draw_export/run_tests.sh=, 43 checks pass after one
+  check ("causes sum to the total") was changed to measure against the gross sum.
+- Full pooling, =output/report-multimodel-2026-11/run_pooling.sh=; output at
+  =~/data/wb-temp-attr-projections/review/multimodel-2026-11/= (not in git; includes
+  =country_cause.csv.gz=, =country_age_sex.csv.gz=, =tidy_common.rds=).
+- World Bank income groups by ISO3: =output/report-multimodel-2026-11/build_income_groups.R=,
+  =income_groups_by_location.csv=, =income_groups.csv=.
+- Draft report in Aaron's voice: =docs/reports/multimodel-2026-11/multimodel-summary.tex= and
+  =.pdf= (26 pages), tables in =tables/= and =tex-tables/=, figures in =figures/=. Builds under
+  pdflatex (emacs-r) and xelatex (bittensor-ubuntu), TEXINPUTS unset.
+- Slides: =docs/meetings/team-meeting-2026-11-09-slides.tex= and =.pdf= (19 pages), figures in
+  =docs/meetings/figures-2026-11-09/=. Same builds, except that the last edit (the slide for
+  Charlie) was built under pdflatex only.
+- Headline, world, 24 common models, SSP2-4.5: heat 431,244 deaths per year in 2022-2030 (95%
+  interval 328,460 to 570,407), 729,507 in 2041-2050 (499,064 to 1,074,365); cold 1,483,673
+  (1,302,682 to 1,661,329), 1,998,935 (1,602,802 to 2,423,909). SSP5-8.5 against SSP2-4.5 in
+  2041-2050: heat ratio 1.127, cold 0.976, total 1.016 (interval on the difference includes zero).
+
+* Decisions made, and why
+- Aaron, 2026-11-06: asterisk both Haiti and Honduras, with a side-by-side column without the
+  =inj_disaster= cause (forces of nature); all 17 causes stay in the headline. Honduras's mean
+  moves by a ratio of 1.17 and its upper bound by 1.16 at 2041-2050; the alternative was Haiti only.
+- Aaron, 2026-11-06: causes at world and income-group level in the main text; country by cause
+  in an appendix, because the 95% interval includes zero in 60.2% of heat cells and 30.7% of
+  cold cells (ssp585, 2041-2050, 3,452 cells).
+- Aaron, 2026-11-06: reporting periods 2022-2030, 2031-2040, 2041-2050.
+- Aaron, 2026-11-06: the agent builds the income mapping; open questions are flagged on a slide
+  for Charlie to help answer on 2026-11-09.
+- Agent: report the heat-overtakes-cold result as shares of (model, draw) pairs per category
+  and not as a year, since for all eight countries whose median year falls within the period
+  under SSP2-4.5 the 95% interval runs from before 2022 to after 2050.
+
+* Tried and ruled out
+- The pooling script as it stood at a586d57 on the cause files, one period per pass: measured
+  on 20 files (10.0 GB, 19 minutes 13 seconds), extrapolated to about 100 GB for 204 against
+  60 GB on this machine. Replaced by the rewrite above.
+- Comparing draw files to the CSVs relative to max(|value|, 1): gives up to 1.1e-3 where draws
+  of both signs nearly cancel, which is rounding. Use the proper rounding bound.
+
+* Current state
+** Git
+- =~/code/wbg-climate-health-burden-projections=: main at dbceb71 (pushed), holds everything
+  here. Aaron's checkout is at 6d9aa7e, behind; pull before editing.
+- Branch =worktree-ssp126-review=: fully merged, pushed, kept on the remote. Aaron approved
+  removing its worktree =.claude/worktrees/ssp126-review= at shutdown (2026-11-06).
+- Untouched, not from this session: local branches =samuel-verification-patches= and
+  =verification-depto-day= (no upstream).
+** Running or scheduled
+- Nothing.
+** Flagged before shutdown but not done
+- None.
+** Permissions Aaron granted this session
+- Merges to main of this session's branch, each approved explicitly. Do not assume they carry over.
+
+* Todos for the next agent
+1. After 2026-11-09: revise the report from the team's answers. Start at
+   =docs/reports/multimodel-2026-11/multimodel-summary.tex=. If income groups change, edit
+   =output/report-multimodel-2026-11/build_income_groups.R= and re-run, in order,
+   =run_pooling.sh=, =build_tables.R=, =country_extras.R=, =make_figures.R=,
+   =make_report_tables.R= (all in that directory). Trap: =population.csv= has aggregate age
+   rows; use single-age rows only, or world population comes to 51.8 billion. Done when both
+   documents build under pdflatex and xelatex.
+2. Before the report goes outside the team: it cites Burkart et al. and the GBD 2021 Foresight
+   forecast by name only. Add verified full references.
+3. Optional, ask first: World Bank regions (a CSV of location_id, group for =--groups=, no new run).
+
+* Todos for Aaron
+1. Monday 2026-11-09: put the income-group questions to Charlie (slide "Income groups:
+   questions for Charlie"): which vintage of the classification (the current API list is used;
+   the April 2025 spreadsheet puts 10 countries in a different group, including the Philippines
+   and Viet Nam); Venezuela; Taiwan; Cook Islands, Niue and Tokelau; and groups held fixed
+   through 2050. Recommendation: keep the current choices unless the team has a standard.
+   Blocks: final income-group tables only.
+2. Whether colleagues stay named in the report (Samuel, Caspar's machine). Recommendation: keep
+   them for the team draft, remove if it goes further. Blocks: nothing now.
+
+* Documentation updated this session
+- =docs/reviews/workflow-b-draw-export-review-2026-11-05.org=: review with a 2026-11-06 update.
+- =docs/reports/multimodel-2026-11/multimodel-summary.tex=: draft report.
+- =docs/meetings/team-meeting-2026-11-09-slides.tex=: deck.
+- All merged in f915430 and dbceb71.
+- Project memory: =workflow-b-export-review-2026-11-05.md=.
+
+* Key files
+- =docs/reports/multimodel-2026-11/multimodel-summary.tex=: the report.
+- =docs/meetings/team-meeting-2026-11-09-slides.tex=: the deck.
+- =global-scripts/util_pool_workflow_b_draws.R=: the pooling.
+- =output/report-multimodel-2026-11/=: every step from pooling to tables and figures.
+- =~/data/wb-temp-attr-projections/review/workflow-b-2026-11-04/draws_cause/summary_workflow_b_v2/=: Caspar's export.
