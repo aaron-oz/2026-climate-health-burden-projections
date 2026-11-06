@@ -1,0 +1,92 @@
+YLLs World, per year
+    scenario    period    measure     mean        l        u  rate ratio
+      <char>    <char>     <char>    <num>    <num>    <num> <num> <num>
+ 1:   ssp245 2022-2030   yll_cold 17796431 15667546 20065708   217    NA
+ 2:   ssp245 2041-2050   yll_cold 23804806 18948269 29396079   258    NA
+ 3:   ssp585 2022-2030   yll_cold 17741104 15671324 19958565   216 0.997
+ 4:   ssp585 2041-2050   yll_cold 23228405 18426160 28780573   251 0.976
+ 5:   ssp245 2022-2030   yll_heat  9201214  7037617 12125547   112    NA
+ 6:   ssp245 2041-2050   yll_heat 12762278  8673086 18919999   138    NA
+ 7:   ssp585 2022-2030   yll_heat  9323917  7219974 12028487   113 1.013
+ 8:   ssp585 2041-2050   yll_heat 14274993  9418992 21685746   154 1.119
+ 9:   ssp245 2022-2030 yll_nonopt 26997645 23978062 30134475   329    NA
+10:   ssp245 2041-2050 yll_nonopt 36567084 29051993 45815084   396    NA
+11:   ssp585 2022-2030 yll_nonopt 27065021 24054593 30137596   329 1.002
+12:   ssp585 2041-2050 yll_nonopt 37503398 29573446 47444826   406 1.026
+Shares of World, SSP2-4.5 2041-2050
+     name     measure   mean share
+   <char>      <char>  <num> <num>
+1:  China deaths_cold 792478 0.396
+2:  China deaths_heat 113009 0.155
+3:  India deaths_cold 111580 0.056
+4:  India deaths_heat 231555 0.317
+       measure top5_share                                                              top5
+        <char>      <num>                                                            <char>
+1: deaths_cold      0.580 China, United States of America, India, Russian Federation, Japan
+2: deaths_heat      0.586                       India, China, Pakistan, Nigeria, Bangladesh
+Heat ratio growth
+      period       measure    mean  rate
+      <char>        <char>   <num> <num>
+1: 2022-2030   deaths_cold 1483673 18.06
+2: 2031-2040   deaths_cold 1740378 19.79
+3: 2041-2050   deaths_cold 1998935 21.63
+4: 2022-2030   deaths_heat  431244  5.25
+5: 2031-2040   deaths_heat  550839  6.26
+6: 2041-2050   deaths_heat  729507  7.89
+7: 2022-2030 deaths_nonopt 1914917 23.31
+8: 2031-2040 deaths_nonopt 2291217 26.05
+9: 2041-2050 deaths_nonopt 2728442 29.53
+Heat share of nonopt
+Key: <scenario, period>
+    scenario    period deaths_heat deaths_nonopt share
+      <char>    <char>       <num>         <num> <num>
+ 1:   ssp126 2022-2030    439563.8       1916262 0.229
+ 2:   ssp126 2031-2040    559817.9       2292174 0.244
+ 3:   ssp126 2041-2050    703149.0       2708809 0.260
+ 4:   ssp245 2022-2030    431244.4       1914917 0.225
+ 5:   ssp245 2031-2040    550838.6       2291217 0.240
+ 6:   ssp245 2041-2050    729506.5       2728442 0.267
+ 7:   ssp370 2022-2030    424074.3       1917644 0.221
+ 8:   ssp370 2031-2040    555086.6       2305673 0.241
+ 9:   ssp370 2041-2050    735317.0       2742090 0.268
+10:   ssp585 2022-2030    438032.4       1917193 0.228
+11:   ssp585 2031-2040    586214.0       2310500 0.254
+12:   ssp585 2041-2050    821948.3       2772707 0.296
+                    unit     measure incl0
+                  <char>      <char> <int>
+1:           High income deaths_cold     0
+2:           High income deaths_heat     6
+3: Low and middle income deaths_cold     1
+4: Low and middle income deaths_heat     9
+5:                 World deaths_cold     1
+6:                 World deaths_heat     9
+                    unit     measure incl0
+                  <char>      <char> <int>
+1:           High income deaths_cold     0
+2:           High income deaths_heat     4
+3: Low and middle income deaths_cold     1
+4: Low and middle income deaths_heat     8
+5:                 World deaths_cold     1
+6:                 World deaths_heat     7
+   scenario   neg
+     <char> <int>
+1:   ssp126     8
+2:   ssp370     9
+3:   ssp585     8
+4:   ssp245     8
+    scenario    period   neg  inc0
+      <char>    <char> <int> <int>
+ 1:   ssp126 2022-2030    21    70
+ 2:   ssp126 2031-2040    13    60
+ 3:   ssp126 2041-2050     8    54
+ 4:   ssp245 2022-2030    21    69
+ 5:   ssp245 2031-2040    13    60
+ 6:   ssp245 2041-2050     8    54
+ 7:   ssp370 2022-2030    22    67
+ 8:   ssp370 2031-2040    13    60
+ 9:   ssp370 2041-2050     9    57
+10:   ssp585 2022-2030    22    68
+11:   ssp585 2031-2040    12    60
+12:   ssp585 2041-2050     8    58
+non-ASCII names: Türkiye; Côte d'Ivoire 
+Haiti/Honduras income: Haiti Lower middle income; Honduras Lower middle income 

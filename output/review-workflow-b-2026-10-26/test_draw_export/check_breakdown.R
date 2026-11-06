@@ -17,10 +17,14 @@ ok("age file: 3 age groups x 2 sexes per (location, model, scenario, period, dra
 ok("same (location, model, scenario) runs in all three files",
    setequal(unique(tot[, paste(location_id, model, scenario)]), unique(cau[, paste(location_id, model, scenario)])) &&
    setequal(unique(tot[, paste(location_id, model, scenario)]), unique(age[, paste(location_id, model, scenario)])))
-cs <- cau[, lapply(.SD, sum), by = .(location_id, model, scenario, period, draw), .SDcols = c("deaths_heat", "yll_cold", "yllref_heat")]
+# Each value carries 6-digit rounding (5e-6 of itself), so measure the difference
+# against the causes' gross sum: relative to a net sum near zero it is not bounded.
+cs <- cau[, .(deaths_heat = sum(deaths_heat), yll_cold = sum(yll_cold), yllref_heat = sum(yllref_heat),
+              g1 = sum(abs(deaths_heat)), g2 = sum(abs(yll_cold)), g3 = sum(abs(yllref_heat))),
+          by = .(location_id, model, scenario, period, draw)]
 m <- merge(cs, tot, by = c("location_id", "model", "scenario", "period", "draw"))
-ok(sprintf("causes sum to the total (worst rel. dev %.1e)", max(rel(m$deaths_heat.x, m$deaths_heat.y), rel(m$yll_cold.x, m$yll_cold.y), rel(m$yllref_heat.x, m$yllref_heat.y))),
-   max(rel(m$deaths_heat.x, m$deaths_heat.y), rel(m$yll_cold.x, m$yll_cold.y), rel(m$yllref_heat.x, m$yllref_heat.y)) < 2e-4)
+worst <- m[, max(abs(deaths_heat.x - deaths_heat.y) / pmax(g1, 1e-9), abs(yll_cold.x - yll_cold.y) / pmax(g2, 1e-9), abs(yllref_heat.x - yllref_heat.y) / pmax(g3, 1e-9))]
+ok(sprintf("causes sum to the total (worst dev / gross %.1e)", worst), worst < 2e-5)
 
 # recompute age groups and reference YLLs for one target and one reference run
 for (case in list(list(loc = 125L, model = "m2", scen = "ssp585"), list(loc = 126L, model = "m3", scen = "ssp245"))) {

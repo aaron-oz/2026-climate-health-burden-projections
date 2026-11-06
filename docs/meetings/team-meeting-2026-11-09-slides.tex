@@ -1,0 +1,270 @@
+% team-meeting-2026-11-09-slides.tex -- summary slides on the multi-model results for
+% the team meeting of November 9, 2026.
+% Build: plain pdflatex (emacs, emacs-r container) or xelatex (bittensor-ubuntu), run
+% twice. beamerthemeozlabs.sty, ozcolors.sty and ozfonts.sty in this directory are
+% symlinks to ~/code/oz-templates/, and the logo is set by absolute path below, so no
+% TEXINPUTS setting is needed.
+% Numbers come from docs/reports/multimodel-2026-11/ (tables/, tex-tables/,
+% multimodel-summary.tex); figures are made by output/report-multimodel-2026-11/make_figures.R.
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usetheme{ozlabs}
+
+\renewcommand{\ozfootbrand}{OZ Labs}
+\renewcommand{\ozfooturl}{ozlabs.tech}
+\renewcommand{\ozeyelogo}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
+
+\usepackage{booktabs}
+
+\title{Heat and Cold Deaths, 2022--2050: Multi-Model Results}
+\subtitle{204 countries, four climate scenarios, 24 climate models, with uncertainty ranges}
+\author{Aaron Osgood-Zimmerman}
+\institute{OZ Labs, for the World Bank}
+\date{November 9, 2026}
+
+\begin{document}
+
+\begin{frame}[plain,noframenumbering]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Where we are}
+  \begin{itemize}
+    \item Caspar's per-draw run has arrived and I've checked it. It all passes, and nothing more is needed from him for these results. Thanks, Caspar!
+    \item Everything here follows what we agreed on October 27: the 24 models run under all four scenarios, keeping the adjustment to IHME's forecasts, heat and cold side by side, decade averages.
+    \item Each number pools 24 models $\times$ 500 draws = 12,000 values, so its range includes disagreement between climate models. Ranges are 95\%, 80\% and 66\%; the figures show all three (thin, medium, thick bars).
+    \item A draft report with all the tables goes with these slides. Today: the main results, my cautions, and a few questions for the team.
+    \item These are not forecasts of what will happen. The risk curves don't change over time, so adaptation is not tested, and the population and mortality come from IHME's forecasts.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{World: heat and cold both rise in every scenario}
+  \centering
+  \includegraphics[width=0.84\textwidth]{figures-2026-11-09/fig_world_decades.pdf}
+
+  \small\raggedright
+  Under SSP2-4.5, from 2022--2030 to 2041--2050: heat 431,244 to 729,507 deaths per year, cold 1,483,673 to 1,998,935. Cold stays the larger burden; heat's share of the two goes from 22.5\% to 26.7\%.
+\end{frame}
+
+\begin{frame}{Why do cold deaths rise if the world is warming?}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures-2026-11-09/fig_world_yearly.pdf}
+
+  \small\raggedright
+  \begin{itemize}
+    \item IHME's forecast of deaths from these 17 causes grows from 32.0 to 43.4 million per year. Cold's share of those deaths stays flat (4.66\% to 4.62\%); heat's rises (1.32\% to 1.69\%).
+    \item Single years are noisy (the band is the SSP2-4.5 95\% range), which is why we report decades.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Scenarios differ more in the split than in the total}
+  \centering
+  \includegraphics[width=0.84\textwidth]{figures-2026-11-09/fig_world_diff.pdf}
+
+  \small\raggedright
+  Differences from SSP2-4.5, taken draw by draw. A warmer scenario adds heat deaths and removes cold deaths, so the total barely moves.
+\end{frame}
+
+\begin{frame}{Scenarios against SSP2-4.5, 2041--2050}
+  \footnotesize
+  \centering
+  \begin{tabular}{llccc}
+    \toprule
+    & & Ratio & Models above 1 (of 24) & Deaths per year, difference (95\% range) \\
+    \midrule
+    SSP1-2.6 & Heat  & 0.964 & 7  & $-26{,}357$ ($-106{,}815$ to 36,835) \\
+             & Cold  & 1.003 & 13 & 6,725 ($-61{,}798$ to 57,261) \\
+    SSP3-7.0 & Heat  & 1.008 & 13 & 5,810 ($-82{,}064$ to 86,069) \\
+             & Cold  & 1.004 & 16 & 7,838 ($-53{,}872$ to 50,423) \\
+    SSP5-8.5 & Heat  & 1.127 & 24 & 92,442 (24,344 to 206,886) \\
+             & Cold  & 0.976 & 0  & $-48{,}176$ ($-106{,}725$ to $-16{,}804$) \\
+             & Total & 1.016 & 21 & 44,266 ($-14{,}239$ to 141,455) \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item Only SSP5-8.5 separates from SSP2-4.5, and only for heat and cold taken separately. The models share code, so ``24 of 24'' is not 24 independent results.
+    \item Countries: the 95\% range of the heat difference is entirely above zero in 39 of 204 for SSP5-8.5, and excludes zero in only 1 for SSP1-2.6 and none for SSP3-7.0.
+    \item Before 2040, SSP1-2.6 has slightly more heat than SSP2-4.5 (1.019, 1.016). Faster aerosol cuts are one possibility, not tested.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Where does the uncertainty come from?}
+  \small
+  Share of the pooled variance that is between climate models, world, by scenario and decade:
+
+  \medskip
+  \centering
+  \begin{tabular}{lc}
+    \toprule
+    Heat deaths & 0.41 to 0.57 \\
+    Cold deaths & 0.07 to 0.14 \\
+    Heat + cold & 0.02 to 0.04 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item The choice of climate model matters a lot for heat and very little for the total, because a model that runs warm has more heat and less cold.
+    \item The range on the total comes almost entirely from the risk curves and the mortality forecast.
+    \item Not included in any range: the bias correction of temperature, the choice of curves, and the fact that our 24 models aren't independent.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Income groups: the burden differs in kind}
+  \centering
+  \includegraphics[width=0.74\textwidth]{figures-2026-11-09/fig_income_rates.pdf}
+
+  \small\raggedright
+  Crude rates, not age-standardized, so much of the cold contrast is likely age structure. Low- and middle-income countries hold 92\% of heat deaths and 71\% of cold deaths in 2041--2050. World Bank groups held fixed at today's classification; the mapping still needs a second look.
+\end{frame}
+
+\begin{frame}{Countries: rates under SSP2-4.5, 2041--2050}
+  \centering
+  \includegraphics[width=\textwidth]{figures-2026-11-09/fig_maps.png}
+
+  \small\raggedright
+  \begin{itemize}
+    \item The totals are concentrated: India has 31.7\% of heat deaths, China 39.6\% of cold deaths.
+    \item Caution on the Gulf. IHME has 17-cause deaths in the UAE growing by 10.6 times from 2022 to 2050 (world: 1.52), with the population aged 65+ going from 198,137 to 4,717,387. My guess is migrant workers forecast to age in place. It puts Saudi Arabia (33.4 per 100,000) and the UAE (29.2) at the top of the heat rate table.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Causes, world, SSP2-4.5, 2041--2050}
+  \centering
+  \includegraphics[width=0.84\textwidth]{figures-2026-11-09/fig_causes.pdf}
+
+  \small\raggedright
+  All nine injury causes have negative cold values, $-118{,}825$ per year in total, and these stay in the cold total. Diabetes has about equal heat and cold deaths.
+\end{frame}
+
+\begin{frame}{Causes get uncertain quickly as they get narrower}
+  \begin{itemize}
+    \item The 95\% range includes zero for 7 of 17 causes for heat at world level, and 1 of 17 for cold.
+    \item For one cause in one country, it includes zero in 60\% of cells for heat and 31\% for cold (SSP5-8.5, 2041--2050).
+    \item Country totals rarely have this problem: for deaths, at most 2 of 204 countries include zero.
+    \item So the draft report shows causes at world and income-group level, and country by cause only in an appendix, with those cells in parentheses.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Age and sex, world, SSP2-4.5}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures-2026-11-09/fig_age.pdf}
+
+  \small\raggedright
+  \begin{itemize}
+    \item 65+ goes from 59\% to 72\% of heat deaths, and from 88\% to 93\% of cold deaths. Under-5 heat deaths halve (21,009 to 10,766 per year) as under-5 mortality falls in the forecast.
+    \item Men aged 15--49 have about three times the heat deaths of women, and a slightly negative cold total. I suspect injuries in both cases, not yet split.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Years of life lost: one thing to be careful about}
+  \begin{itemize}
+    \item Under SSP2-4.5 in 2041--2050: heat 12.8 million years per year (8.7 to 18.9 million), cold 23.8 million (18.9 to 29.4 million). These use each country's own life table, so they aren't comparable with GBD's.
+    \item A country's cold years of life lost can be negative alongside positive cold deaths, because injuries have negative cold values and happen at young ages.
+    \item This holds for 21 countries in 2022--2030, 13 in 2031--2040 and 8 in 2041--2050. For example, Burkina Faso (SSP1-2.6, 2041--2050): +114.6 cold deaths, $-294.9$ years.
+    \item \textbf{My suggestion:} report it as it is, with a note, and don't publish years of life lost per death wherever signs mix.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Haiti and Honduras: the asterisk}
+  \small
+  Heat + cold deaths per year, SSP2-4.5:
+
+  \medskip
+  \centering
+  \begin{tabular}{llcc}
+    \toprule
+    & & All 17 causes (95\% range) & Without forces of nature (95\% range) \\
+    \midrule
+    Haiti$^{*}$    & 2022--2030 & 2,084 (282 to 10,715) & 236 ($-713$ to 603) \\
+                   & 2041--2050 & 2,032 (417 to 8,575)  & 497 ($-461$ to 1,093) \\
+    Honduras$^{*}$ & 2022--2030 & 547 (360 to 954)      & 407 (145 to 594) \\
+                   & 2041--2050 & 818 (530 to 1,216)    & 702 (349 to 1,051) \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item A few of IHME's forecast draws carry event-scale disaster deaths. All 17 causes stay in the headline, as we decided; these two get an asterisk and the second column.
+    \item The second column is not a correction: in Haiti those draws also distort the minimum-risk temperature for every cause.
+    \item Only these two move by more than 10\%; the world total moves by under 0.04\% (2041--2050). Single draws in Puerto Rico and Myanmar show it too.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{The year heat overtakes cold}
+  \small
+  Samuel's question. A straight line per (model, draw); countries by where the median year falls:
+
+  \medskip
+  \centering
+  \begin{tabular}{lcccc}
+    \toprule
+    & SSP1-2.6 & SSP2-4.5 & SSP3-7.0 & SSP5-8.5 \\
+    \midrule
+    Heat above cold already in 2022 & 83 & 82 & 80 & 75 \\
+    Median year within 2022--2050   & 6  & 8  & 11 & 16 \\
+    Heat below cold through 2050    & 115 & 114 & 113 & 113 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item Most countries are settled at one end: India (85\% of pairs) and Nigeria (100\%) are above from the start; China, the US and Russia (100\%) stay below.
+    \item Where the year falls inside the period, it can't be pinned down: under SSP2-4.5 there are eight such countries (for example Iraq, Dominican Republic, Honduras), and for all eight the 95\% range runs from before 2022 to after 2050.
+    \item \textbf{My suggestion:} report the share of pairs in each category, not a year.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{The choice of models doesn't change the picture}
+  \small
+  Ratio to SSP2-4.5, world, 2041--2050:
+
+  \medskip
+  \centering
+  \begin{tabular}{llccc}
+    \toprule
+    & & Common 24 & Paired (26, 24, 27) & All available \\
+    \midrule
+    Heat & SSP1-2.6 & 0.964 & 0.963 & 0.964 \\
+         & SSP3-7.0 & 1.008 & 1.008 & 0.998 \\
+         & SSP5-8.5 & 1.127 & 1.134 & 1.134 \\
+    Cold & SSP5-8.5 & 0.976 & 0.974 & 0.974 \\
+    Total & SSP5-8.5 & 1.016 & 1.018 & 1.018 \\
+    \bottomrule
+  \end{tabular}
+
+  \medskip
+  \raggedright
+  \begin{itemize}
+    \item At most a point for heat. ``All available'' compares different models for SSP3-7.0, which is the gap there.
+    \item Models with no SSP2-4.5 run can't be adjusted, so they are in none of these, including two of the three hottest under SSP5-8.5.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Questions for the team}
+  \small
+  \begin{enumerate}
+    \item \textbf{What do we lead with?} The rise common to every scenario, or the differences between scenarios? I'd lead with the rise and give the SSP5-8.5 heat and cold split second, since that's what the numbers can support.
+    \item \textbf{Should someone ask IHME about the Gulf forecast?} I'd ask before we lean on those rates; otherwise we footnote them. It holds up nothing else.
+    \item \textbf{Age-standardized rates?} The current rates are crude. Full standardization needs all ages by country, which we don't have in this export. I'd stay with crude unless the comparison between income groups needs to be cleaner.
+    \item \textbf{Is more from Caspar's machine worth it?} Summer temperatures for the SSP3-7.0 Europe question, and all ages by year for a decade-level split of the rise in heat deaths. I'd do neither now.
+    \item \textbf{Regions:} income groups are done. Would World Bank regions also be useful? It's a small addition, without a new run.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Next steps}
+  \begin{itemize}
+    \item Your comments on the draft report and on these slides.
+    \item A check of the income-group mapping. Taiwan is high income from the Bank's spreadsheet; Cook Islands, Niue and Tokelau have no classification (about one death per year in total).
+    \item Me: revise the report in the next week or two according to what we decide today.
+    \item All country tables are available now, including every scenario, decade and range.
+  \end{itemize}
+\end{frame}
+
+\end{document}

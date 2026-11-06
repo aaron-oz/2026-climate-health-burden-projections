@@ -1,0 +1,723 @@
+
+
+================  1. Mechanical checks, roll-up over locations  ================
+locations with check files: 204 
+                                       check n_loc       min   median      max
+                                      <char> <int>     <num>    <num>    <num>
+ 1:                    D_rows_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+ 2:                    C_rows_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+ 3:                    A_rows_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+ 4:                               D_dup_keys   204  0.00e+00 0.00e+00 0.00e+00
+ 5:                               C_dup_keys   204  0.00e+00 0.00e+00 0.00e+00
+ 6:                               A_dup_keys   204  0.00e+00 0.00e+00 0.00e+00
+ 7:                              D_nonfinite   204  0.00e+00 0.00e+00 0.00e+00
+ 8:                         D_wrong_location   204  0.00e+00 0.00e+00 0.00e+00
+ 9:                        D_draws_not_0_499   204  0.00e+00 0.00e+00 0.00e+00
+10:                        D_wrong_model_set   204  0.00e+00 0.00e+00 0.00e+00
+11:                              D_scenarios   204  4.00e+00 4.00e+00 4.00e+00
+12:                          D_round_dev_gt6   204  0.00e+00 0.00e+00 0.00e+00
+13:                          D_all_zero_runs   204  0.00e+00 0.00e+00 0.00e+00
+14:                              C_nonfinite   204  0.00e+00 0.00e+00 0.00e+00
+15:                         C_wrong_location   204  0.00e+00 0.00e+00 0.00e+00
+16:                        C_draws_not_0_499   204  0.00e+00 0.00e+00 0.00e+00
+17:                        C_wrong_model_set   204  0.00e+00 0.00e+00 0.00e+00
+18:                              C_scenarios   204  4.00e+00 4.00e+00 4.00e+00
+19:                          C_round_dev_gt6   204  0.00e+00 0.00e+00 0.00e+00
+20:                          C_all_zero_runs   204  0.00e+00 0.00e+00 0.00e+00
+21:                              A_nonfinite   204  0.00e+00 0.00e+00 0.00e+00
+22:                         A_wrong_location   204  0.00e+00 0.00e+00 0.00e+00
+23:                        A_draws_not_0_499   204  0.00e+00 0.00e+00 0.00e+00
+24:                        A_wrong_model_set   204  0.00e+00 0.00e+00 0.00e+00
+25:                              A_scenarios   204  4.00e+00 4.00e+00 4.00e+00
+26:                          A_round_dev_gt6   204  0.00e+00 0.00e+00 0.00e+00
+27:                          A_all_zero_runs   204  0.00e+00 0.00e+00 0.00e+00
+28:                           D_nyears_not_1   204  0.00e+00 0.00e+00 0.00e+00
+29:                           C_nyears_wrong   204  0.00e+00 0.00e+00 0.00e+00
+30:                           A_nyears_wrong   204  0.00e+00 0.00e+00 0.00e+00
+31:                                D_periods   204  2.90e+01 2.90e+01 2.90e+01
+32:                                C_periods   204  6.00e+00 6.00e+00 6.00e+00
+33:                                A_periods   204  6.00e+00 6.00e+00 6.00e+00
+34:                                 C_causes   204  1.70e+01 1.70e+01 1.70e+01
+35:                                 A_slices   204  6.00e+00 6.00e+00 6.00e+00
+36:   nat_target_rows_matched_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+37:                  nat_target_max_rel_mean   204  2.04e-07 3.58e-07 4.76e-04
+38:                nat_target_max_rel_median   204  3.02e-06 4.58e-06 3.24e-05
+39:                 nat_target_max_rel_lower   204  2.44e-06 4.54e-06 7.43e-04
+40:                 nat_target_max_rel_upper   204  2.72e-06 4.53e-06 1.25e-05
+41:      nat_ref_rows_matched_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+42:                     nat_ref_max_rel_mean   204  2.66e-08 2.78e-07 9.54e-07
+43:   bundle_ref_rows_matched_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+44:                  bundle_ref_max_rel_mean   204  1.65e-07 3.29e-07 4.13e-04
+45:                bundle_ref_max_rel_median   204  3.06e-06 4.38e-06 5.15e-06
+46:                 bundle_ref_max_rel_lower   204  1.58e-06 4.40e-06 1.41e-04
+47:                 bundle_ref_max_rel_upper   204  2.00e-06 4.37e-06 4.86e-06
+48:                           selfscale_rows   204  5.40e+01 5.40e+01 5.40e+01
+49:                   selfscale_max_rel_mean   204  1.11e-07 2.40e-07 5.72e-05
+50:                 duplicate_run_signatures   204  0.00e+00 0.00e+00 0.00e+00
+51: cause_target_rows_matched_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+52:                     cause_target_max_rel   204  2.67e-07 1.85e-05 1.10e-03
+53:    cause_ref_rows_matched_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+54:                        cause_ref_max_rel   204  2.59e-07 1.16e-05 7.89e-04
+55:          draw_D_vs_C_rows_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+56:          draw_D_vs_C_maxdev_rel_to_gross   204  3.66e-06 4.91e-06 8.75e-06
+57:            age_ratio_rows_minus_expected   204  0.00e+00 0.00e+00 0.00e+00
+58:         age_ratio_out_of_range_heat_gt10   204  0.00e+00 0.00e+00 2.20e+01
+59:                    age_ratio_n_heat_gt10   204  0.00e+00 2.48e+03 3.74e+03
+60:         age_ratio_out_of_range_cold_gt10   204  0.00e+00 0.00e+00 1.14e+03
+61:                    age_ratio_n_cold_gt10   204  0.00e+00 1.61e+03 3.74e+03
+62:                  cor_draw_2030_2031_cold   204 -9.57e-03 9.71e-01 9.99e-01
+63:                  cor_draw_2030_2050_cold   204 -6.68e-03 7.55e-01 9.66e-01
+                                       check n_loc       min   median      max
+                                      <char> <int>     <num>    <num>    <num>
+
+
+================  2. World, common 24, per year: pooled mean and intervals (independent of the pooling script)  ================
+          measure scenario    period       mean        l95        u95        l66        u66
+           <char>   <char>    <char>     <char>     <char>     <char>     <char>     <char>
+ 1:   deaths_cold   ssp126 2022-2030  1,476,698  1,300,283  1,649,518  1,396,045  1,558,300
+ 2:   deaths_cold   ssp126 2031-2040  1,732,357  1,464,364  2,010,174  1,601,700  1,864,426
+ 3:   deaths_cold   ssp126 2041-2050  2,005,660  1,610,224  2,429,040  1,800,614  2,208,318
+ 4:   deaths_cold   ssp245 2022-2030  1,483,673  1,302,682  1,661,329  1,401,447  1,567,548
+ 5:   deaths_cold   ssp245 2031-2040  1,740,378  1,473,028  2,020,121  1,610,563  1,872,675
+ 6:   deaths_cold   ssp245 2041-2050  1,998,935  1,602,802  2,423,909  1,792,883  2,202,615
+ 7:   deaths_cold   ssp370 2022-2030  1,493,569  1,309,047  1,672,803  1,409,601  1,578,587
+ 8:   deaths_cold   ssp370 2031-2040  1,750,587  1,475,667  2,036,943  1,618,225  1,886,922
+ 9:   deaths_cold   ssp370 2041-2050  2,006,773  1,607,553  2,435,824  1,799,552  2,214,053
+10:   deaths_cold   ssp585 2022-2030  1,479,161  1,302,715  1,651,236  1,398,348  1,560,712
+11:   deaths_cold   ssp585 2031-2040  1,724,286  1,455,503  2,010,306  1,593,516  1,857,563
+12:   deaths_cold   ssp585 2041-2050  1,950,759  1,559,517  2,374,196  1,744,700  2,151,321
+13:   deaths_heat   ssp126 2022-2030    439,564    335,071    577,145    382,052    495,707
+14:   deaths_heat   ssp126 2031-2040    559,818    406,659    783,095    470,558    648,651
+15:   deaths_heat   ssp126 2041-2050    703,149    482,305  1,014,120    574,030    830,636
+16:   deaths_heat   ssp245 2022-2030    431,244    328,460    570,407    374,219    488,293
+17:   deaths_heat   ssp245 2031-2040    550,839    401,464    763,498    465,395    634,245
+18:   deaths_heat   ssp245 2041-2050    729,507    499,064  1,074,365    593,357    865,107
+19:   deaths_heat   ssp370 2022-2030    424,074    317,094    563,785    365,345    481,764
+20:   deaths_heat   ssp370 2031-2040    555,087    401,912    810,299    465,151    643,233
+21:   deaths_heat   ssp370 2041-2050    735,317    495,059  1,116,333    593,217    875,362
+22:   deaths_heat   ssp585 2022-2030    438,032    337,926    566,727    383,316    493,128
+23:   deaths_heat   ssp585 2031-2040    586,214    411,226    827,779    489,221    682,668
+24:   deaths_heat   ssp585 2041-2050    821,948    542,817  1,243,627    655,970    986,615
+25: deaths_nonopt   ssp126 2022-2030  1,916,262  1,710,301  2,108,140  1,819,751  2,017,424
+26: deaths_nonopt   ssp126 2031-2040  2,292,174  1,953,869  2,641,967  2,120,581  2,465,933
+27: deaths_nonopt   ssp126 2041-2050  2,708,809  2,185,166  3,285,540  2,423,627  2,990,952
+28: deaths_nonopt   ssp245 2022-2030  1,914,917  1,709,009  2,106,891  1,819,375  2,016,524
+29: deaths_nonopt   ssp245 2031-2040  2,291,217  1,955,573  2,640,692  2,120,007  2,465,201
+30: deaths_nonopt   ssp245 2041-2050  2,728,442  2,197,956  3,315,938  2,440,927  3,015,052
+31: deaths_nonopt   ssp370 2022-2030  1,917,644  1,708,095  2,107,858  1,821,881  2,018,774
+32: deaths_nonopt   ssp370 2031-2040  2,305,673  1,964,279  2,664,307  2,131,053  2,482,825
+33: deaths_nonopt   ssp370 2041-2050  2,742,090  2,209,346  3,336,578  2,453,998  3,032,026
+34: deaths_nonopt   ssp585 2022-2030  1,917,193  1,712,835  2,107,675  1,821,832  2,018,158
+35: deaths_nonopt   ssp585 2031-2040  2,310,500  1,967,530  2,671,937  2,134,899  2,489,099
+36: deaths_nonopt   ssp585 2041-2050  2,772,707  2,224,938  3,394,792  2,472,950  3,071,703
+37:      yll_cold   ssp126 2022-2030 17,703,424 15,640,702 19,930,762 16,710,286 18,718,593
+38:      yll_cold   ssp126 2031-2040 20,683,189 17,466,575 24,303,417 19,006,491 22,340,394
+39:      yll_cold   ssp126 2041-2050 23,894,619 19,036,792 29,520,052 21,210,851 26,509,019
+40:      yll_cold   ssp245 2022-2030 17,796,431 15,667,546 20,065,708 16,766,806 18,845,947
+41:      yll_cold   ssp245 2031-2040 20,780,218 17,583,275 24,428,934 19,109,576 22,440,557
+42:      yll_cold   ssp245 2041-2050 23,804,806 18,948,269 29,396,079 21,115,835 26,434,298
+43:      yll_cold   ssp370 2022-2030 17,919,902 15,756,667 20,208,922 16,874,036 18,975,331
+44:      yll_cold   ssp370 2031-2040 20,900,018 17,587,419 24,616,954 19,192,861 22,616,735
+45:      yll_cold   ssp370 2041-2050 23,890,983 18,941,850 29,540,808 21,195,083 26,578,452
+46:      yll_cold   ssp585 2022-2030 17,741,104 15,671,324 19,958,565 16,742,540 18,762,016
+47:      yll_cold   ssp585 2031-2040 20,588,975 17,365,203 24,324,855 18,910,165 22,264,593
+48:      yll_cold   ssp585 2041-2050 23,228,405 18,426,160 28,780,573 20,584,458 25,811,663
+49:      yll_heat   ssp126 2022-2030  9,357,288  7,176,819 12,232,283  8,139,557 10,554,350
+50:      yll_heat   ssp126 2031-2040 10,739,079  7,826,024 14,908,208  9,035,701 12,411,052
+51:      yll_heat   ssp126 2041-2050 12,301,158  8,399,925 17,959,322 10,011,544 14,569,622
+52:      yll_heat   ssp245 2022-2030  9,201,214  7,037,617 12,125,547  7,989,445 10,389,487
+53:      yll_heat   ssp245 2031-2040 10,592,790  7,778,827 14,541,297  8,972,364 12,188,871
+54:      yll_heat   ssp245 2041-2050 12,762,278  8,673,086 18,919,999 10,337,361 15,185,767
+55:      yll_heat   ssp370 2022-2030  9,081,030  6,840,544 11,957,352  7,844,112 10,294,460
+56:      yll_heat   ssp370 2031-2040 10,682,198  7,769,813 15,355,905  8,944,539 12,358,183
+57:      yll_heat   ssp370 2041-2050 12,890,658  8,643,318 19,555,639 10,365,190 15,406,510
+58:      yll_heat   ssp585 2022-2030  9,323,917  7,219,974 12,028,487  8,162,204 10,464,075
+59:      yll_heat   ssp585 2031-2040 11,186,504  7,895,699 15,619,955  9,356,493 13,003,570
+60:      yll_heat   ssp585 2041-2050 14,274,993  9,418,992 21,685,746 11,339,020 17,149,038
+61:    yll_nonopt   ssp126 2022-2030 27,060,711 24,027,818 30,229,744 25,533,727 28,585,201
+62:    yll_nonopt   ssp126 2031-2040 31,422,268 26,676,833 36,918,835 28,799,532 34,142,079
+63:    yll_nonopt   ssp126 2041-2050 36,195,777 28,864,582 45,255,541 31,963,420 40,542,139
+64:    yll_nonopt   ssp245 2022-2030 26,997,645 23,978,062 30,134,475 25,489,393 28,506,468
+65:    yll_nonopt   ssp245 2031-2040 31,373,008 26,663,932 36,729,305 28,786,956 34,090,915
+66:    yll_nonopt   ssp245 2041-2050 36,567,084 29,051,993 45,815,084 32,261,653 40,983,815
+67:    yll_nonopt   ssp370 2022-2030 27,000,933 23,989,176 30,130,848 25,493,530 28,522,024
+68:    yll_nonopt   ssp370 2031-2040 31,582,216 26,777,991 37,126,807 28,940,184 34,361,769
+69:    yll_nonopt   ssp370 2041-2050 36,781,641 29,234,823 46,212,797 32,439,836 41,285,489
+70:    yll_nonopt   ssp585 2022-2030 27,065,021 24,054,593 30,137,596 25,569,936 28,570,550
+71:    yll_nonopt   ssp585 2031-2040 31,775,479 26,887,197 37,409,028 29,080,939 34,583,586
+72:    yll_nonopt   ssp585 2041-2050 37,503,398 29,573,446 47,444,826 32,992,436 42,179,917
+          measure scenario    period       mean        l95        u95        l66        u66
+           <char>   <char>    <char>     <char>     <char>     <char>     <char>     <char>
+
+
+================  2b. Expectation: target / ssp245, heat and cold, common 24 (ratio of pooled means), with per-model range and draw-paired difference  ================
+          measure    period target ratio mod_min mod_max n_above1   d_mean      d_l95     d_u95    d_l66     d_u66 share_pos width_d_over_t
+           <char>    <char> <char> <num>   <num>   <num>    <int>   <char>     <char>    <char>   <char>    <char>     <num>          <num>
+ 1:   deaths_cold 2022-2030 ssp126 0.995   0.977   1.019        9   -6,975    -39,159    27,441  -28,201    11,029     0.403           0.19
+ 2:   deaths_cold 2031-2040 ssp126 0.995   0.985   1.013        8   -8,021    -32,357    22,077  -22,981     7,311     0.328           0.10
+ 3:   deaths_cold 2041-2050 ssp126 1.003   0.968   1.028       13    6,725    -61,798    57,261  -15,390    36,548     0.553           0.15
+ 4:   deaths_cold 2022-2030 ssp370 1.007   0.993   1.023       19    9,896    -11,573    36,351   -1,523    21,605     0.791           0.13
+ 5:   deaths_cold 2031-2040 ssp370 1.006   0.986   1.024       16   10,209    -24,716    45,838  -11,952    32,362     0.696           0.13
+ 6:   deaths_cold 2041-2050 ssp370 1.004   0.970   1.021       16    7,838    -53,872    50,423  -21,838    36,459     0.645           0.13
+ 7:   deaths_cold 2022-2030 ssp585 0.997   0.975   1.019        8   -4,512    -39,585    29,931  -23,557    14,440     0.370           0.20
+ 8:   deaths_cold 2031-2040 ssp585 0.991   0.975   1.015        5  -16,092    -49,508    25,754  -34,404     2,535     0.206           0.14
+ 9:   deaths_cold 2041-2050 ssp585 0.976   0.945   0.989        0  -48,176   -106,725   -16,804  -69,295   -26,537     0.000           0.11
+10:   deaths_heat 2022-2030 ssp126 1.019   0.915   1.109       17    8,319    -42,673    46,197   -9,401    25,535     0.698           0.37
+11:   deaths_heat 2031-2040 ssp126 1.016   0.945   1.070       19    8,979    -27,089    41,594   -2,806    20,656     0.762           0.18
+12:   deaths_heat 2041-2050 ssp126 0.964   0.896   1.053        7  -26,357   -106,815    36,835  -60,149     7,889     0.260           0.27
+13:   deaths_heat 2022-2030 ssp370 0.983   0.934   1.047        7   -7,170    -27,939    17,265  -17,637     3,426     0.271           0.18
+14:   deaths_heat 2031-2040 ssp370 1.008   0.922   1.088       13    4,248    -43,003    63,395  -20,610    27,303     0.547           0.26
+15:   deaths_heat 2041-2050 ssp370 1.008   0.894   1.087       13    5,810    -82,064    86,069  -26,780    39,701     0.549           0.27
+16:   deaths_heat 2022-2030 ssp585 1.016   0.934   1.129       17    6,788    -33,251    49,549  -11,232    23,109     0.677           0.36
+17:   deaths_heat 2031-2040 ssp585 1.064   0.965   1.164       22   35,375    -21,707    88,748    9,106    60,665     0.889           0.27
+18:   deaths_heat 2041-2050 ssp585 1.127   1.040   1.236       24   92,442     24,344   206,886   47,387   132,662     1.000           0.26
+19: deaths_nonopt 2022-2030 ssp126 1.001   0.982   1.016       12    1,345    -35,349    31,469  -15,324    18,621     0.533           0.17
+20: deaths_nonopt 2031-2040 ssp126 1.000   0.988   1.008       15      958    -30,482    25,969  -14,058    14,894     0.573           0.08
+21: deaths_nonopt 2041-2050 ssp126 0.993   0.977   1.009        5  -19,633    -76,956    27,716  -42,823     6,182     0.229           0.10
+22: deaths_nonopt 2022-2030 ssp370 1.001   0.992   1.014       15    2,726    -20,648    29,317  -12,550    17,037     0.569           0.12
+23: deaths_nonopt 2031-2040 ssp370 1.006   0.993   1.019       18   14,457    -20,924    52,071   -4,666    35,757     0.762           0.10
+24: deaths_nonopt 2041-2050 ssp370 1.005   0.983   1.022       19   13,648    -42,317    64,657   -4,901    33,823     0.761           0.09
+25: deaths_nonopt 2022-2030 ssp585 1.001   0.978   1.016       13    2,276    -40,236    33,478  -11,307    17,691     0.567           0.19
+26: deaths_nonopt 2031-2040 ssp585 1.008   0.994   1.022       21   19,284    -17,112    60,293     -131    39,056     0.828           0.11
+27: deaths_nonopt 2041-2050 ssp585 1.016   0.997   1.038       21   44,266    -14,239   141,455    4,571    84,480     0.875           0.13
+28:    yll_nonopt 2022-2030 ssp126 1.002   0.973   1.020       16   63,066   -722,160   602,222 -208,475   335,389     0.616           0.21
+29:    yll_nonopt 2031-2040 ssp126 1.002   0.987   1.015       16   49,260   -459,187   533,153 -210,121   270,046     0.622           0.10
+30:    yll_nonopt 2041-2050 ssp126 0.990   0.969   1.010        3 -371,307 -1,401,154   401,012 -752,643    -1,262     0.169           0.11
+31:    yll_nonopt 2022-2030 ssp370 1.000   0.988   1.012       12    3,288   -391,464   410,772 -240,715   237,791     0.516           0.13
+32:    yll_nonopt 2031-2040 ssp370 1.007   0.991   1.026       17  209,208   -391,744   934,019 -130,814   544,740     0.711           0.13
+33:    yll_nonopt 2041-2050 ssp370 1.006   0.977   1.024       20  214,556   -814,971 1,037,308  -97,923   615,159     0.753           0.11
+34:    yll_nonopt 2022-2030 ssp585 1.002   0.972   1.024       12   67,376   -739,562   693,568 -174,910   350,349     0.586           0.24
+35:    yll_nonopt 2031-2040 ssp585 1.013   0.992   1.029       22  402,471   -242,610 1,148,083   39,108   764,338     0.864           0.13
+36:    yll_nonopt 2041-2050 ssp585 1.026   1.000   1.055       24  936,313    -33,935 2,589,228  250,548 1,588,586     0.966           0.15
+          measure    period target ratio mod_min mod_max n_above1   d_mean      d_l95     d_u95    d_l66     d_u66 share_pos width_d_over_t
+           <char>    <char> <char> <num>   <num>   <num>    <int>   <char>     <char>    <char>   <char>    <char>     <num>          <num>
+
+
+================  2c. Time trend, World, common 24, every year: ensemble mean heat and cold (thousands) and largest year-on-year jump per model  ================
+Key: <year>
+    year h_ssp126 h_ssp245 h_ssp370 h_ssp585 c_ssp126 c_ssp245 c_ssp370 c_ssp585
+   <int>    <num>    <num>    <num>    <num>    <num>    <num>    <num>    <num>
+1:  2022      385      395      382      389     1407     1403     1412     1414
+2:  2026      430      432      424      429     1474     1478     1491     1477
+3:  2030      480      461      458      483     1567     1585     1596     1568
+4:  2034      534      518      523      540     1692     1693     1707     1692
+5:  2038      606      608      611      646     1808     1809     1814     1786
+6:  2042      653      681      675      702     1920     1909     1920     1906
+7:  2046      723      741      747      835     2009     2010     2023     1955
+8:  2050      778      813      835      943     2123     2089     2099     2025
+   scenario max_jump_heat max_jump_cold
+     <char>         <num>         <num>
+1:   ssp126         0.347         0.091
+2:   ssp245         0.345         0.107
+3:   ssp370         0.469         0.113
+4:   ssp585         0.409         0.100
+   scenario                 model  year        h       c        jh           jc
+     <char>                <char> <int>    <num>   <num>     <num>        <num>
+1:   ssp370   miroc-es2l-r1i1p1f2  2032 551659.7 1598001 0.4689921 -0.024456169
+2:   ssp370   miroc-es2l-r1i1p1f2  2036 566149.0 1758458 0.4104949 -0.003778953
+3:   ssp585   access-cm2-r1i1p1f1  2023 524353.3 1400596 0.4090300 -0.016893402
+4:   ssp370   noresm2-lm-r1i1p1f1  2026 394815.2 1514866 0.4037416 -0.010122156
+5:   ssp370 ipsl-cm6a-lr-r1i1p1f1  2028 525605.2 1512921 0.4037346 -0.008781027
+6:   ssp585   miroc-es2l-r1i1p1f2  2044 905873.1 1914456 0.3941885 -0.004704164
+   scenario               model  year         h       c          jh         jc
+     <char>              <char> <int>     <num>   <num>       <num>      <num>
+1:   ssp370 cnrm-cm6-1-r1i1p1f2  2029  411513.0 1618977 -0.10600237 0.11256511
+2:   ssp245 noresm2-lm-r1i1p1f1  2033  453982.9 1773409 -0.18990178 0.10702804
+3:   ssp245 kace-1-0-g-r1i1p1f1  2040  748711.6 1838294 -0.07970255 0.10198407
+4:   ssp245  cmcc-esm2-r1i1p1f1  2049  725094.5 2154874 -0.15859546 0.10106977
+5:   ssp585    canesm5-r1i1p1f1  2049 1151278.3 1966245  0.00952084 0.10026970
+6:   ssp245 noresm2-lm-r1i1p1f1  2045  678995.8 2063433 -0.17192242 0.09657936
+
+
+================  3. Draw coherence: World target vs reference correlation across draws within model; between large countries; across years  ================
+Empty data.table (0 rows and 2 cols): target,N
+       measure    period cor126_min cor126_med cor370_min cor585_min cor585_med
+        <char>    <char>      <num>      <num>      <num>      <num>      <num>
+1: deaths_cold 2022-2030      0.998      0.999      0.997      0.998      0.999
+2: deaths_heat 2022-2030      0.983      0.996      0.991      0.982      0.996
+3: deaths_cold 2031-2040      0.998      0.999      0.999      0.997      0.999
+4: deaths_heat 2031-2040      0.988      0.998      0.992      0.973      0.996
+5: deaths_cold 2041-2050      0.998      1.000      0.999      0.998      0.999
+6: deaths_heat 2041-2050      0.989      0.998      0.991      0.985      0.997
+                 model scenario    period  draw deaths_heat deaths_cold yll_heat yll_cold  slice    loc
+                <char>   <char>    <char> <int>       <num>       <num>    <num>    <num> <char> <char>
+1: access-cm2-r1i1p1f1   ssp126 2022-2030     0    104244.2     1009636  1718024 13343180    all    102
+2: access-cm2-r1i1p1f1   ssp126 2022-2030     1    116193.3     1025744  1964750 13617730    all    102
+between-country correlation of within-model draw deviations, ssp245 2041-2050, cold deaths (6=China 163=India 102=USA 135=Brazil 214=Nigeria):
+     102  135  163  214    6
+102 1.00 0.59 0.43 0.17 0.74
+135 0.59 1.00 0.64 0.21 0.75
+163 0.43 0.64 1.00 0.47 0.56
+214 0.17 0.21 0.47 1.00 0.17
+6   0.74 0.75 0.56 0.17 1.00
+same, heat deaths:
+     102  135  163  214    6
+102 1.00 0.42 0.27 0.20 0.69
+135 0.42 1.00 0.61 0.65 0.39
+163 0.27 0.61 1.00 0.56 0.32
+214 0.20 0.65 0.56 1.00 0.22
+6   0.69 0.39 0.32 0.22 1.00
+adjacent-year and 20-year draw correlation at location level, median over locations (from checks):
+                     check   p05   med
+                    <char> <num> <num>
+1: cor_draw_2030_2031_cold 0.529 0.971
+2: cor_draw_2030_2050_cold 0.056 0.755
+location-level within-model correlation, target vs reference draws:
+          measure target    period   p05   med   min
+           <char> <char>    <char> <num> <num> <num>
+ 1:   deaths_cold ssp126 2022-2030 0.879 0.987 0.608
+ 2:   deaths_cold ssp126 2031-2040 0.911 0.989 0.626
+ 3:   deaths_cold ssp126 2041-2050 0.893 0.988 0.580
+ 4:   deaths_cold ssp370 2022-2030 0.904 0.988 0.521
+ 5:   deaths_cold ssp370 2031-2040 0.896 0.990 0.440
+ 6:   deaths_cold ssp370 2041-2050 0.894 0.988 0.717
+ 7:   deaths_cold ssp585 2022-2030 0.880 0.988 0.656
+ 8:   deaths_cold ssp585 2031-2040 0.889 0.986 0.587
+ 9:   deaths_cold ssp585 2041-2050 0.840 0.981 0.628
+10:   deaths_heat ssp126 2022-2030 0.871 0.974 0.704
+11:   deaths_heat ssp126 2031-2040 0.850 0.975 0.709
+12:   deaths_heat ssp126 2041-2050 0.858 0.969 0.744
+13:   deaths_heat ssp370 2022-2030 0.877 0.976 0.710
+14:   deaths_heat ssp370 2031-2040 0.872 0.973 0.709
+15:   deaths_heat ssp370 2041-2050 0.854 0.971 0.564
+16:   deaths_heat ssp585 2022-2030 0.870 0.971 0.663
+17:   deaths_heat ssp585 2031-2040 0.812 0.973 0.713
+18:   deaths_heat ssp585 2041-2050 0.786 0.955 0.480
+19: deaths_nonopt ssp126 2022-2030 0.930 0.990 0.832
+20: deaths_nonopt ssp126 2031-2040 0.945 0.991 0.894
+21: deaths_nonopt ssp126 2041-2050 0.936 0.990 0.825
+22: deaths_nonopt ssp370 2022-2030 0.938 0.991 0.860
+23: deaths_nonopt ssp370 2031-2040 0.921 0.990 0.887
+24: deaths_nonopt ssp370 2041-2050 0.939 0.991 0.851
+25: deaths_nonopt ssp585 2022-2030 0.919 0.990 0.808
+26: deaths_nonopt ssp585 2031-2040 0.923 0.989 0.852
+27: deaths_nonopt ssp585 2041-2050 0.889 0.985 0.776
+          measure target    period   p05   med   min
+           <char> <char>    <char> <num> <num> <num>
+          name t_mean r_mean cor_tr
+        <char>  <num>  <num>  <num>
+ 1:      Chile    9.8    5.3  0.480
+ 2:    Andorra    0.0    0.0  0.556
+ 3:     Monaco    0.2    0.1  0.630
+ 4: San Marino    0.7    0.4  0.733
+ 5:    Estonia    5.2    4.1  0.748
+ 6:    Ireland    0.8    0.6  0.761
+ 7:     Rwanda    0.7    0.4  0.766
+ 8:       Niue    0.1    0.1  0.770
+ 9:    Bermuda    1.7    1.6  0.779
+10:    Lesotho    0.6    0.4  0.782
+
+
+================  4. How much of the pooled variance is climate-model spread? Share = between-model variance / total pooled variance  ================
+Key: <measure, period>
+         measure    period ssp126 ssp245 ssp370 ssp585
+          <char>    <char>  <num>  <num>  <num>  <num>
+1:   deaths_cold 2022-2030   0.10   0.13   0.14   0.10
+2:   deaths_cold 2031-2040   0.09   0.09   0.12   0.12
+3:   deaths_cold 2041-2050   0.07   0.08   0.09   0.10
+4:   deaths_heat 2022-2030   0.48   0.51   0.53   0.43
+5:   deaths_heat 2031-2040   0.51   0.48   0.57   0.53
+6:   deaths_heat 2041-2050   0.41   0.44   0.50   0.49
+7: deaths_nonopt 2022-2030   0.04   0.04   0.03   0.03
+8: deaths_nonopt 2031-2040   0.03   0.03   0.04   0.04
+9: deaths_nonopt 2041-2050   0.02   0.03   0.03   0.04
+Key: <measure, period>
+         measure    period ssp126 ssp245 ssp370 ssp585
+          <char>    <char>  <num>  <num>  <num>  <num>
+1:   deaths_cold 2022-2030  0.060  0.061  0.062  0.060
+2:   deaths_cold 2031-2040  0.081  0.080  0.082  0.082
+3:   deaths_cold 2041-2050  0.107  0.107  0.108  0.109
+4:   deaths_heat 2022-2030  0.140  0.143  0.147  0.134
+5:   deaths_heat 2031-2040  0.172  0.166  0.184  0.179
+6:   deaths_heat 2041-2050  0.195  0.201  0.214  0.218
+7: deaths_nonopt 2022-2030  0.055  0.055  0.055  0.055
+8: deaths_nonopt 2031-2040  0.078  0.078  0.078  0.079
+9: deaths_nonopt 2041-2050  0.106  0.107  0.107  0.110
+location level, heat 2041-2050 under ssp585: quantiles of between-model variance share
+        5%        25%        50%        75%        95% 
+0.06581351 0.25462882 0.43611219 0.58106408 0.69852247 
+
+
+================  5. Causes, World, common 24 (pooled mean and 95% interval, per year, 2041-2050)  ================
+              cause    heat heat_l95 heat_u95    cold cold_l95 cold_u95 yll_per_death_heat yll_per_death_cold
+             <char>  <char>   <char>   <char>  <char>   <char>   <char>              <num>              <num>
+ 1:         cvd_ihd 168,892   88,605  294,425 562,182  419,381  757,498               14.5               13.1
+ 2:      cvd_stroke 144,203   76,211  236,264 413,001  325,157  509,460               13.9               12.9
+ 3:        diabetes  85,485   47,878  135,175  84,124   59,836  110,368               14.4               14.1
+ 4:       resp_copd  78,641   14,117  162,583 475,014  369,004  593,297               12.2               11.9
+ 5:             lri  74,796   25,270  136,866 197,171  156,005  237,994               20.1               14.1
+ 6:  inj_trans_road  49,986   26,159   87,013 -28,758  -42,339  -18,724               33.3               32.7
+ 7:             ckd  46,154    2,538  100,577 176,376  134,927  219,950               15.7               14.2
+ 8:         cvd_htn  26,790     -878   64,360 182,882  133,129  242,940               13.5               12.5
+ 9:     inj_suicide  21,798    5,553   40,586 -36,748  -47,673  -27,960               32.4               29.3
+10:    inj_homicide  14,647    8,425   23,176 -11,125  -15,197   -7,879               38.3               38.8
+11:    inj_drowning   7,545      283   15,411 -23,603  -29,669  -18,418               34.1               29.9
+12:        inj_mech   3,161     -146    6,960  -4,723   -6,256   -3,121               33.2               31.5
+13:    inj_disaster   2,761   -1,775   12,144  -1,759   -3,999      739               37.2               33.9
+14:      inj_animal   2,527   -9,930   15,813  -4,881   -9,533   -1,142               28.9               27.7
+15: inj_trans_other   1,728   -2,785    6,147  -3,610   -4,990   -2,361               32.2               31.9
+16: inj_othunintent     835   -1,505    3,213  -3,618   -4,783   -2,550               33.7               32.7
+17:         cvd_cmp    -442  -13,018   12,000  27,009   19,239   34,936               44.5               16.9
+causes sum to heat total: 1 ; share of 17 causes in heat by largest:
+[1] 0.232 0.198 0.117 0.108 0.103
+cause x country cells (ssp585, 2041-2050) where the 95% interval includes 0, of those with nonzero mean; and share with pooled mean below 0:
+       measure     n incl0 mean_neg
+        <char> <int> <num>    <num>
+1: deaths_heat  3452 0.602    0.073
+2: deaths_cold  3452 0.307    0.533
+        measure           slice incl0 mean_neg any_mean_abs
+         <char>          <char> <num>    <num>        <num>
+ 1: deaths_cold         cvd_cmp  0.53     0.00         10.1
+ 2: deaths_cold             lri  0.49     0.08         63.5
+ 3: deaths_cold        diabetes  0.45     0.18         43.5
+ 4: deaths_cold inj_trans_other  0.45     1.00          2.1
+ 5: deaths_cold        inj_mech  0.41     1.00          2.9
+ 6: deaths_cold    inj_disaster  0.40     0.91          0.3
+ 7: deaths_cold      cvd_stroke  0.38     0.02        148.0
+ 8: deaths_cold      inj_animal  0.38     0.95          1.0
+ 9: deaths_cold             ckd  0.36     0.00         75.0
+10: deaths_cold       resp_copd  0.36     0.00         83.3
+11: deaths_cold         cvd_htn  0.35     0.00         59.0
+12: deaths_cold inj_othunintent  0.35     0.93          1.4
+13: deaths_cold    inj_drowning  0.27     1.00          8.5
+14: deaths_cold  inj_trans_road  0.03     1.00         19.0
+15: deaths_cold         cvd_ihd  0.01     0.00        257.1
+16: deaths_cold    inj_homicide  0.00     1.00          5.0
+17: deaths_cold     inj_suicide  0.00     1.00         17.3
+18: deaths_heat         cvd_htn  0.95     0.17          5.1
+19: deaths_heat       resp_copd  0.94     0.07          9.2
+20: deaths_heat             ckd  0.93     0.04         20.2
+21: deaths_heat        inj_mech  0.78     0.00          1.1
+22: deaths_heat         cvd_cmp  0.75     0.54          6.2
+23: deaths_heat inj_trans_other  0.73     0.00          0.7
+24: deaths_heat             lri  0.72     0.25         15.3
+25: deaths_heat    inj_disaster  0.69     0.03          0.1
+26: deaths_heat         cvd_ihd  0.62     0.04         43.3
+27: deaths_heat      inj_animal  0.61     0.03          0.2
+28: deaths_heat      cvd_stroke  0.56     0.03         47.2
+29: deaths_heat inj_othunintent  0.56     0.01          0.4
+30: deaths_heat    inj_drowning  0.44     0.00          2.5
+31: deaths_heat  inj_trans_road  0.29     0.00          7.2
+32: deaths_heat        diabetes  0.28     0.01         42.5
+33: deaths_heat     inj_suicide  0.22     0.00          7.2
+34: deaths_heat    inj_homicide  0.18     0.00          2.3
+        measure           slice incl0 mean_neg any_mean_abs
+         <char>          <char> <num>    <num>        <num>
+World x cause: interval includes 0? ssp585 2041-2050
+              slice heat_incl0 cold_incl0
+             <char>     <lgcl>     <lgcl>
+ 1:             ckd       TRUE      FALSE
+ 2:         cvd_cmp       TRUE      FALSE
+ 3:         cvd_htn       TRUE      FALSE
+ 4:         cvd_ihd      FALSE      FALSE
+ 5:      cvd_stroke      FALSE      FALSE
+ 6:        diabetes      FALSE      FALSE
+ 7:      inj_animal       TRUE      FALSE
+ 8:    inj_disaster       TRUE       TRUE
+ 9:    inj_drowning       TRUE      FALSE
+10:    inj_homicide      FALSE      FALSE
+11:        inj_mech       TRUE      FALSE
+12: inj_othunintent       TRUE      FALSE
+13:     inj_suicide      FALSE      FALSE
+14: inj_trans_other       TRUE      FALSE
+15:  inj_trans_road      FALSE      FALSE
+16:             lri      FALSE      FALSE
+17:       resp_copd      FALSE      FALSE
+
+
+================  6. Age and sex, World, common 24, per year  ================
+Key: <period>
+       period        slice    heat heat_l95 heat_u95    cold cold_l95  cold_u95 share_heat share_cold share_yll_heat share_yll_cold yll_per_heat yll_per_cold
+       <char>       <char>  <char>   <char>   <char>  <char>   <char>    <char>      <num>      <num>          <num>          <num>        <num>        <num>
+ 1: 2022-2030  a15_49_sex1  52,427   39,689   69,712  -4,526  -10,164       725      0.122     -0.003          0.235         -0.028         41.3        110.7
+ 2: 2022-2030  a15_49_sex2  18,679   13,958   25,003   8,085    6,040    10,422      0.043      0.005          0.089          0.014         44.1         30.6
+ 3: 2022-2030 a65plus_sex1 132,274   98,226  179,887 646,170  575,613   719,151      0.307      0.436          0.145          0.361         10.1          9.9
+ 4: 2022-2030 a65plus_sex2 121,150   88,670  165,302 652,803  544,919   738,074      0.281      0.440          0.145          0.409         11.0         11.1
+ 5: 2022-2030  under5_sex1  11,092    4,960   20,041   3,562    1,621     5,938      0.026      0.002          0.076          0.013         63.2         66.9
+ 6: 2022-2030  under5_sex2   9,917    4,324   17,481   3,673    1,727     6,028      0.023      0.002          0.073          0.015         67.4         71.8
+ 7: 2041-2050  a15_49_sex1  59,110   40,119   89,142  -7,116  -13,182      -725      0.081     -0.004          0.196         -0.023         42.3         75.7
+ 8: 2041-2050  a15_49_sex2  19,106   11,687   30,639   5,928    3,350     9,598      0.026      0.003          0.067          0.008         44.5         32.3
+ 9: 2041-2050 a65plus_sex1 270,661  188,786  395,895 902,450  750,280 1,064,557      0.371      0.451          0.223          0.399         10.5         10.5
+10: 2041-2050 a65plus_sex2 251,482  166,278  379,694 950,596  728,685 1,170,536      0.345      0.476          0.222          0.462         11.3         11.6
+11: 2041-2050  under5_sex1   5,843    1,684   12,067     972      162     2,113      0.008      0.000          0.030          0.003         65.0         71.4
+12: 2041-2050  under5_sex2   4,923    1,160   10,292   1,059      251     2,177      0.007      0.001          0.027          0.003         69.5         76.1
+
+Check against the ssp245 bundle by_age_sex.csv (common models, year 2030 alone vs block mean 2026-2030 is not exact; decade 2022-2030 here vs mean of 2022 and 2030):
+Key: <slice>
+          slice heat_bundle heat_export ratio_h cold_bundle cold_export ratio_c
+         <char>      <char>      <char>   <num>      <char>      <char>   <num>
+1:  a15_49_sex1      51,801      52,427   1.012      -4,435      -4,526   1.021
+2:  a15_49_sex2      18,471      18,679   1.011       8,132       8,085   0.994
+3: a65plus_sex1     131,570     132,274   1.005     652,888     646,170   0.990
+4: a65plus_sex2     120,386     121,150   1.006     657,263     652,803   0.993
+5:  under5_sex1      11,154      11,092   0.995       3,627       3,562   0.982
+6:  under5_sex2       9,956       9,917   0.996       3,742       3,673   0.982
+
+
+================  7. Country-level: tails, widths, signs (common 24)  ================
+non-optimal deaths, ssp585 2041-2050, widest relative 95% intervals (top 15) and largest absolute means (top 12):
+                                name location_id   mean   l95    u95 rel_width   min     max tail_ratio between_share
+                              <char>       <int>  <num> <num>  <num>     <num> <num>   <num>      <num>         <num>
+ 1:                            Haiti         114 2114.4 460.7 8750.2      3.92 318.7 18576.4        6.6          0.00
+ 2:                        Singapore          69  301.7  67.5 1061.4      3.29  28.9  2357.7        7.5          0.07
+ 3:                          Liberia         210  236.7  73.7  607.6      2.26  39.0  1172.6        7.1          0.73
+ 4:                         Maldives          14   31.8   8.0   75.7      2.13   2.6   125.0        5.3          0.46
+ 5:                         Suriname         118   80.3  26.1  197.5      2.13  12.1   355.7        6.3          0.69
+ 6:                             Guam         351   10.0   2.5   23.7      2.13   0.7    39.0        5.2          0.49
+ 7:                 Marshall Islands          24    6.8   1.6   16.0      2.12   0.4    30.9        6.4          0.48
+ 8:                            Palau         380    2.7   0.6    6.2      2.04   0.1     9.0        4.3          0.49
+ 9:                          Grenada         112    5.6   1.8   13.1      2.02   0.8    25.3        6.8          0.29
+10: Micronesia (Federated States of)          25   13.1   3.3   29.6      2.01   0.8    44.6        4.6          0.53
+11:                   American Samoa         298    3.7   1.3    8.4      1.93   0.4    14.1        5.8          0.37
+12:                           Guyana         113   70.4  25.0  160.0      1.92  12.5   265.2        5.5          0.68
+13:                          Tokelau         413    0.2   0.0    0.4      1.90   0.0     0.6        5.2          0.48
+14:                         Malaysia          13 2665.7 787.4 5792.1      1.88 273.5  9544.7        5.3          0.55
+15:                Brunei Darussalam          66   44.2  12.2   94.2      1.86   4.6   143.1        4.6          0.52
+                          name location_id     mean      l95       u95 rel_width      min       max tail_ratio between_share
+                        <char>       <int>    <num>    <num>     <num>     <num>    <num>     <num>      <num>         <num>
+ 1:                      China           6 899686.6 711416.9 1104973.4      0.44 588155.1 1286063.4        3.9          0.02
+ 2:                      India         163 358834.1 235349.2  525872.2      0.81 189710.8  792467.9        5.9          0.16
+ 3:   United States of America         102 155905.4 122725.0  184151.6      0.39  95445.9  206299.3        3.4          0.03
+ 4:         Russian Federation          62  74164.4  53544.5   95455.2      0.57  44267.1  116711.1        3.9          0.08
+ 5:                   Pakistan         165  69188.6  46100.0   99666.4      0.77  34548.8  136497.1        4.8          0.02
+ 6:                      Japan          67  49854.0  35785.8   61386.8      0.51  26041.6   75323.8        3.9          0.04
+ 7:                      Egypt         141  46138.1  33191.7   61721.7      0.62  27372.0   74378.3        4.0          0.08
+ 8:                   TÃ¼rkiye         155  44256.4  34196.4   56481.5      0.50  25788.4   64442.1        3.5          0.02
+ 9:                    Germany          81  42300.4  32413.1   51024.5      0.44  23951.0   59150.3        3.6          0.06
+10: Iran (Islamic Republic of)         142  41152.9  29804.3   54806.3      0.61  23301.0   68389.5        4.1          0.01
+11:                     Mexico         130  39683.6  30849.4   50037.9      0.48  24230.4   57709.2        3.6          0.05
+12:                 Bangladesh         161  36586.5  22661.9   57021.1      0.94  16145.2   94764.5        6.6          0.34
+rel_width quantiles: 0.42 0.52 0.78 1.21 1.93 
+                                name location_id   mean    l95    u95 rel_width    min     max tail_ratio between_share
+                              <char>       <int>  <num>  <num>  <num>     <num>  <num>   <num>      <num>         <num>
+ 1:                      Puerto Rico         385  192.1  102.5  337.5      1.22   58.5  2691.3       33.5          0.30
+ 2:                       Seychelles         186    6.1    2.6   12.7      1.66    1.2    38.1       11.9          0.24
+ 3:                      Timor-Leste          19   41.3   25.7   64.8      0.95   18.0   151.3       10.7          0.08
+ 4:                       Cabo Verde         203   29.1   20.0   43.2      0.80   14.6    97.4       10.6          0.11
+ 5:                     Cook Islands         320    1.2    0.7    2.1      1.19    0.5     5.0       10.2          0.09
+ 6:              Antigua and Barbuda         105    5.2    2.0   11.3      1.77    0.9    27.8        9.4          0.36
+ 7:            Saint Kitts and Nevis         393    3.4    1.3    7.0      1.69    0.6    16.8        9.1          0.38
+ 8:                        Mauritius         183  131.3   82.4  222.4      1.07   52.0   446.9        8.7          0.03
+ 9:                            Samoa          27    6.6    2.7   13.0      1.55    1.6    27.4        7.5          0.37
+10:                        Singapore          69  301.7   67.5 1061.4      3.29   28.9  2357.7        7.5          0.07
+11: Democratic Republic of the Congo         171 5070.7 2835.1 8983.3      1.21 1797.9 16913.6        7.5          0.42
+12:                Equatorial Guinea         172   39.9   18.1   78.0      1.50   11.1   158.6        7.5          0.49
+Haiti 114, Honduras 129:
+Key: <location_id>
+       name location_id   mean   l95    u95 rel_width   min     max tail_ratio between_share
+     <char>       <int>  <num> <num>  <num>     <num> <num>   <num>      <num>         <num>
+1:    Haiti         114 2114.4 460.7 8750.2      3.92 318.7 18576.4        6.6          0.00
+2: Honduras         129  869.6 560.3 1300.1      0.85 449.7  1983.5        5.8          0.17
+        name       measure  t_mean   t_l95    t_u95    t_max
+      <char>        <char>   <num>   <num>    <num>    <num>
+ 1:    Haiti   deaths_heat  1686.8   253.9   7545.3  18416.4
+ 2:    Haiti   deaths_cold   427.5    84.7   2197.4   8326.2
+ 3:    Haiti deaths_nonopt  2114.4   460.7   8750.2  18576.4
+ 4:    Haiti      yll_heat 60592.6  6340.7 302794.2 750947.4
+ 5:    Haiti      yll_cold  8585.2 -1203.0  84113.3 319494.4
+ 6:    Haiti    yll_nonopt 69177.8  6465.9 349429.4 750972.6
+ 7: Honduras   deaths_heat   493.6   222.2    935.4   1719.6
+ 8: Honduras   deaths_cold   376.0   183.1    638.6   1061.8
+ 9: Honduras deaths_nonopt   869.6   560.3   1300.1   1983.5
+10: Honduras      yll_heat 13601.6  4920.3  35074.8  77533.8
+11: Honduras      yll_cold  2695.6  -241.3   6563.9  15845.0
+12: Honduras    yll_nonopt 16297.2  7605.5  37365.6  79524.0
+
+country-level signs, per scenario-period: pooled means below zero; 95% interval including zero
+          measure target    period     n neg_mean incl0 zero_mean
+           <char> <char>    <char> <int>    <int> <int>     <int>
+ 1:   deaths_cold ssp585 2022-2030   204        0     2         0
+ 2:   deaths_cold ssp585 2031-2040   204        0     1         0
+ 3:   deaths_cold ssp585 2041-2050   204        0     1         0
+ 4:   deaths_heat ssp585 2022-2030   204        0     2         0
+ 5:   deaths_heat ssp585 2031-2040   204        0     2         0
+ 6:   deaths_heat ssp585 2041-2050   204        0     2         0
+ 7: deaths_nonopt ssp585 2022-2030   204        0     0         0
+ 8: deaths_nonopt ssp585 2031-2040   204        0     0         0
+ 9: deaths_nonopt ssp585 2041-2050   204        0     0         0
+10:      yll_cold ssp585 2022-2030   204       22    68         0
+11:      yll_cold ssp585 2031-2040   204       12    60         0
+12:      yll_cold ssp585 2041-2050   204        8    58         0
+13:      yll_heat ssp585 2022-2030   204        0     0         0
+14:      yll_heat ssp585 2031-2040   204        0     0         0
+15:      yll_heat ssp585 2041-2050   204        0     0         0
+16:    yll_nonopt ssp585 2022-2030   204        0     1         0
+17:    yll_nonopt ssp585 2031-2040   204        0     1         0
+18:    yll_nonopt ssp585 2041-2050   204        0     1         0
+
+deaths and YLLs with opposite pooled-mean signs, any scenario-period:
+   target     n                                                                                                                   ex
+   <char> <int>                                                                                                               <char>
+1: ssp126    42 Samoa; Solomon Islands; Belize; Guyana; Saint Vincent and the Grenadines; Suriname; Trinidad and Tobago; El Salvador
+2: ssp370    44 Samoa; Solomon Islands; Belize; Guyana; Saint Lucia; Saint Vincent and the Grenadines; Suriname; Trinidad and Tobago
+3: ssp585    42 Samoa; Solomon Islands; Belize; Guyana; Saint Lucia; Saint Vincent and the Grenadines; Suriname; Trinidad and Tobago
+Key: <location_id, name, target, period>
+    location_id                     name target    period deaths_cold deaths_heat    yll_cold    yll_heat
+          <int>                   <char> <char>    <char>       <num>       <num>       <num>       <num>
+ 1:          28          Solomon Islands ssp126 2041-2050    1.418853    20.96283   -6.402838    605.9502
+ 2:          28          Solomon Islands ssp370 2041-2050    1.016959    28.88494   -3.502254    791.5176
+ 3:          28          Solomon Islands ssp585 2041-2050    1.023133    30.50332   -2.930089    822.4874
+ 4:         169 Central African Republic ssp126 2041-2050   31.045560   468.25475 -202.263839  13336.3353
+ 5:         169 Central African Republic ssp370 2041-2050   28.671435   543.90707 -194.420956  15226.6182
+ 6:         169 Central African Republic ssp585 2041-2050   27.909691   576.03656 -188.881330  16034.6032
+ 7:         172        Equatorial Guinea ssp126 2041-2050    9.262771    21.05186  -58.540342    763.8547
+ 8:         172        Equatorial Guinea ssp370 2041-2050    7.090051    28.44059  -59.632173   1001.2984
+ 9:         172        Equatorial Guinea ssp585 2041-2050    6.209404    33.73992  -58.119283   1158.4697
+10:         173                    Gabon ssp370 2041-2050   13.274874    61.50548   -2.655143   1624.3500
+11:         200                    Benin ssp126 2041-2050   53.997466  1466.40888   -7.950796  34676.7025
+12:         200                    Benin ssp370 2041-2050   43.566801  1628.72494   -8.690551  38297.8529
+13:         200                    Benin ssp585 2041-2050   39.870303  1747.87712   -8.122547  40909.7524
+14:         201             Burkina Faso ssp126 2041-2050  114.603814  5278.81972 -294.913123 142442.5745
+15:         201             Burkina Faso ssp370 2041-2050   99.971811  5750.34844 -265.855771 154621.6542
+
+YLL per death, country level, ssp585 2041-2050, non-optimal: range
+                   name deaths_nonopt  yll_nonopt         r
+                 <char>         <num>       <num>     <num>
+ 1:           Greenland      27.15109    130.4668  4.805214
+ 2:             Iceland     130.39937   1322.1921 10.139559
+ 3: Republic of Moldova    2274.24315  23811.9976 10.470295
+ 4:            Mongolia     976.73458  10333.1732 10.579305
+ 5:             Croatia    2481.69620  26636.0003 10.732982
+ 6:             Armenia    1690.51733  18222.6859 10.779355
+ 7:        Burkina Faso    6016.91252 158709.5900 26.377247
+ 8:   Equatorial Guinea      39.94933   1100.3504 27.543655
+ 9:               Niger    7986.17322 222278.7222 27.832945
+10:                Chad    4674.81313 138229.3010 29.568947
+11:             Somalia    4262.77690 128149.8673 30.062532
+12:               Haiti    2114.36683  69177.7993 32.717974
+      5%      50%      95% 
+11.28042 14.09924 23.99176 
+
+
+================  8. Spikes at country-model-year level, from national_by_year.csv draw means  ================
+largest heat year / run median, for locations with median heat > 500:
+                                name                 model scenario  year     x   med     r
+                              <char>                <char>   <char> <int> <num> <num> <num>
+ 1:                        Argentina  cnrm-esm2-1-r1i1p1f2   ssp370  2049  3823   786  4.87
+ 2: Democratic Republic of the Congo   miroc-es2l-r1i1p1f2   ssp585  2049  6797  1413  4.81
+ 3:                            Italy ipsl-cm6a-lr-r1i1p1f1   ssp370  2047  2188   515  4.25
+ 4: Democratic Republic of the Congo    ec-earth3-r1i1p1f1   ssp585  2047  4580  1114  4.11
+ 5:                            Italy  giss-e2-1-g-r1i1p1f2   ssp585  2050  2465   625  3.94
+ 6: Democratic Republic of the Congo   noresm2-mm-r1i1p1f1   ssp585  2049  5336  1456  3.66
+ 7:                            Italy  bcc-csm2-mr-r1i1p1f1   ssp585  2045  2150   592  3.63
+ 8: Democratic Republic of the Congo    gfdl-esm4-r1i1p1f1   ssp585  2049  6322  1752  3.61
+ 9:                     South Africa   miroc-es2l-r1i1p1f2   ssp585  2049  2038   566  3.60
+10:                            Italy  giss-e2-1-g-r1i1p1f2   ssp126  2044  2296   639  3.59
+11:                   CÃ´te d'Ivoire   noresm2-mm-r1i1p1f1   ssp585  2049  4955  1382  3.59
+12: Democratic Republic of the Congo ipsl-cm6a-lr-r1i1p1f1   ssp585  2048  7172  2010  3.57
+largest cold year / run median, median cold > 500:
+                   name                  model scenario  year    xc  medc    rc
+                 <char>                 <char>   <char> <int> <num> <num> <num>
+1: United Arab Emirates    noresm2-lm-r1i1p1f1   ssp126  2050  2084   609  3.42
+2: United Arab Emirates        miroc6-r1i1p1f1   ssp126  2049  2014   636  3.17
+3: United Arab Emirates     fgoals-g3-r3i1p1f1   ssp126  2050  2132   673  3.17
+4: United Arab Emirates        miroc6-r1i1p1f1   ssp126  2050  1995   636  3.14
+5: United Arab Emirates    noresm2-lm-r1i1p1f1   ssp126  2048  1838   609  3.02
+6: United Arab Emirates   ukesm1-0-ll-r1i1p1f2   ssp126  2050  1671   554  3.01
+7: United Arab Emirates mpi-esm1-2-hr-r1i1p1f1   ssp126  2050  2014   679  2.96
+8: United Arab Emirates    noresm2-lm-r1i1p1f1   ssp126  2049  1752   609  2.88
+exact duplicate model-scenario runs within a location, via CSV signature: 0 
+
+
+================  9. Model-set sensitivity, World: common 24 vs paired vs all available (scaled)  ================
+Key: <measure, target>
+         measure target   all common paired
+          <char> <char> <num>  <num>  <num>
+1:   deaths_cold ssp126 1.004  1.003  1.004
+2:   deaths_cold ssp370 1.006  1.004  1.004
+3:   deaths_cold ssp585 0.974  0.976  0.974
+4:   deaths_heat ssp126 0.964  0.964  0.963
+5:   deaths_heat ssp370 0.998  1.008  1.008
+6:   deaths_heat ssp585 1.134  1.127  1.134
+7: deaths_nonopt ssp126 0.993  0.993  0.993
+8: deaths_nonopt ssp370 1.004  1.005  1.005
+9: deaths_nonopt ssp585 1.018  1.016  1.018
+Key: <measure, target>
+         measure target       all    common    paired
+          <char> <char>    <char>    <char>    <char>
+1:   deaths_cold ssp126 2,002,463 2,005,660 2,002,463
+2:   deaths_cold ssp370 2,006,773 2,006,773 2,006,773
+3:   deaths_cold ssp585 1,944,173 1,950,759 1,944,173
+4:   deaths_heat ssp126   710,066   703,149   710,066
+5:   deaths_heat ssp370   735,317   735,317   735,317
+6:   deaths_heat ssp585   835,842   821,948   835,842
+7: deaths_nonopt ssp126 2,712,529 2,708,809 2,712,529
+8: deaths_nonopt ssp370 2,742,090 2,742,090 2,742,090
+9: deaths_nonopt ssp585 2,780,015 2,772,707 2,780,015
+
+
+================  10. Rates per 100,000, IHME population forecast (mean of draws)  ================
+population locations without GBD id:  
+ages in population file: Under 5; Early Neonatal; Late Neonatal; Post Neonatal; 1 to 4; 5 to 9; 10 to 14; 15 to 19; 20 to 24; 25 to 29; 30 to 34; 35 to 39; 40 to 44; 45 to 49; 50 to 54; 55 to 59; 60 to 64; 65 to 69; 70 to 74; 75 to 79; All Ages; 5-14 years; 15-49 years; 50-69 years; 70+ years; <1 year; 80 to 84; 85 to 89; 90 to 94; 20 plus; 0 to 14; 50 to 74 years; Neonatal; <20 years; 10 to 24; Birth; 15 to 39; 75 plus; 95 plus; <70 years; < 19 years 
+burden locations without population:  ; population locations: 204 
+World population, mean per year:
+      period  N_bn
+      <char> <num>
+1: 2022-2030 51.83
+2: 2031-2040 54.87
+3: 2041-2050 57.11
+World rates per 100,000 per year, common 24, target scenarios; reference row uses r_mean:
+          measure target    period  rate   ref
+           <char> <char>    <char> <num> <num>
+ 1:   deaths_cold ssp126 2022-2030  2.85  2.86
+ 2:   deaths_cold ssp126 2031-2040  3.16  3.17
+ 3:   deaths_cold ssp126 2041-2050  3.51  3.50
+ 4:   deaths_cold ssp370 2022-2030  2.88  2.86
+ 5:   deaths_cold ssp370 2031-2040  3.19  3.17
+ 6:   deaths_cold ssp370 2041-2050  3.51  3.50
+ 7:   deaths_cold ssp585 2022-2030  2.85  2.86
+ 8:   deaths_cold ssp585 2031-2040  3.14  3.17
+ 9:   deaths_cold ssp585 2041-2050  3.42  3.50
+10:   deaths_heat ssp126 2022-2030  0.85  0.83
+11:   deaths_heat ssp126 2031-2040  1.02  1.00
+12:   deaths_heat ssp126 2041-2050  1.23  1.28
+13:   deaths_heat ssp370 2022-2030  0.82  0.83
+14:   deaths_heat ssp370 2031-2040  1.01  1.00
+15:   deaths_heat ssp370 2041-2050  1.29  1.28
+16:   deaths_heat ssp585 2022-2030  0.85  0.83
+17:   deaths_heat ssp585 2031-2040  1.07  1.00
+18:   deaths_heat ssp585 2041-2050  1.44  1.28
+19: deaths_nonopt ssp126 2022-2030  3.70  3.69
+20: deaths_nonopt ssp126 2031-2040  4.18  4.18
+21: deaths_nonopt ssp126 2041-2050  4.74  4.78
+22: deaths_nonopt ssp370 2022-2030  3.70  3.69
+23: deaths_nonopt ssp370 2031-2040  4.20  4.18
+24: deaths_nonopt ssp370 2041-2050  4.80  4.78
+25: deaths_nonopt ssp585 2022-2030  3.70  3.69
+26: deaths_nonopt ssp585 2031-2040  4.21  4.18
+27: deaths_nonopt ssp585 2041-2050  4.86  4.78
+          measure target    period  rate   ref
+           <char> <char>    <char> <num> <num>
+largest and smallest rates, ssp245 2041-2050 (reference columns):
+                                 name     measure ref_rate         N r_mean
+                               <char>      <char>    <num>     <num>  <num>
+1:                       Saudi Arabia deaths_heat      5.5 274929731  15247
+2:               United Arab Emirates deaths_heat      4.8 111445776   5390
+3:                           Thailand deaths_heat      4.7 351200737  16621
+4:                            Bahrain deaths_heat      4.2  12908142    548
+5:                               Oman deaths_heat      4.0  42204584   1683
+6:                           Cambodia deaths_heat      3.4 133003360   4519
+7:                              Sudan deaths_heat      3.2 409501207  12995
+8: Venezuela (Bolivarian Republic of) deaths_heat      3.1 152500601   4765
+          name     measure ref_rate         N
+        <char>      <char>    <num>     <num>
+1:   Greenland deaths_heat        0    365266
+2:     Iceland deaths_heat        0   2886392
+3:      Rwanda deaths_heat        0 150278173
+4: New Zealand deaths_heat        0  40800825
+                                    name     measure ref_rate         N r_mean
+                                  <char>      <char>    <num>     <num>  <num>
+1:                              Bulgaria deaths_cold     17.9  30753636   5505
+2:                               Ukraine deaths_cold     15.6 195504391  30437
+3:                   Republic of Moldova deaths_cold     14.4  14385826   2078
+4:                       North Macedonia deaths_cold     14.3  10960254   1572
+5: Democratic People's Republic of Korea deaths_cold     13.8 149861774  20629
+6:                               Romania deaths_cold     13.8  93324608  12845
+7:                Bosnia and Herzegovina deaths_cold     13.5  14448963   1957
+8:                                Serbia deaths_cold     12.9  43105139   5559
+                               name     measure ref_rate      N
+                             <char>      <char>    <num>  <num>
+1:                           Tuvalu deaths_cold        0 102936
+2: Micronesia (Federated States of) deaths_cold        0 639383
+3:                            Nauru deaths_cold        0 101695
+4:                          Tokelau deaths_cold        0   9176

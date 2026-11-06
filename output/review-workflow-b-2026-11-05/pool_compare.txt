@@ -1,0 +1,69 @@
+pooled.csv columns: unit_type unit slice target period measure n_years n_models target_mean target_lower95 target_upper95 target_lower80 target_upper80 target_lower66 target_upper66 ref_mean ref_lower95 ref_upper95 ref_lower80 ref_upper80 ref_lower66 ref_upper66 diff_mean diff_lower95 diff_upper95 diff_lower80 diff_upper80 diff_lower66 diff_upper66 target_model_min ...
+rows 11070 units 205 n_models 24 
+   unit_type     N
+      <char> <int>
+1:     group    54
+2:  location 11016
+location rows matched: 11016 of 11016 
+  target_mean        vs independent: worst relative difference 5.02e-15
+  target_lower95     vs independent: worst relative difference 6.07e-13
+  target_upper95     vs independent: worst relative difference 4.87e-15
+  target_lower80     vs independent: worst relative difference 2.10e-13
+  target_upper80     vs independent: worst relative difference 5.17e-15
+  target_lower66     vs independent: worst relative difference 1.01e-12
+  target_upper66     vs independent: worst relative difference 4.68e-15
+  ref_mean           vs independent: worst relative difference 4.84e-15
+  ref_lower95        vs independent: worst relative difference 8.30e-14
+  ref_upper95        vs independent: worst relative difference 4.72e-15
+  diff_mean          vs independent: worst relative difference 4.97e-15
+  diff_lower95       vs independent: worst relative difference 2.08e-13
+  diff_upper95       vs independent: worst relative difference 5.02e-15
+  target_model_min   vs independent: worst relative difference 3.28e-13
+  target_model_max   vs independent: worst relative difference 4.04e-14
+World rows matched 54 of 54 ; worst rel: mean 0  l95 7.65e-15  u95 4.98e-15  l80 4.37e-15  u66 5.26e-15 
+World reference columns vs ssp245 row: worst rel mean 0  u95 0 
+   target   note     N
+   <char> <char> <int>
+1: ssp126   used    24
+2: ssp370   used    24
+3: ssp585   used    24
+   target n_models target_mean ref_mean     ratio
+   <char>    <int>       <num>    <num>     <num>
+1: ssp126       26    710066.3 737271.9 0.9630996
+2: ssp370       24    735317.0 729506.5 1.0079649
+3: ssp585       27    835841.8 736868.2 1.1343166
+paired set: the reference (ssp245) World heat differs by target, as the status doc warned:
+      period       lo       hi
+      <char>    <num>    <num>
+1: 2022-2030 431244.4 436858.8
+2: 2031-2040 550838.6 556919.4
+3: 2041-2050 729506.5 737271.9
+[2026-11-05 17:40:18.536398] Config loaded for location_id = 125 | years = 2010 - 2019 | use_draws = FALSE
+[2026-11-05 17:40:18.538474] Threads: data.table=1 | OMP_NUM_THREADS=unset | OPENBLAS_NUM_THREADS=unset
+[2026-11-05 17:40:26.333388] Pooling  3  locations, periods  2022-2025,2026-2030,2031-2035,2036-2040,2041-2045,2046-2050  in  3  pass(es), model set  common
+[2026-11-05 17:40:50.323721]    ssp126 :  24  models
+[2026-11-05 17:40:50.323966]    ssp370 :  24  models
+[2026-11-05 17:40:50.324063]    ssp585 :  24  models
+[2026-11-05 17:41:22.496295]   done:  2022-2025,2026-2030
+[2026-11-05 17:42:04.58866]   done:  2031-2035,2036-2040
+[2026-11-05 17:42:48.333801]   done:  2041-2045,2046-2050
+[2026-11-05 17:42:48.411052] Wrote  7344  rows to  /var/home/aoz/data/wb-temp-attr-projections/review/workflow-b-2026-11-05-review/smoke_draws_cause_out/pooled.csv  and model_sets.csv
+draws_cause pooling script exit: 0 
+draws_cause rows 7344 ; slices 17 ; periods 2022-2025 2026-2030 2031-2035 2036-2040 2041-2045 2046-2050 
+draws_cause : group sum of 3 locations vs by-hand, slices 17 ; worst rel mean 3.07e-15  l95 2.17e-16  u95 2.16e-15 
+[2026-11-05 17:43:05.83258] Config loaded for location_id = 125 | years = 2010 - 2019 | use_draws = FALSE
+[2026-11-05 17:43:05.834193] Threads: data.table=1 | OMP_NUM_THREADS=unset | OPENBLAS_NUM_THREADS=unset
+[2026-11-05 17:43:07.869297] Pooling  3  locations, periods  2022-2025,2026-2030,2031-2035,2036-2040,2041-2045,2046-2050  in  3  pass(es), model set  common
+[2026-11-05 17:43:14.627022]    ssp126 :  24  models
+[2026-11-05 17:43:14.627228]    ssp370 :  24  models
+[2026-11-05 17:43:14.627307]    ssp585 :  24  models
+[2026-11-05 17:43:25.017673]   done:  2022-2025,2026-2030
+[2026-11-05 17:43:40.340148]   done:  2031-2035,2036-2040
+[2026-11-05 17:43:55.637971]   done:  2041-2045,2046-2050
+[2026-11-05 17:43:55.692499] Wrote  2592  rows to  /var/home/aoz/data/wb-temp-attr-projections/review/workflow-b-2026-11-05-review/smoke_draws_age_out/pooled.csv  and model_sets.csv
+draws_age pooling script exit: 0 
+draws_age rows 2592 ; slices 6 ; periods 2022-2025 2026-2030 2031-2035 2036-2040 2041-2045 2046-2050 
+draws_age : group sum of 3 locations vs by-hand, slices 6 ; worst rel mean 3.67e-15  l95 1.9e-16  u95 6.22e-16 
+
+Decade periods from the breakdown blocks through --periods: expected to refuse
+exit status: 1 

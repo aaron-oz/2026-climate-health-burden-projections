@@ -1,0 +1,817 @@
+location_id,name,income,scenario,median_year,lower95,upper95,share_before_2022,share_within,share_after_2050
+160,Afghanistan,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+160,Afghanistan,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+160,Afghanistan,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+160,Afghanistan,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+43,Albania,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+43,Albania,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+43,Albania,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+43,Albania,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+139,Algeria,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+139,Algeria,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+139,Algeria,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+139,Algeria,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+298,American Samoa,High income,ssp126,before 2022,before 2022,before 2022,0.988166666666667,0.0115833333333333,0.00025
+298,American Samoa,High income,ssp245,before 2022,before 2022,before 2022,0.979666666666667,0.0201666666666667,0.000166666666666667
+298,American Samoa,High income,ssp370,before 2022,before 2022,2023,0.959916666666667,0.0400833333333333,0
+298,American Samoa,High income,ssp585,before 2022,before 2022,2023,0.949916666666667,0.0500833333333333,0
+74,Andorra,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+74,Andorra,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+74,Andorra,High income,ssp370,after 2050,after 2050,after 2050,0.000333333333333333,0,0.999666666666667
+74,Andorra,High income,ssp585,after 2050,after 2050,after 2050,0.000416666666666667,0,0.999583333333333
+168,Angola,Lower middle income,ssp126,after 2050,after 2050,after 2050,0.00791666666666667,0.00858333333333333,0.9835
+168,Angola,Lower middle income,ssp245,after 2050,2034,after 2050,0.01175,0.0548333333333333,0.933416666666667
+168,Angola,Lower middle income,ssp370,after 2050,2032,after 2050,0.000333333333333333,0.12475,0.874916666666667
+168,Angola,Lower middle income,ssp585,after 2050,2032,after 2050,0,0.189333333333333,0.810666666666667
+105,Antigua and Barbuda,High income,ssp126,before 2022,before 2022,after 2050,0.856916666666667,0.111083333333333,0.032
+105,Antigua and Barbuda,High income,ssp245,before 2022,before 2022,after 2050,0.840333333333333,0.13375,0.0259166666666667
+105,Antigua and Barbuda,High income,ssp370,before 2022,before 2022,after 2050,0.737666666666667,0.236833333333333,0.0255
+105,Antigua and Barbuda,High income,ssp585,before 2022,before 2022,2049,0.69825,0.277916666666667,0.0238333333333333
+97,Argentina,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+97,Argentina,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+97,Argentina,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+97,Argentina,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+33,Armenia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+33,Armenia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+33,Armenia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+33,Armenia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+71,Australia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+71,Australia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+71,Australia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+71,Australia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+75,Austria,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+75,Austria,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+75,Austria,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+75,Austria,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+34,Azerbaijan,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+34,Azerbaijan,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+34,Azerbaijan,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+34,Azerbaijan,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+106,Bahamas,High income,ssp126,before 2022,before 2022,after 2050,0.655083333333333,0.09275,0.252166666666667
+106,Bahamas,High income,ssp245,before 2022,before 2022,after 2050,0.590416666666667,0.164916666666667,0.244666666666667
+106,Bahamas,High income,ssp370,2024,before 2022,after 2050,0.46575,0.290833333333333,0.243416666666667
+106,Bahamas,High income,ssp585,2023,before 2022,after 2050,0.47725,0.354333333333333,0.168416666666667
+140,Bahrain,High income,ssp126,before 2022,before 2022,2025,0.87325,0.1265,0.00025
+140,Bahrain,High income,ssp245,before 2022,before 2022,2025,0.808916666666667,0.190833333333333,0.00025
+140,Bahrain,High income,ssp370,before 2022,before 2022,2026,0.707083333333333,0.29275,0.000166666666666667
+140,Bahrain,High income,ssp585,before 2022,before 2022,2026,0.736916666666667,0.263,8.33333333333333e-05
+161,Bangladesh,Lower middle income,ssp126,before 2022,before 2022,2046,0.691083333333333,0.28725,0.0216666666666667
+161,Bangladesh,Lower middle income,ssp245,before 2022,before 2022,after 2050,0.5285,0.400916666666667,0.0705833333333333
+161,Bangladesh,Lower middle income,ssp370,before 2022,before 2022,after 2050,0.556833333333333,0.373083333333333,0.0700833333333333
+161,Bangladesh,Lower middle income,ssp585,2023,before 2022,after 2050,0.40575,0.52375,0.0705
+107,Barbados,High income,ssp126,before 2022,before 2022,2022,0.97375,0.02,0.00625
+107,Barbados,High income,ssp245,before 2022,before 2022,2024,0.95675,0.0400833333333333,0.00316666666666667
+107,Barbados,High income,ssp370,before 2022,before 2022,2025,0.94625,0.0500833333333333,0.00366666666666667
+107,Barbados,High income,ssp585,before 2022,before 2022,2027,0.9085,0.0904166666666667,0.00108333333333333
+57,Belarus,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+57,Belarus,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+57,Belarus,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+57,Belarus,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+76,Belgium,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+76,Belgium,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+76,Belgium,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+76,Belgium,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+108,Belize,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.997666666666667,0.00233333333333333,0
+108,Belize,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.9945,0.0055,0
+108,Belize,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.989416666666667,0.0105833333333333,0
+108,Belize,Upper middle income,ssp585,before 2022,before 2022,2023,0.952166666666667,0.0478333333333333,0
+200,Benin,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+200,Benin,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.9995,5e-04,0
+200,Benin,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.998833333333333,0.00116666666666667,0
+200,Benin,Lower middle income,ssp585,before 2022,before 2022,before 2022,0.99725,0.00275,0
+305,Bermuda,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+305,Bermuda,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+305,Bermuda,High income,ssp370,after 2050,after 2050,after 2050,0,8.33333333333333e-05,0.999916666666667
+305,Bermuda,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+162,Bhutan,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+162,Bhutan,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+162,Bhutan,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+162,Bhutan,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+121,Bolivia (Plurinational State of),Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+121,Bolivia (Plurinational State of),Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+121,Bolivia (Plurinational State of),Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+121,Bolivia (Plurinational State of),Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+44,Bosnia and Herzegovina,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+44,Bosnia and Herzegovina,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+44,Bosnia and Herzegovina,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+44,Bosnia and Herzegovina,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+193,Botswana,Upper middle income,ssp126,after 2050,after 2050,after 2050,0.00883333333333333,0.002,0.989166666666667
+193,Botswana,Upper middle income,ssp245,after 2050,after 2050,after 2050,0.01025,0.00691666666666667,0.982833333333333
+193,Botswana,Upper middle income,ssp370,after 2050,2041,after 2050,0.00275,0.03975,0.9575
+193,Botswana,Upper middle income,ssp585,after 2050,2045,after 2050,0.0025,0.0375,0.96
+135,Brazil,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0.00333333333333333,0.996666666666667
+135,Brazil,Upper middle income,ssp245,after 2050,2048,after 2050,0,0.0315,0.9685
+135,Brazil,Upper middle income,ssp370,after 2050,2036,after 2050,0,0.10025,0.89975
+135,Brazil,Upper middle income,ssp585,after 2050,2035,after 2050,0,0.145416666666667,0.854583333333333
+66,Brunei Darussalam,High income,ssp126,before 2022,before 2022,before 2022,0.998666666666667,0.00133333333333333,0
+66,Brunei Darussalam,High income,ssp245,before 2022,before 2022,before 2022,0.992833333333333,0.00716666666666667,0
+66,Brunei Darussalam,High income,ssp370,before 2022,before 2022,2022,0.96425,0.03575,0
+66,Brunei Darussalam,High income,ssp585,before 2022,before 2022,2024,0.793833333333333,0.206166666666667,0
+45,Bulgaria,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+45,Bulgaria,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+45,Bulgaria,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+45,Bulgaria,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+201,Burkina Faso,Low income,ssp126,before 2022,before 2022,before 2022,0.998,0,0.002
+201,Burkina Faso,Low income,ssp245,before 2022,before 2022,before 2022,0.998,0,0.002
+201,Burkina Faso,Low income,ssp370,before 2022,before 2022,before 2022,0.998,0,0.002
+201,Burkina Faso,Low income,ssp585,before 2022,before 2022,before 2022,0.997916666666667,8.33333333333333e-05,0.002
+175,Burundi,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+175,Burundi,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+175,Burundi,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+175,Burundi,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+203,Cabo Verde,Upper middle income,ssp126,after 2050,after 2050,after 2050,0.000166666666666667,0.0168333333333333,0.983
+203,Cabo Verde,Upper middle income,ssp245,after 2050,after 2050,after 2050,0.00075,0.00891666666666667,0.990333333333333
+203,Cabo Verde,Upper middle income,ssp370,after 2050,after 2050,after 2050,0.00108333333333333,0.0149166666666667,0.984
+203,Cabo Verde,Upper middle income,ssp585,after 2050,2046,after 2050,0.001,0.03975,0.95925
+10,Cambodia,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+10,Cambodia,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+10,Cambodia,Lower middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+10,Cambodia,Lower middle income,ssp585,before 2022,before 2022,before 2022,1,0,0
+202,Cameroon,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.98975,0.00791666666666667,0.00233333333333333
+202,Cameroon,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.978666666666667,0.0185833333333333,0.00275
+202,Cameroon,Lower middle income,ssp370,before 2022,before 2022,2023,0.963666666666667,0.0341666666666667,0.00216666666666667
+202,Cameroon,Lower middle income,ssp585,before 2022,before 2022,2024,0.951833333333333,0.04625,0.00191666666666667
+101,Canada,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+101,Canada,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+101,Canada,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+101,Canada,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+169,Central African Republic,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+169,Central African Republic,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+169,Central African Republic,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+169,Central African Republic,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+204,Chad,Low income,ssp126,before 2022,before 2022,before 2022,0.995333333333333,0.00466666666666667,0
+204,Chad,Low income,ssp245,before 2022,before 2022,before 2022,0.995083333333333,0.00491666666666667,0
+204,Chad,Low income,ssp370,before 2022,before 2022,before 2022,0.995166666666667,0.00483333333333333,0
+204,Chad,Low income,ssp585,before 2022,before 2022,before 2022,0.994916666666667,0.00508333333333333,0
+98,Chile,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+98,Chile,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+98,Chile,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+98,Chile,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+6,China,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+6,China,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+6,China,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+6,China,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+125,Colombia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+125,Colombia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+125,Colombia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,8.33333333333333e-05,0.999916666666667
+125,Colombia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+176,Comoros,Lower middle income,ssp126,before 2022,before 2022,after 2050,0.8435,0.07575,0.08075
+176,Comoros,Lower middle income,ssp245,before 2022,before 2022,after 2050,0.806916666666667,0.1465,0.0465833333333333
+176,Comoros,Lower middle income,ssp370,before 2022,before 2022,after 2050,0.740333333333333,0.233916666666667,0.02575
+176,Comoros,Lower middle income,ssp585,before 2022,before 2022,2039,0.702916666666667,0.289583333333333,0.0075
+170,Congo,Lower middle income,ssp126,before 2022,before 2022,after 2050,0.852166666666667,0.07075,0.0770833333333333
+170,Congo,Lower middle income,ssp245,before 2022,before 2022,after 2050,0.725416666666667,0.20375,0.0708333333333333
+170,Congo,Lower middle income,ssp370,before 2022,before 2022,after 2050,0.615166666666667,0.345333333333333,0.0395
+170,Congo,Lower middle income,ssp585,before 2022,before 2022,2045,0.51675,0.461083333333333,0.0221666666666667
+320,Cook Islands,Not classified,ssp126,after 2050,2048,after 2050,0.00291666666666667,0.02625,0.970833333333333
+320,Cook Islands,Not classified,ssp245,after 2050,2043,after 2050,0.00233333333333333,0.0586666666666667,0.939
+320,Cook Islands,Not classified,ssp370,after 2050,2042,after 2050,0.00125,0.0818333333333333,0.916916666666667
+320,Cook Islands,Not classified,ssp585,after 2050,2038,after 2050,0.00275,0.135583333333333,0.861666666666667
+126,Costa Rica,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+126,Costa Rica,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+126,Costa Rica,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+126,Costa Rica,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+46,Croatia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+46,Croatia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+46,Croatia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+46,Croatia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+109,Cuba,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.68625,0.2315,0.08225
+109,Cuba,Upper middle income,ssp245,before 2022,before 2022,after 2050,0.659416666666667,0.308083333333333,0.0325
+109,Cuba,Upper middle income,ssp370,before 2022,before 2022,2044,0.51225,0.475916666666667,0.0118333333333333
+109,Cuba,Upper middle income,ssp585,before 2022,before 2022,2039,0.54625,0.444416666666667,0.00933333333333333
+77,Cyprus,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+77,Cyprus,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+77,Cyprus,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+77,Cyprus,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+47,Czechia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+47,Czechia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+47,Czechia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+47,Czechia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+205,Côte d'Ivoire,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+205,Côte d'Ivoire,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.999583333333333,0.000416666666666667,0
+205,Côte d'Ivoire,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.994083333333333,0.00591666666666667,0
+205,Côte d'Ivoire,Lower middle income,ssp585,before 2022,before 2022,2022,0.974833333333333,0.0251666666666667,0
+7,Democratic People's Republic of Korea,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+7,Democratic People's Republic of Korea,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+7,Democratic People's Republic of Korea,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+7,Democratic People's Republic of Korea,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+171,Democratic Republic of the Congo,Low income,ssp126,after 2050,before 2022,after 2050,0.276916666666667,0.175333333333333,0.54775
+171,Democratic Republic of the Congo,Low income,ssp245,after 2050,before 2022,after 2050,0.160583333333333,0.331166666666667,0.50825
+171,Democratic Republic of the Congo,Low income,ssp370,2042,before 2022,after 2050,0.09925,0.445916666666667,0.454833333333333
+171,Democratic Republic of the Congo,Low income,ssp585,2034,before 2022,after 2050,0.0719166666666667,0.606,0.322083333333333
+78,Denmark,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+78,Denmark,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+78,Denmark,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+78,Denmark,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+177,Djibouti,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+177,Djibouti,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+177,Djibouti,Lower middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+177,Djibouti,Lower middle income,ssp585,before 2022,before 2022,before 2022,1,0,0
+110,Dominica,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.55875,0.229083333333333,0.212166666666667
+110,Dominica,Upper middle income,ssp245,before 2022,before 2022,after 2050,0.565083333333333,0.290166666666667,0.14475
+110,Dominica,Upper middle income,ssp370,before 2022,before 2022,after 2050,0.500583333333333,0.374666666666667,0.12475
+110,Dominica,Upper middle income,ssp585,2022,before 2022,after 2050,0.487,0.41525,0.09775
+111,Dominican Republic,Upper middle income,ssp126,2036,before 2022,after 2050,0.308,0.297,0.395
+111,Dominican Republic,Upper middle income,ssp245,2034,before 2022,after 2050,0.227,0.45775,0.31525
+111,Dominican Republic,Upper middle income,ssp370,2035,before 2022,after 2050,0.129666666666667,0.609166666666667,0.261166666666667
+111,Dominican Republic,Upper middle income,ssp585,2030,before 2022,after 2050,0.108833333333333,0.764666666666667,0.1265
+122,Ecuador,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+122,Ecuador,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+122,Ecuador,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+122,Ecuador,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+141,Egypt,Lower middle income,ssp126,after 2050,after 2050,after 2050,0.00025,0,0.99975
+141,Egypt,Lower middle income,ssp245,after 2050,after 2050,after 2050,5e-04,8.33333333333333e-05,0.999416666666667
+141,Egypt,Lower middle income,ssp370,after 2050,after 2050,after 2050,0.00025,0.000583333333333333,0.999166666666667
+141,Egypt,Lower middle income,ssp585,after 2050,after 2050,after 2050,5e-04,0.003,0.9965
+127,El Salvador,Upper middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+127,El Salvador,Upper middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+127,El Salvador,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.999833333333333,0.000166666666666667,0
+127,El Salvador,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.99125,0.00875,0
+172,Equatorial Guinea,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.845333333333333,0.086,0.0686666666666667
+172,Equatorial Guinea,Upper middle income,ssp245,before 2022,before 2022,after 2050,0.700083333333333,0.236833333333333,0.0630833333333333
+172,Equatorial Guinea,Upper middle income,ssp370,before 2022,before 2022,after 2050,0.594833333333333,0.361083333333333,0.0440833333333333
+172,Equatorial Guinea,Upper middle income,ssp585,2022,before 2022,after 2050,0.486333333333333,0.48425,0.0294166666666667
+178,Eritrea,Low income,ssp126,before 2022,before 2022,before 2022,0.983833333333333,0.01225,0.00391666666666667
+178,Eritrea,Low income,ssp245,before 2022,before 2022,before 2022,0.988083333333333,0.00708333333333333,0.00483333333333333
+178,Eritrea,Low income,ssp370,before 2022,before 2022,before 2022,0.98525,0.0119166666666667,0.00283333333333333
+178,Eritrea,Low income,ssp585,before 2022,before 2022,before 2022,0.980916666666667,0.016,0.00308333333333333
+58,Estonia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+58,Estonia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+58,Estonia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+58,Estonia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+197,Eswatini,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+197,Eswatini,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+197,Eswatini,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+197,Eswatini,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+179,Ethiopia,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+179,Ethiopia,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+179,Ethiopia,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+179,Ethiopia,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+22,Fiji,Upper middle income,ssp126,after 2050,2041,after 2050,0.00241666666666667,0.05775,0.939833333333333
+22,Fiji,Upper middle income,ssp245,after 2050,2038,after 2050,0.000333333333333333,0.124083333333333,0.875583333333333
+22,Fiji,Upper middle income,ssp370,after 2050,2035,after 2050,5e-04,0.16575,0.83375
+22,Fiji,Upper middle income,ssp585,after 2050,2032,after 2050,0.000416666666666667,0.374666666666667,0.624916666666667
+79,Finland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+79,Finland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+79,Finland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+79,Finland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+80,France,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+80,France,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+80,France,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+80,France,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+173,Gabon,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.872166666666667,0.0885,0.0393333333333333
+173,Gabon,Upper middle income,ssp245,before 2022,before 2022,2043,0.772416666666667,0.207333333333333,0.02025
+173,Gabon,Upper middle income,ssp370,before 2022,before 2022,2037,0.683666666666667,0.303666666666667,0.0126666666666667
+173,Gabon,Upper middle income,ssp585,before 2022,before 2022,2032,0.611916666666667,0.3825,0.00558333333333333
+206,Gambia,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+206,Gambia,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+206,Gambia,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+206,Gambia,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+35,Georgia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+35,Georgia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+35,Georgia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+35,Georgia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+81,Germany,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+81,Germany,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+81,Germany,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+81,Germany,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+207,Ghana,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+207,Ghana,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+207,Ghana,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+207,Ghana,Lower middle income,ssp585,before 2022,before 2022,before 2022,0.999833333333333,0.000166666666666667,0
+82,Greece,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+82,Greece,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+82,Greece,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+82,Greece,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+349,Greenland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+349,Greenland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+349,Greenland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+349,Greenland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+112,Grenada,Upper middle income,ssp126,before 2022,before 2022,2026,0.9545,0.0340833333333333,0.0114166666666667
+112,Grenada,Upper middle income,ssp245,before 2022,before 2022,2027,0.933083333333333,0.0615833333333333,0.00533333333333333
+112,Grenada,Upper middle income,ssp370,before 2022,before 2022,2026,0.93025,0.06625,0.0035
+112,Grenada,Upper middle income,ssp585,before 2022,before 2022,2027,0.8875,0.110916666666667,0.00158333333333333
+351,Guam,High income,ssp126,before 2022,before 2022,before 2022,0.99375,0.00525,0.001
+351,Guam,High income,ssp245,before 2022,before 2022,2023,0.957416666666667,0.0418333333333333,0.00075
+351,Guam,High income,ssp370,before 2022,before 2022,2023,0.96425,0.0353333333333333,0.000416666666666667
+351,Guam,High income,ssp585,before 2022,before 2022,2024,0.907583333333333,0.0919166666666667,5e-04
+128,Guatemala,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+128,Guatemala,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+128,Guatemala,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,8.33333333333333e-05,0.999916666666667
+128,Guatemala,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+208,Guinea,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.9985,0.000666666666666667,0.000833333333333333
+208,Guinea,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.99825,0.00133333333333333,0.000416666666666667
+208,Guinea,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.998583333333333,0.00108333333333333,0.000333333333333333
+208,Guinea,Lower middle income,ssp585,before 2022,before 2022,before 2022,0.9985,0.00133333333333333,0.000166666666666667
+209,Guinea-Bissau,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+209,Guinea-Bissau,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+209,Guinea-Bissau,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+209,Guinea-Bissau,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+113,Guyana,High income,ssp126,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+113,Guyana,High income,ssp245,before 2022,before 2022,before 2022,0.997833333333333,0.00216666666666667,0
+113,Guyana,High income,ssp370,before 2022,before 2022,before 2022,0.998166666666667,0.00183333333333333,0
+113,Guyana,High income,ssp585,before 2022,before 2022,before 2022,0.994333333333333,0.00566666666666667,0
+114,Haiti,Lower middle income,ssp126,before 2022,before 2022,after 2050,0.784666666666667,0.174333333333333,0.041
+114,Haiti,Lower middle income,ssp245,before 2022,before 2022,after 2050,0.7655,0.198583333333333,0.0359166666666667
+114,Haiti,Lower middle income,ssp370,before 2022,before 2022,2047,0.737,0.24,0.023
+114,Haiti,Lower middle income,ssp585,before 2022,before 2022,after 2050,0.709833333333333,0.262166666666667,0.028
+129,Honduras,Lower middle income,ssp126,2043,before 2022,after 2050,0.307666666666667,0.231333333333333,0.461
+129,Honduras,Lower middle income,ssp245,2040,before 2022,after 2050,0.297833333333333,0.273,0.429166666666667
+129,Honduras,Lower middle income,ssp370,2038,before 2022,after 2050,0.2485,0.378833333333333,0.372666666666667
+129,Honduras,Lower middle income,ssp585,2033,before 2022,after 2050,0.2365,0.542166666666667,0.221333333333333
+48,Hungary,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+48,Hungary,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+48,Hungary,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+48,Hungary,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+83,Iceland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+83,Iceland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+83,Iceland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+83,Iceland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+163,India,Lower middle income,ssp126,before 2022,before 2022,2027,0.918833333333333,0.08075,0.000416666666666667
+163,India,Lower middle income,ssp245,before 2022,before 2022,2031,0.848833333333333,0.147916666666667,0.00325
+163,India,Lower middle income,ssp370,before 2022,before 2022,2039,0.798166666666667,0.191,0.0108333333333333
+163,India,Lower middle income,ssp585,before 2022,before 2022,2033,0.773416666666667,0.22425,0.00233333333333333
+11,Indonesia,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.78775,0.17,0.04225
+11,Indonesia,Upper middle income,ssp245,before 2022,before 2022,2043,0.652,0.332166666666667,0.0158333333333333
+11,Indonesia,Upper middle income,ssp370,before 2022,before 2022,2038,0.547333333333333,0.44325,0.00941666666666667
+11,Indonesia,Upper middle income,ssp585,2022,before 2022,2033,0.493333333333333,0.503666666666667,0.003
+142,Iran (Islamic Republic of),Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+142,Iran (Islamic Republic of),Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+142,Iran (Islamic Republic of),Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+142,Iran (Islamic Republic of),Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+143,Iraq,Upper middle income,ssp126,2026,before 2022,after 2050,0.453,0.211333333333333,0.335666666666667
+143,Iraq,Upper middle income,ssp245,2033,before 2022,after 2050,0.325666666666667,0.355083333333333,0.31925
+143,Iraq,Upper middle income,ssp370,2034,before 2022,after 2050,0.25925,0.431166666666667,0.309583333333333
+143,Iraq,Upper middle income,ssp585,2027,before 2022,after 2050,0.309166666666667,0.530583333333333,0.16025
+84,Ireland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+84,Ireland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+84,Ireland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+84,Ireland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+85,Israel,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+85,Israel,High income,ssp245,after 2050,after 2050,after 2050,0,0.000416666666666667,0.999583333333333
+85,Israel,High income,ssp370,after 2050,after 2050,after 2050,0,0.000583333333333333,0.999416666666667
+85,Israel,High income,ssp585,after 2050,after 2050,after 2050,0,0.00266666666666667,0.997333333333333
+86,Italy,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+86,Italy,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+86,Italy,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+86,Italy,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+115,Jamaica,Upper middle income,ssp126,before 2022,before 2022,2025,0.9595,0.0331666666666667,0.00733333333333333
+115,Jamaica,Upper middle income,ssp245,before 2022,before 2022,2023,0.96925,0.0275833333333333,0.00316666666666667
+115,Jamaica,Upper middle income,ssp370,before 2022,before 2022,2026,0.923083333333333,0.0754166666666667,0.0015
+115,Jamaica,Upper middle income,ssp585,before 2022,before 2022,2025,0.919583333333333,0.0800833333333334,0.000333333333333333
+67,Japan,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+67,Japan,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+67,Japan,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+67,Japan,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+144,Jordan,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+144,Jordan,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+144,Jordan,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+144,Jordan,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+36,Kazakhstan,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+36,Kazakhstan,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+36,Kazakhstan,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+36,Kazakhstan,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+180,Kenya,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+180,Kenya,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+180,Kenya,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+180,Kenya,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+23,Kiribati,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.984333333333333,0.0156666666666667,0
+23,Kiribati,Lower middle income,ssp245,before 2022,before 2022,2023,0.966,0.034,0
+23,Kiribati,Lower middle income,ssp370,before 2022,before 2022,2023,0.93525,0.06475,0
+23,Kiribati,Lower middle income,ssp585,before 2022,before 2022,2024,0.90975,0.09025,0
+145,Kuwait,High income,ssp126,before 2022,before 2022,2025,0.808,0.191916666666667,8.33333333333333e-05
+145,Kuwait,High income,ssp245,before 2022,before 2022,2027,0.670416666666667,0.329416666666667,0.000166666666666667
+145,Kuwait,High income,ssp370,before 2022,before 2022,2026,0.654666666666667,0.34525,8.33333333333333e-05
+145,Kuwait,High income,ssp585,before 2022,before 2022,2027,0.620833333333333,0.37875,0.000416666666666667
+37,Kyrgyzstan,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+37,Kyrgyzstan,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+37,Kyrgyzstan,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+37,Kyrgyzstan,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+12,Lao People's Democratic Republic,Lower middle income,ssp126,2031,before 2022,after 2050,0.31025,0.336,0.35375
+12,Lao People's Democratic Republic,Lower middle income,ssp245,2039,before 2022,after 2050,0.196833333333333,0.448,0.355166666666667
+12,Lao People's Democratic Republic,Lower middle income,ssp370,2042,before 2022,after 2050,0.0945833333333333,0.487666666666667,0.41775
+12,Lao People's Democratic Republic,Lower middle income,ssp585,2031,before 2022,after 2050,0.075,0.788,0.137
+59,Latvia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+59,Latvia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+59,Latvia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+59,Latvia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+146,Lebanon,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+146,Lebanon,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+146,Lebanon,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+146,Lebanon,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+194,Lesotho,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+194,Lesotho,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+194,Lesotho,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+194,Lesotho,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+210,Liberia,Low income,ssp126,before 2022,before 2022,2023,0.96225,0.0364166666666667,0.00133333333333333
+210,Liberia,Low income,ssp245,before 2022,before 2022,2025,0.8965,0.102583333333333,0.000916666666666667
+210,Liberia,Low income,ssp370,before 2022,before 2022,2026,0.792083333333333,0.207583333333333,0.000333333333333333
+210,Liberia,Low income,ssp585,before 2022,before 2022,2027,0.69075,0.308166666666667,0.00108333333333333
+147,Libya,Upper middle income,ssp126,after 2050,after 2050,after 2050,0.00116666666666667,8.33333333333333e-05,0.99875
+147,Libya,Upper middle income,ssp245,after 2050,after 2050,after 2050,0.000916666666666667,0,0.999083333333333
+147,Libya,Upper middle income,ssp370,after 2050,after 2050,after 2050,0.000833333333333333,0,0.999166666666667
+147,Libya,Upper middle income,ssp585,after 2050,after 2050,after 2050,0.00383333333333333,0,0.996166666666667
+60,Lithuania,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+60,Lithuania,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+60,Lithuania,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+60,Lithuania,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+87,Luxembourg,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+87,Luxembourg,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+87,Luxembourg,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+87,Luxembourg,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+181,Madagascar,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+181,Madagascar,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+181,Madagascar,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+181,Madagascar,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+182,Malawi,Low income,ssp126,after 2050,after 2050,after 2050,0,0.00308333333333333,0.996916666666667
+182,Malawi,Low income,ssp245,after 2050,after 2050,after 2050,8.33333333333333e-05,0.01125,0.988666666666667
+182,Malawi,Low income,ssp370,after 2050,2047,after 2050,0.000333333333333333,0.0325,0.967166666666667
+182,Malawi,Low income,ssp585,after 2050,2042,after 2050,0,0.0866666666666667,0.913333333333333
+13,Malaysia,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.9985,0.00141666666666667,8.33333333333333e-05
+13,Malaysia,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.9985,0.00116666666666667,0.000333333333333333
+13,Malaysia,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.99675,0.00308333333333333,0.000166666666666667
+13,Malaysia,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.982416666666667,0.0174166666666667,0.000166666666666667
+14,Maldives,Upper middle income,ssp126,before 2022,before 2022,2024,0.855666666666667,0.143333333333333,0.001
+14,Maldives,Upper middle income,ssp245,before 2022,before 2022,2025,0.679416666666667,0.320333333333333,0.00025
+14,Maldives,Upper middle income,ssp370,before 2022,before 2022,2026,0.546416666666667,0.452833333333333,0.00075
+14,Maldives,Upper middle income,ssp585,2023,before 2022,2027,0.333333333333333,0.66625,0.000416666666666667
+211,Mali,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+211,Mali,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+211,Mali,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+211,Mali,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+88,Malta,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+88,Malta,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+88,Malta,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+88,Malta,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+24,Marshall Islands,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.992833333333333,0.00716666666666667,0
+24,Marshall Islands,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.987,0.013,0
+24,Marshall Islands,Upper middle income,ssp370,before 2022,before 2022,2023,0.941083333333333,0.0589166666666667,0
+24,Marshall Islands,Upper middle income,ssp585,before 2022,before 2022,2024,0.91325,0.08675,0
+212,Mauritania,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+212,Mauritania,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+212,Mauritania,Lower middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+212,Mauritania,Lower middle income,ssp585,before 2022,before 2022,before 2022,1,0,0
+183,Mauritius,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0.000416666666666667,0.999583333333333
+183,Mauritius,Upper middle income,ssp245,after 2050,after 2050,after 2050,0.000333333333333333,0.0109166666666667,0.98875
+183,Mauritius,Upper middle income,ssp370,after 2050,after 2050,after 2050,0.00025,0.0134166666666667,0.986333333333333
+183,Mauritius,Upper middle income,ssp585,after 2050,2048,after 2050,0.00141666666666667,0.0325833333333333,0.966
+130,Mexico,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+130,Mexico,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+130,Mexico,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+130,Mexico,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+25,Micronesia (Federated States of),Upper middle income,ssp126,before 2022,before 2022,before 2022,0.99975,0.00025,0
+25,Micronesia (Federated States of),Upper middle income,ssp245,before 2022,before 2022,before 2022,0.996083333333333,0.00391666666666667,0
+25,Micronesia (Federated States of),Upper middle income,ssp370,before 2022,before 2022,before 2022,0.977416666666667,0.0225833333333333,0
+25,Micronesia (Federated States of),Upper middle income,ssp585,before 2022,before 2022,2023,0.950083333333333,0.0499166666666667,0
+367,Monaco,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+367,Monaco,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+367,Monaco,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+367,Monaco,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+38,Mongolia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+38,Mongolia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+38,Mongolia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+38,Mongolia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+50,Montenegro,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+50,Montenegro,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+50,Montenegro,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+50,Montenegro,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+148,Morocco,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+148,Morocco,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+148,Morocco,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+148,Morocco,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+184,Mozambique,Low income,ssp126,before 2022,before 2022,after 2050,0.854916666666667,0.086,0.0590833333333333
+184,Mozambique,Low income,ssp245,before 2022,before 2022,after 2050,0.799083333333333,0.1755,0.0254166666666667
+184,Mozambique,Low income,ssp370,before 2022,before 2022,2039,0.761583333333333,0.228,0.0104166666666667
+184,Mozambique,Low income,ssp585,before 2022,before 2022,2034,0.680583333333333,0.316333333333333,0.00308333333333333
+15,Myanmar,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.99075,0.00925,0
+15,Myanmar,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.987,0.0129166666666667,8.33333333333333e-05
+15,Myanmar,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.983666666666667,0.0163333333333333,0
+15,Myanmar,Lower middle income,ssp585,before 2022,before 2022,2022,0.972,0.028,0
+195,Namibia,Lower middle income,ssp126,after 2050,2043,after 2050,0.00158333333333333,0.0548333333333333,0.943583333333333
+195,Namibia,Lower middle income,ssp245,after 2050,2038,after 2050,0.00725,0.08075,0.912
+195,Namibia,Lower middle income,ssp370,after 2050,2032,after 2050,0,0.152666666666667,0.847333333333333
+195,Namibia,Lower middle income,ssp585,after 2050,2033,after 2050,0,0.2035,0.7965
+369,Nauru,High income,ssp126,before 2022,before 2022,before 2022,0.992666666666667,0.00733333333333333,0
+369,Nauru,High income,ssp245,before 2022,before 2022,before 2022,0.98575,0.01425,0
+369,Nauru,High income,ssp370,before 2022,before 2022,2023,0.959,0.041,0
+369,Nauru,High income,ssp585,before 2022,before 2022,2022,0.962333333333333,0.0376666666666667,0
+164,Nepal,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+164,Nepal,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+164,Nepal,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+164,Nepal,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0.00391666666666667,0.996083333333333
+89,Netherlands,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+89,Netherlands,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+89,Netherlands,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+89,Netherlands,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+72,New Zealand,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+72,New Zealand,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+72,New Zealand,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+72,New Zealand,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+131,Nicaragua,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.989166666666667,0.0108333333333333,0
+131,Nicaragua,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.9905,0.0095,0
+131,Nicaragua,Lower middle income,ssp370,before 2022,before 2022,2023,0.957416666666667,0.0425833333333333,0
+131,Nicaragua,Lower middle income,ssp585,before 2022,before 2022,2023,0.904583333333333,0.0954166666666667,0
+213,Niger,Low income,ssp126,before 2022,before 2022,before 2022,0.996666666666667,0.00333333333333333,0
+213,Niger,Low income,ssp245,before 2022,before 2022,before 2022,0.996583333333333,0.00341666666666667,0
+213,Niger,Low income,ssp370,before 2022,before 2022,before 2022,0.996833333333333,0.00316666666666667,0
+213,Niger,Low income,ssp585,before 2022,before 2022,before 2022,0.996,0.004,0
+214,Nigeria,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.999,0.001,0
+214,Nigeria,Lower middle income,ssp245,before 2022,before 2022,before 2022,0.999416666666667,0.000583333333333333,0
+214,Nigeria,Lower middle income,ssp370,before 2022,before 2022,before 2022,0.999083333333333,0.000916666666666667,0
+214,Nigeria,Lower middle income,ssp585,before 2022,before 2022,before 2022,0.998916666666667,0.00108333333333333,0
+374,Niue,Not classified,ssp126,after 2050,before 2022,after 2050,0.174,0.317583333333333,0.508416666666667
+374,Niue,Not classified,ssp245,2042,before 2022,after 2050,0.123083333333333,0.488916666666667,0.388
+374,Niue,Not classified,ssp370,2039,before 2022,after 2050,0.11525,0.5955,0.28925
+374,Niue,Not classified,ssp585,2036,before 2022,after 2050,0.158583333333333,0.6205,0.220916666666667
+49,North Macedonia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+49,North Macedonia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+49,North Macedonia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+49,North Macedonia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+376,Northern Mariana Islands,High income,ssp126,before 2022,before 2022,before 2022,0.997916666666667,0.00208333333333333,0
+376,Northern Mariana Islands,High income,ssp245,before 2022,before 2022,2022,0.972416666666667,0.0275833333333333,0
+376,Northern Mariana Islands,High income,ssp370,before 2022,before 2022,before 2022,0.976333333333333,0.0236666666666667,0
+376,Northern Mariana Islands,High income,ssp585,before 2022,before 2022,2024,0.90925,0.09075,0
+90,Norway,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+90,Norway,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+90,Norway,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+90,Norway,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+150,Oman,High income,ssp126,before 2022,before 2022,before 2022,1,0,0
+150,Oman,High income,ssp245,before 2022,before 2022,before 2022,1,0,0
+150,Oman,High income,ssp370,before 2022,before 2022,before 2022,1,0,0
+150,Oman,High income,ssp585,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+165,Pakistan,Lower middle income,ssp126,before 2022,before 2022,after 2050,0.865416666666667,0.0783333333333333,0.05625
+165,Pakistan,Lower middle income,ssp245,before 2022,before 2022,after 2050,0.831666666666667,0.111166666666667,0.0571666666666667
+165,Pakistan,Lower middle income,ssp370,before 2022,before 2022,after 2050,0.821916666666667,0.105333333333333,0.07275
+165,Pakistan,Lower middle income,ssp585,before 2022,before 2022,after 2050,0.761166666666667,0.207583333333333,0.03125
+380,Palau,High income,ssp126,before 2022,before 2022,before 2022,0.997916666666667,0.002,8.33333333333333e-05
+380,Palau,High income,ssp245,before 2022,before 2022,before 2022,0.992666666666667,0.00733333333333333,0
+380,Palau,High income,ssp370,before 2022,before 2022,before 2022,0.988916666666667,0.0110833333333333,0
+380,Palau,High income,ssp585,before 2022,before 2022,2023,0.948083333333333,0.0519166666666667,0
+149,Palestine,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+149,Palestine,Lower middle income,ssp245,after 2050,after 2050,after 2050,8.33333333333333e-05,0,0.999916666666667
+149,Palestine,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+149,Palestine,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+132,Panama,High income,ssp126,before 2022,before 2022,2023,0.9675,0.0308333333333333,0.00166666666666667
+132,Panama,High income,ssp245,before 2022,before 2022,2023,0.949666666666667,0.0496666666666667,0.000666666666666667
+132,Panama,High income,ssp370,before 2022,before 2022,2025,0.872583333333333,0.126416666666667,0.001
+132,Panama,High income,ssp585,before 2022,before 2022,2025,0.779416666666667,0.220583333333333,0
+26,Papua New Guinea,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+26,Papua New Guinea,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+26,Papua New Guinea,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+26,Papua New Guinea,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+136,Paraguay,Upper middle income,ssp126,after 2050,after 2050,after 2050,0.009,0.0121666666666667,0.978833333333333
+136,Paraguay,Upper middle income,ssp245,after 2050,2031,after 2050,0.0201666666666667,0.0375833333333333,0.94225
+136,Paraguay,Upper middle income,ssp370,after 2050,2028,after 2050,0.0213333333333333,0.116416666666667,0.86225
+136,Paraguay,Upper middle income,ssp585,after 2050,2030,after 2050,0.00183333333333333,0.1355,0.862666666666667
+123,Peru,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+123,Peru,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+123,Peru,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+123,Peru,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+16,Philippines,Upper middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+16,Philippines,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.99975,0.00025,0
+16,Philippines,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+16,Philippines,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.998166666666667,0.00183333333333333,0
+51,Poland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+51,Poland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+51,Poland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+51,Poland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+91,Portugal,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+91,Portugal,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+91,Portugal,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+91,Portugal,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+385,Puerto Rico,High income,ssp126,before 2022,before 2022,after 2050,0.681083333333333,0.163416666666667,0.1555
+385,Puerto Rico,High income,ssp245,before 2022,before 2022,after 2050,0.6705,0.226416666666667,0.103083333333333
+385,Puerto Rico,High income,ssp370,before 2022,before 2022,after 2050,0.5825,0.33625,0.08125
+385,Puerto Rico,High income,ssp585,before 2022,before 2022,after 2050,0.60775,0.31875,0.0735
+151,Qatar,High income,ssp126,before 2022,before 2022,2023,0.9355,0.0645,0
+151,Qatar,High income,ssp245,before 2022,before 2022,2023,0.917333333333333,0.0826666666666667,0
+151,Qatar,High income,ssp370,before 2022,before 2022,2023,0.906333333333333,0.0936666666666667,0
+151,Qatar,High income,ssp585,before 2022,before 2022,2023,0.887333333333333,0.112666666666667,0
+68,Republic of Korea,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+68,Republic of Korea,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+68,Republic of Korea,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+68,Republic of Korea,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+61,Republic of Moldova,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+61,Republic of Moldova,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+61,Republic of Moldova,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+61,Republic of Moldova,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+52,Romania,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+52,Romania,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+52,Romania,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+52,Romania,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+62,Russian Federation,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+62,Russian Federation,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+62,Russian Federation,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+62,Russian Federation,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+185,Rwanda,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+185,Rwanda,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+185,Rwanda,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+185,Rwanda,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+393,Saint Kitts and Nevis,High income,ssp126,before 2022,before 2022,2049,0.890416666666667,0.0846666666666667,0.0249166666666667
+393,Saint Kitts and Nevis,High income,ssp245,before 2022,before 2022,2034,0.895,0.0875,0.0175
+393,Saint Kitts and Nevis,High income,ssp370,before 2022,before 2022,2036,0.809,0.17375,0.01725
+393,Saint Kitts and Nevis,High income,ssp585,before 2022,before 2022,2039,0.79575,0.187666666666667,0.0165833333333333
+116,Saint Lucia,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.996,0.004,0
+116,Saint Lucia,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.986166666666667,0.0138333333333333,0
+116,Saint Lucia,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.977666666666667,0.0223333333333333,0
+116,Saint Lucia,Upper middle income,ssp585,before 2022,before 2022,2022,0.968,0.032,0
+117,Saint Vincent and the Grenadines,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.981833333333333,0.0145833333333333,0.00358333333333333
+117,Saint Vincent and the Grenadines,Upper middle income,ssp245,before 2022,before 2022,2023,0.964916666666667,0.0326666666666667,0.00241666666666667
+117,Saint Vincent and the Grenadines,Upper middle income,ssp370,before 2022,before 2022,2024,0.9565,0.0413333333333333,0.00216666666666667
+117,Saint Vincent and the Grenadines,Upper middle income,ssp585,before 2022,before 2022,2026,0.911333333333333,0.0876666666666667,0.001
+27,Samoa,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.793666666666667,0.171416666666667,0.0349166666666667
+27,Samoa,Upper middle income,ssp245,before 2022,before 2022,2046,0.719333333333333,0.258333333333333,0.0223333333333333
+27,Samoa,Upper middle income,ssp370,before 2022,before 2022,2039,0.64275,0.3425,0.01475
+27,Samoa,Upper middle income,ssp585,before 2022,before 2022,2033,0.642333333333333,0.349083333333333,0.00858333333333333
+396,San Marino,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+396,San Marino,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+396,San Marino,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+396,San Marino,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+215,Sao Tome and Principe,Lower middle income,ssp126,2027,before 2022,after 2050,0.418833333333333,0.26,0.321166666666667
+215,Sao Tome and Principe,Lower middle income,ssp245,2027,before 2022,after 2050,0.366416666666667,0.406416666666667,0.227166666666667
+215,Sao Tome and Principe,Lower middle income,ssp370,2028,before 2022,after 2050,0.297083333333333,0.525416666666667,0.1775
+215,Sao Tome and Principe,Lower middle income,ssp585,2027,before 2022,after 2050,0.314333333333333,0.56125,0.124416666666667
+152,Saudi Arabia,High income,ssp126,before 2022,before 2022,before 2022,0.999833333333333,0.000166666666666667,0
+152,Saudi Arabia,High income,ssp245,before 2022,before 2022,before 2022,0.999666666666667,0.000333333333333333,0
+152,Saudi Arabia,High income,ssp370,before 2022,before 2022,before 2022,0.999416666666667,0.000583333333333333,0
+152,Saudi Arabia,High income,ssp585,before 2022,before 2022,before 2022,0.998083333333333,0.00191666666666667,0
+216,Senegal,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+216,Senegal,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+216,Senegal,Lower middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+216,Senegal,Lower middle income,ssp585,before 2022,before 2022,before 2022,1,0,0
+53,Serbia,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+53,Serbia,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+53,Serbia,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+53,Serbia,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+186,Seychelles,High income,ssp126,before 2022,before 2022,after 2050,0.85525,0.08825,0.0565
+186,Seychelles,High income,ssp245,before 2022,before 2022,after 2050,0.814916666666667,0.132916666666667,0.0521666666666667
+186,Seychelles,High income,ssp370,before 2022,before 2022,after 2050,0.725916666666667,0.227083333333333,0.047
+186,Seychelles,High income,ssp585,before 2022,before 2022,2050,0.659583333333333,0.315833333333333,0.0245833333333333
+217,Sierra Leone,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+217,Sierra Leone,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+217,Sierra Leone,Low income,ssp370,before 2022,before 2022,before 2022,0.9995,5e-04,0
+217,Sierra Leone,Low income,ssp585,before 2022,before 2022,before 2022,0.99675,0.00325,0
+69,Singapore,High income,ssp126,before 2022,before 2022,after 2050,0.675333333333333,0.221916666666667,0.10275
+69,Singapore,High income,ssp245,before 2022,before 2022,after 2050,0.569166666666667,0.320666666666667,0.110166666666667
+69,Singapore,High income,ssp370,2022,before 2022,after 2050,0.480833333333333,0.408083333333333,0.111083333333333
+69,Singapore,High income,ssp585,2024,before 2022,after 2050,0.378833333333333,0.501583333333333,0.119583333333333
+54,Slovakia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+54,Slovakia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+54,Slovakia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+54,Slovakia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+55,Slovenia,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+55,Slovenia,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+55,Slovenia,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+55,Slovenia,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+28,Solomon Islands,Lower middle income,ssp126,before 2022,before 2022,before 2022,0.988166666666667,0.0105,0.00133333333333333
+28,Solomon Islands,Lower middle income,ssp245,before 2022,before 2022,2023,0.964833333333333,0.03475,0.000416666666666667
+28,Solomon Islands,Lower middle income,ssp370,before 2022,before 2022,2024,0.928916666666667,0.0710833333333333,0
+28,Solomon Islands,Lower middle income,ssp585,before 2022,before 2022,2024,0.919416666666667,0.0805833333333333,0
+187,Somalia,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+187,Somalia,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+187,Somalia,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+187,Somalia,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+196,South Africa,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+196,South Africa,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+196,South Africa,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+196,South Africa,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+435,South Sudan,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+435,South Sudan,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+435,South Sudan,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+435,South Sudan,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+92,Spain,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+92,Spain,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+92,Spain,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+92,Spain,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+17,Sri Lanka,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.997333333333333,0.00266666666666667,0
+17,Sri Lanka,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.995333333333333,0.00466666666666667,0
+17,Sri Lanka,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.991833333333333,0.00816666666666667,0
+17,Sri Lanka,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.984083333333333,0.0159166666666667,0
+522,Sudan,Low income,ssp126,before 2022,before 2022,before 2022,1,0,0
+522,Sudan,Low income,ssp245,before 2022,before 2022,before 2022,1,0,0
+522,Sudan,Low income,ssp370,before 2022,before 2022,before 2022,1,0,0
+522,Sudan,Low income,ssp585,before 2022,before 2022,before 2022,1,0,0
+118,Suriname,Upper middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+118,Suriname,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.996833333333333,0.00316666666666667,0
+118,Suriname,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.99325,0.00675,0
+118,Suriname,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.990083333333333,0.00991666666666667,0
+93,Sweden,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+93,Sweden,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+93,Sweden,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+93,Sweden,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+94,Switzerland,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+94,Switzerland,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+94,Switzerland,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+94,Switzerland,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+153,Syrian Arab Republic,Low income,ssp126,after 2050,after 2050,after 2050,0,0,1
+153,Syrian Arab Republic,Low income,ssp245,after 2050,after 2050,after 2050,0,0,1
+153,Syrian Arab Republic,Low income,ssp370,after 2050,after 2050,after 2050,0,0,1
+153,Syrian Arab Republic,Low income,ssp585,after 2050,after 2050,after 2050,0,0,1
+8,Taiwan,High income,ssp126,after 2050,after 2050,after 2050,0,0.001,0.999
+8,Taiwan,High income,ssp245,after 2050,after 2050,after 2050,0,0.00358333333333333,0.996416666666667
+8,Taiwan,High income,ssp370,after 2050,after 2050,after 2050,0,0.0116666666666667,0.988333333333333
+8,Taiwan,High income,ssp585,after 2050,after 2050,after 2050,0,0.0156666666666667,0.984333333333333
+39,Tajikistan,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+39,Tajikistan,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+39,Tajikistan,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+39,Tajikistan,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+18,Thailand,Upper middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+18,Thailand,Upper middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+18,Thailand,Upper middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+18,Thailand,Upper middle income,ssp585,before 2022,before 2022,before 2022,1,0,0
+19,Timor-Leste,Lower middle income,ssp126,after 2050,2032,after 2050,0.00758333333333333,0.107083333333333,0.885333333333333
+19,Timor-Leste,Lower middle income,ssp245,after 2050,2031,after 2050,0.00475,0.183583333333333,0.811666666666667
+19,Timor-Leste,Lower middle income,ssp370,after 2050,2029,after 2050,0.00325,0.288,0.70875
+19,Timor-Leste,Lower middle income,ssp585,after 2050,2029,after 2050,0.00283333333333333,0.4235,0.573666666666667
+218,Togo,Lower middle income,ssp126,before 2022,before 2022,before 2022,1,0,0
+218,Togo,Lower middle income,ssp245,before 2022,before 2022,before 2022,1,0,0
+218,Togo,Lower middle income,ssp370,before 2022,before 2022,before 2022,1,0,0
+218,Togo,Lower middle income,ssp585,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+413,Tokelau,Not classified,ssp126,before 2022,before 2022,before 2022,0.998916666666667,0.001,8.33333333333333e-05
+413,Tokelau,Not classified,ssp245,before 2022,before 2022,before 2022,0.998666666666667,0.00133333333333333,0
+413,Tokelau,Not classified,ssp370,before 2022,before 2022,before 2022,0.995583333333333,0.00441666666666667,0
+413,Tokelau,Not classified,ssp585,before 2022,before 2022,before 2022,0.984333333333333,0.0156666666666667,0
+29,Tonga,Upper middle income,ssp126,before 2022,before 2022,after 2050,0.530083333333333,0.25825,0.211666666666667
+29,Tonga,Upper middle income,ssp245,2023,before 2022,after 2050,0.477666666666667,0.402,0.120333333333333
+29,Tonga,Upper middle income,ssp370,2024,before 2022,after 2050,0.420416666666667,0.5025,0.0770833333333333
+29,Tonga,Upper middle income,ssp585,2024,before 2022,after 2050,0.445166666666667,0.500666666666667,0.0541666666666667
+119,Trinidad and Tobago,High income,ssp126,before 2022,before 2022,before 2022,0.999916666666667,8.33333333333333e-05,0
+119,Trinidad and Tobago,High income,ssp245,before 2022,before 2022,before 2022,0.998916666666667,0.00108333333333333,0
+119,Trinidad and Tobago,High income,ssp370,before 2022,before 2022,before 2022,0.998916666666667,0.00108333333333333,0
+119,Trinidad and Tobago,High income,ssp585,before 2022,before 2022,before 2022,0.996333333333333,0.00366666666666667,0
+154,Tunisia,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+154,Tunisia,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+154,Tunisia,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+154,Tunisia,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+40,Turkmenistan,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+40,Turkmenistan,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+40,Turkmenistan,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+40,Turkmenistan,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+416,Tuvalu,Upper middle income,ssp126,before 2022,before 2022,before 2022,0.999583333333333,0.000416666666666667,0
+416,Tuvalu,Upper middle income,ssp245,before 2022,before 2022,before 2022,0.998083333333333,0.00191666666666667,0
+416,Tuvalu,Upper middle income,ssp370,before 2022,before 2022,before 2022,0.986416666666667,0.0135833333333333,0
+416,Tuvalu,Upper middle income,ssp585,before 2022,before 2022,before 2022,0.978333333333333,0.0216666666666667,0
+155,Türkiye,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+155,Türkiye,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+155,Türkiye,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+155,Türkiye,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+190,Uganda,Low income,ssp126,after 2050,after 2050,after 2050,0,0.00575,0.99425
+190,Uganda,Low income,ssp245,after 2050,after 2050,after 2050,0,0.0179166666666667,0.982083333333333
+190,Uganda,Low income,ssp370,after 2050,2045,after 2050,0,0.052,0.948
+190,Uganda,Low income,ssp585,after 2050,2044,after 2050,0,0.0753333333333333,0.924666666666667
+63,Ukraine,Upper middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+63,Ukraine,Upper middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+63,Ukraine,Upper middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+63,Ukraine,Upper middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+156,United Arab Emirates,High income,ssp126,before 2022,before 2022,2023,0.711083333333333,0.288916666666667,0
+156,United Arab Emirates,High income,ssp245,before 2022,before 2022,2024,0.656416666666667,0.343583333333333,0
+156,United Arab Emirates,High income,ssp370,before 2022,before 2022,2024,0.598166666666667,0.401833333333333,0
+156,United Arab Emirates,High income,ssp585,before 2022,before 2022,2024,0.572583333333333,0.427416666666667,0
+95,United Kingdom,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+95,United Kingdom,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+95,United Kingdom,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+95,United Kingdom,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+189,United Republic of Tanzania,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+189,United Republic of Tanzania,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0.001,0.999
+189,United Republic of Tanzania,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0.0186666666666667,0.981333333333333
+189,United Republic of Tanzania,Lower middle income,ssp585,after 2050,2049,after 2050,0,0.0335,0.9665
+422,United States Virgin Islands,High income,ssp126,before 2022,before 2022,2031,0.934083333333333,0.0525,0.0134166666666667
+422,United States Virgin Islands,High income,ssp245,before 2022,before 2022,2027,0.94775,0.0443333333333333,0.00791666666666667
+422,United States Virgin Islands,High income,ssp370,before 2022,before 2022,2028,0.904833333333333,0.089,0.00616666666666667
+422,United States Virgin Islands,High income,ssp585,before 2022,before 2022,2029,0.885833333333333,0.10825,0.00591666666666667
+102,United States of America,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+102,United States of America,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+102,United States of America,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+102,United States of America,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+99,Uruguay,High income,ssp126,after 2050,after 2050,after 2050,0,0,1
+99,Uruguay,High income,ssp245,after 2050,after 2050,after 2050,0,0,1
+99,Uruguay,High income,ssp370,after 2050,after 2050,after 2050,0,0,1
+99,Uruguay,High income,ssp585,after 2050,after 2050,after 2050,0,0,1
+41,Uzbekistan,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+41,Uzbekistan,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+41,Uzbekistan,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0,1
+41,Uzbekistan,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0,1
+30,Vanuatu,Lower middle income,ssp126,2048,before 2022,after 2050,0.256083333333333,0.253666666666667,0.49025
+30,Vanuatu,Lower middle income,ssp245,2036,before 2022,after 2050,0.156833333333333,0.511833333333333,0.331333333333333
+30,Vanuatu,Lower middle income,ssp370,2034,before 2022,after 2050,0.130416666666667,0.648583333333333,0.221
+30,Vanuatu,Lower middle income,ssp585,2031,before 2022,after 2050,0.129333333333333,0.730333333333333,0.140333333333333
+133,Venezuela (Bolivarian Republic of),Lower middle income,ssp126,before 2022,before 2022,before 2022,0.998416666666667,0.00158333333333333,0
+133,Venezuela (Bolivarian Republic of),Lower middle income,ssp245,before 2022,before 2022,before 2022,0.999166666666667,0.000833333333333333,0
+133,Venezuela (Bolivarian Republic of),Lower middle income,ssp370,before 2022,before 2022,before 2022,0.991833333333333,0.00816666666666667,0
+133,Venezuela (Bolivarian Republic of),Lower middle income,ssp585,before 2022,before 2022,before 2022,0.998083333333333,0.00191666666666667,0
+20,Viet Nam,Upper middle income,ssp126,before 2022,before 2022,2041,0.866583333333333,0.114916666666667,0.0185
+20,Viet Nam,Upper middle income,ssp245,before 2022,before 2022,2037,0.791,0.195333333333333,0.0136666666666667
+20,Viet Nam,Upper middle income,ssp370,before 2022,before 2022,2039,0.741166666666667,0.24325,0.0155833333333333
+20,Viet Nam,Upper middle income,ssp585,before 2022,before 2022,2031,0.665583333333333,0.33375,0.000666666666666667
+157,Yemen,Low income,ssp126,after 2050,before 2022,after 2050,0.107916666666667,0.112,0.780083333333333
+157,Yemen,Low income,ssp245,after 2050,before 2022,after 2050,0.07075,0.255083333333333,0.674166666666667
+157,Yemen,Low income,ssp370,after 2050,before 2022,after 2050,0.0603333333333333,0.366666666666667,0.573
+157,Yemen,Low income,ssp585,after 2050,before 2022,after 2050,0.0256666666666667,0.435083333333333,0.53925
+191,Zambia,Lower middle income,ssp126,after 2050,after 2050,after 2050,0.00266666666666667,0.007,0.990333333333333
+191,Zambia,Lower middle income,ssp245,after 2050,2049,after 2050,0.000333333333333333,0.0278333333333333,0.971833333333333
+191,Zambia,Lower middle income,ssp370,after 2050,2037,after 2050,0.000166666666666667,0.0736666666666667,0.926166666666667
+191,Zambia,Lower middle income,ssp585,after 2050,2037,after 2050,0.000333333333333333,0.141166666666667,0.8585
+198,Zimbabwe,Lower middle income,ssp126,after 2050,after 2050,after 2050,0,0,1
+198,Zimbabwe,Lower middle income,ssp245,after 2050,after 2050,after 2050,0,0,1
+198,Zimbabwe,Lower middle income,ssp370,after 2050,after 2050,after 2050,0,0.00466666666666667,0.995333333333333
+198,Zimbabwe,Lower middle income,ssp585,after 2050,after 2050,after 2050,0,0.0015,0.9985
