@@ -42,8 +42,11 @@ pa <- merge(pop, amap, by = "age_name")
 Pall <- pop[, .(N = sum(pop)), by = .(location_id, period, year)][, .(N = mean(N)), by = .(location_id, period)]
 Page <- pa[, .(N = sum(pop)), by = .(location_id, period, year, ag, sex_id)][, .(N = mean(N)), by = .(location_id, period, ag, sex_id)]
 Page[, slice := paste0(ag, "_sex", sex_id)]
+# groups as in income_groups.csv (build_groups_wbg.R): income, low and middle income,
+# World Bank region (when the file has a region column), plus World
 gmap <- rbind(names_loc[, .(location_id, group = income)],
               names_loc[income %in% c("Upper middle income", "Lower middle income", "Low income"), .(location_id, group = "Low and middle income")],
+              if ("region" %in% names(inc)) inc[, .(location_id, group = region)],
               names_loc[, .(location_id, group = "World")])
 popunit <- function(P, extra = NULL) {
   b <- c("period", extra)
@@ -106,6 +109,11 @@ cat("Income groups sum to World, worst rel:", signif(rel(j$s, j$mean), 3), "\n")
 lm <- tot[unit_type == "group" & unit %in% c("Upper middle income", "Lower middle income", "Low income"), .(s = sum(mean)), by = .(scenario, period, measure)]
 j <- merge(lm, tot[unit == "Low and middle income"], by = c("scenario", "period", "measure"))
 cat("Three middle/low groups sum to Low and middle income, worst rel:", signif(rel(j$s, j$mean), 3), "\n")
+if ("region" %in% names(inc)) {
+  rg <- tot[unit_type == "group" & unit %in% unique(inc$region), .(s = sum(mean), n = .N), by = .(scenario, period, measure)]
+  j <- merge(rg, tot[unit == "World"], by = c("scenario", "period", "measure"))
+  cat("Regions sum to World (", max(j$n), "regions), worst rel:", signif(rel(j$s, j$mean), 3), "\n")
+}
 cs <- cau[unit_type == "group", .(s = sum(mean)), by = .(unit, scenario, period, measure)]
 j <- merge(cs, tot[unit_type == "group"], by = c("unit", "scenario", "period", "measure"))
 cat("Causes sum to totals within groups, worst rel:", signif(rel(j$s, j$mean), 3), "\n")

@@ -187,18 +187,18 @@ location_id,group
 218,Lower middle income
 298,High income
 305,High income
-320,Not classified
+320,High income
 349,High income
 351,High income
 367,High income
 369,High income
-374,Not classified
+374,High income
 376,High income
 380,High income
 385,High income
 393,High income
 396,High income
-413,Not classified
+413,High income
 416,Upper middle income
 422,High income
 435,Low income
@@ -333,3 +333,207 @@ location_id,group
 416,Low and middle income
 435,Low and middle income
 522,Low and middle income
+6,East Asia & Pacific
+7,East Asia & Pacific
+8,East Asia & Pacific
+10,East Asia & Pacific
+11,East Asia & Pacific
+12,East Asia & Pacific
+13,East Asia & Pacific
+14,South Asia
+15,East Asia & Pacific
+16,East Asia & Pacific
+17,South Asia
+18,East Asia & Pacific
+19,East Asia & Pacific
+20,East Asia & Pacific
+22,East Asia & Pacific
+23,East Asia & Pacific
+24,East Asia & Pacific
+25,East Asia & Pacific
+26,East Asia & Pacific
+27,East Asia & Pacific
+28,East Asia & Pacific
+29,East Asia & Pacific
+30,East Asia & Pacific
+33,Europe & Central Asia
+34,Europe & Central Asia
+35,Europe & Central Asia
+36,Europe & Central Asia
+37,Europe & Central Asia
+38,East Asia & Pacific
+39,Europe & Central Asia
+40,Europe & Central Asia
+41,Europe & Central Asia
+43,Europe & Central Asia
+44,Europe & Central Asia
+45,Europe & Central Asia
+46,Europe & Central Asia
+47,Europe & Central Asia
+48,Europe & Central Asia
+49,Europe & Central Asia
+50,Europe & Central Asia
+51,Europe & Central Asia
+52,Europe & Central Asia
+53,Europe & Central Asia
+54,Europe & Central Asia
+55,Europe & Central Asia
+57,Europe & Central Asia
+58,Europe & Central Asia
+59,Europe & Central Asia
+60,Europe & Central Asia
+61,Europe & Central Asia
+62,Europe & Central Asia
+63,Europe & Central Asia
+66,East Asia & Pacific
+67,East Asia & Pacific
+68,East Asia & Pacific
+69,East Asia & Pacific
+71,East Asia & Pacific
+72,East Asia & Pacific
+74,Europe & Central Asia
+75,Europe & Central Asia
+76,Europe & Central Asia
+77,Europe & Central Asia
+78,Europe & Central Asia
+79,Europe & Central Asia
+80,Europe & Central Asia
+81,Europe & Central Asia
+82,Europe & Central Asia
+83,Europe & Central Asia
+84,Europe & Central Asia
+85,"Middle East, North Africa, Afghanistan & Pakistan"
+86,Europe & Central Asia
+87,Europe & Central Asia
+88,"Middle East, North Africa, Afghanistan & Pakistan"
+89,Europe & Central Asia
+90,Europe & Central Asia
+91,Europe & Central Asia
+92,Europe & Central Asia
+93,Europe & Central Asia
+94,Europe & Central Asia
+95,Europe & Central Asia
+97,Latin America & Caribbean
+98,Latin America & Caribbean
+99,Latin America & Caribbean
+101,North America
+102,North America
+105,Latin America & Caribbean
+106,Latin America & Caribbean
+107,Latin America & Caribbean
+108,Latin America & Caribbean
+109,Latin America & Caribbean
+110,Latin America & Caribbean
+111,Latin America & Caribbean
+112,Latin America & Caribbean
+113,Latin America & Caribbean
+114,Latin America & Caribbean
+115,Latin America & Caribbean
+116,Latin America & Caribbean
+117,Latin America & Caribbean
+118,Latin America & Caribbean
+119,Latin America & Caribbean
+121,Latin America & Caribbean
+122,Latin America & Caribbean
+123,Latin America & Caribbean
+125,Latin America & Caribbean
+126,Latin America & Caribbean
+127,Latin America & Caribbean
+128,Latin America & Caribbean
+129,Latin America & Caribbean
+130,Latin America & Caribbean
+131,Latin America & Caribbean
+132,Latin America & Caribbean
+133,Latin America & Caribbean
+135,Latin America & Caribbean
+136,Latin America & Caribbean
+139,"Middle East, North Africa, Afghanistan & Pakistan"
+140,"Middle East, North Africa, Afghanistan & Pakistan"
+141,"Middle East, North Africa, Afghanistan & Pakistan"
+142,"Middle East, North Africa, Afghanistan & Pakistan"
+143,"Middle East, North Africa, Afghanistan & Pakistan"
+144,"Middle East, North Africa, Afghanistan & Pakistan"
+145,"Middle East, North Africa, Afghanistan & Pakistan"
+146,"Middle East, North Africa, Afghanistan & Pakistan"
+147,"Middle East, North Africa, Afghanistan & Pakistan"
+148,"Middle East, North Africa, Afghanistan & Pakistan"
+149,"Middle East, North Africa, Afghanistan & Pakistan"
+150,"Middle East, North Africa, Afghanistan & Pakistan"
+151,"Middle East, North Africa, Afghanistan & Pakistan"
+152,"Middle East, North Africa, Afghanistan & Pakistan"
+153,"Middle East, North Africa, Afghanistan & Pakistan"
+154,"Middle East, North Africa, Afghanistan & Pakistan"
+155,Europe & Central Asia
+156,"Middle East, North Africa, Afghanistan & Pakistan"
+157,"Middle East, North Africa, Afghanistan & Pakistan"
+160,"Middle East, North Africa, Afghanistan & Pakistan"
+161,South Asia
+162,South Asia
+163,South Asia
+164,South Asia
+165,"Middle East, North Africa, Afghanistan & Pakistan"
+168,Sub-Saharan Africa
+169,Sub-Saharan Africa
+170,Sub-Saharan Africa
+171,Sub-Saharan Africa
+172,Sub-Saharan Africa
+173,Sub-Saharan Africa
+175,Sub-Saharan Africa
+176,Sub-Saharan Africa
+177,"Middle East, North Africa, Afghanistan & Pakistan"
+178,Sub-Saharan Africa
+179,Sub-Saharan Africa
+180,Sub-Saharan Africa
+181,Sub-Saharan Africa
+182,Sub-Saharan Africa
+183,Sub-Saharan Africa
+184,Sub-Saharan Africa
+185,Sub-Saharan Africa
+186,Sub-Saharan Africa
+187,Sub-Saharan Africa
+189,Sub-Saharan Africa
+190,Sub-Saharan Africa
+191,Sub-Saharan Africa
+193,Sub-Saharan Africa
+194,Sub-Saharan Africa
+195,Sub-Saharan Africa
+196,Sub-Saharan Africa
+197,Sub-Saharan Africa
+198,Sub-Saharan Africa
+200,Sub-Saharan Africa
+201,Sub-Saharan Africa
+202,Sub-Saharan Africa
+203,Sub-Saharan Africa
+204,Sub-Saharan Africa
+205,Sub-Saharan Africa
+206,Sub-Saharan Africa
+207,Sub-Saharan Africa
+208,Sub-Saharan Africa
+209,Sub-Saharan Africa
+210,Sub-Saharan Africa
+211,Sub-Saharan Africa
+212,Sub-Saharan Africa
+213,Sub-Saharan Africa
+214,Sub-Saharan Africa
+215,Sub-Saharan Africa
+216,Sub-Saharan Africa
+217,Sub-Saharan Africa
+218,Sub-Saharan Africa
+298,East Asia & Pacific
+305,North America
+320,East Asia & Pacific
+349,Europe & Central Asia
+351,East Asia & Pacific
+367,Europe & Central Asia
+369,East Asia & Pacific
+374,East Asia & Pacific
+376,East Asia & Pacific
+380,East Asia & Pacific
+385,Latin America & Caribbean
+393,Latin America & Caribbean
+396,Europe & Central Asia
+413,East Asia & Pacific
+416,East Asia & Pacific
+422,Latin America & Caribbean
+435,Sub-Saharan Africa
+522,Sub-Saharan Africa
