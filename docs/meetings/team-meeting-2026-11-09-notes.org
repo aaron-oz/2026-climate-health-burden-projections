@@ -46,3 +46,63 @@ Next steps to consider:
 - Disaggregation of results to subnational units
 
 Charlie will send a follow-up meeting for the following week.
+
+* Aaron's rulings after the meeting (2026-11-13)
+- The files in /var/home/aoz/data/wb-temp-attr-projections/wbg-shapes-loc-data
+  are the official classification. Income groups and World Bank regions both
+  come from CLASS_2026_10_08.csv; the region work does not wait for another
+  file from Charlie.
+- The income question means: why are low-income countries' rates lower than
+  lower-middle-income countries' rates?
+- Reports and methods documents do not name team members, even internal
+  ones. Only meeting summaries and documents asking specific people for
+  contributions (such as a meeting deck's request slides) may name people.
+  The draft report names people in three places (crossing-year question,
+  "Caspar's machine" twice); these get replaced with process wording.
+- Age standard for age-standardized rates (ASRs): Aaron is asking Charlie.
+  Candidates: GBD world standard population, WHO 2000-2025 standard. Build
+  both so either can be reported.
+- *ASRs are computed on Caspar's machine, as part of a new summary run, not
+  from a data dump.* Aaron: "We need Caspar to run more summaries on his
+  machine, and I think we roll the ASR calculation into that. no need for him
+  to partially summarize, give us a huge data dump, and we finish it off."
+  Consequences for the work plan:
+  - One new run on Caspar's machine produces finished summaries: deaths, YLLs
+    and rates by age x sex x cause, by decade and scenario, crude rates and
+    ASRs (both candidate standards), for countries, income groups, World Bank
+    regions, the combined low- and middle-income group, and the world.
+    Finished means pooled over climate models and draws (mean and 66/80/95%
+    ranges) on his machine, so what comes back is summary tables, not
+    per-draw files.
+  - Our part: write and test the code for that run (extend
+    global-scripts/util_summarize_workflow_b.R and the pooling step, or a
+    new driver that chains them), test it on the fixture in
+    output/review-workflow-b-2026-10-26/test_draw_export/, measure its run
+    time and output size, then draft the request to Caspar for Aaron to send.
+  - The group definitions (income, region) must be final before the run,
+    since groups are pooled on his machine; so the income/region switch
+    comes first.
+  - No partial ASRs from the three age slices we already hold (under 5,
+    15-49, 65+).
+
+* Work plan after the rulings (2026-11-13)
+1. Factual answers to the meeting's questions (future population source;
+   low vs lower-middle income; what age-structure data exist; cost of the
+   new run on Caspar's machine). Local.
+2. Income groups and World Bank regions from CLASS_2026_10_08.csv; list
+   every country that changes group; add the combined low- and
+   middle-income group to figures and slides; re-run the local pooling,
+   tables and figures. Local.
+3. Free-y age-sex figure in the deck; rebuild under xelatex and pdflatex.
+   Local.
+4. Code for the new summary run on Caspar's machine (age x sex x cause by
+   decade and scenario, crude rates and ASRs under both standards, pooled
+   over models and draws, all groups). Test on the fixture, measure cost,
+   draft the request. Needs Caspar to run it.
+5. Historical anchor: propose period and source to Aaron before computing.
+6. Heat-crossing countries: shared features and order of crossing.
+   Exploratory.
+7. Two-page methods summary citing IHME methods (verified citations only;
+   no team names).
+8. Standalone worked-example calculation document.
+9. Remove team names from the draft report.
