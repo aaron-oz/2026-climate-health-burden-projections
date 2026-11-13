@@ -7,22 +7,25 @@ status doc in this directory. Git history holds older versions of this file.
 
 * Active lines of work
 ** multimodel-summary
-- Latest status doc: [[file:2026-11-06a-multimodel-summary.org]] (2026-11-06)
-- State: Caspar's per-draw export passes review; all of it is pooled on the 24
-  climate models common to the four scenarios. A draft report
-  (docs/reports/multimodel-2026-11/) and slides for the team meeting of
-  2026-11-09 (docs/meetings/team-meeting-2026-11-09-slides.tex) are on main.
-- Next agent action: after the 2026-11-09 meeting, revise the report from the
-  team's answers to the questions on the slides.
-- Open Aaron todos: put the income-group questions to Charlie on 2026-11-09
-  (which vintage of the World Bank classification; Venezuela; Taiwan; Cook
-  Islands, Niue and Tokelau; groups fixed through 2050); decide whether
-  colleagues stay named if the report goes beyond the team.
+- Latest status doc: [[file:2026-11-13a-multimodel-summary.org]] (2026-11-13)
+- State: the 2026-11-09 team meeting is done; the revised deck is on main
+  (merge 6e95be0). The meeting's questions and asks are recorded verbatim in
+  docs/meetings/team-meeting-2026-11-09-notes.org and none is started.
+- Next agent action: propose to Aaron a plan and order for the meeting asks
+  (new income/label files, regions, age-standardized rates, historical anchor,
+  free-y age-sex figure, crossing-country patterns, 2-page methods summary,
+  worked-example doc) before building anything.
+- Open Aaron todos: confirm whether ~/data/wb-temp-attr-projections/wbg-shapes-loc-data
+  is Charlie's official classification; choose the age standard for
+  age-standardized rates when offered options; decide whether colleagues stay
+  named if the report goes beyond the team.
 - Still running: nothing.
 
 * Dormant or closed
 
 * All status docs (newest first)
+- [[file:2026-11-13a-multimodel-summary.org]] 2026-11-13 multimodel-summary:
+  slides revised from Aaron's review and merged; 2026-11-09 meeting asks recorded, not started.
 - [[file:2026-11-06a-multimodel-summary.org]] 2026-11-06 multimodel-summary:
   per-draw export reviewed, full pooling, income groups, draft report and
   slides for the 2026-11-09 meeting.

@@ -1,0 +1,206 @@
+#+TITLE: Status: multimodel-summary (2026-11-13)
+#+DATE: 2026-11-13
+
+* Read this first
+- This line of work turns the finished scenario runs (four climate scenarios
+  SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5; 204 countries; 2022-2050; heat and
+  cold deaths and years of life lost) into multi-model results: a draft report
+  (docs/reports/multimodel-2026-11/multimodel-summary.tex) and team slides.
+  SSP2-4.5 is the "reference scenario": IHME's mortality forecast is defined
+  under it and the other three are compared against it.
+- Where it stands: the 2026-11-09 team meeting happened. The deck was revised
+  from Aaron's 13 review comments before the meeting and is merged to main
+  (merge 6e95be0). The meeting produced a long list of questions and asks,
+  recorded verbatim in docs/meetings/team-meeting-2026-11-09-notes.org. None of
+  them has been started. Aaron asked that a clean session do that work.
+- Single most important next action: read
+  docs/meetings/team-meeting-2026-11-09-notes.org, then propose to Aaron a
+  plan and order for the asks (agent todos below give a suggested order and
+  what is already known), and get his go before building anything.
+- Previous status doc in this line of work: docs/status/2026-11-06a-multimodel-summary.org.
+- Session ended with: /handoff. Session notes: no compaction. The session ran
+  2026-11-09 (slide revision) and 2026-11-13 (handoff). Everything below was
+  verified by running code or reading files; no sub-agents were used.
+
+* What this session accomplished
+- Slides revised from Aaron's review (2026-11-09), verified by building and
+  viewing every page: docs/meetings/team-meeting-2026-11-09-slides.tex; built
+  PDF committed as docs/meetings/team-bod-meeting-2026-11-09-slides.pdf (Aaron's
+  name for the presented version; a rebuild writes
+  team-meeting-2026-11-09-slides.pdf, so rename after rebuilding). Commits
+  cc5bc7d and 6addd5d on branch worktree-slides-2026-11-09-revise, merged to
+  main in 6e95be0. Changes:
+  - every slide figure shows all four scenarios, SSP2-4.5 labeled
+    "(reference)"; the difference plot draws SSP2-4.5 at zero; maps stay
+    SSP2-4.5 only;
+  - income-group rates: one column per decade, heat and cold rows;
+  - age-sex: one panel per scenario, color = decade, symbol = sex (shared y
+    axis within heat and within cold; Aaron now wants free y, see todos);
+  - scenario table at 2041-2050 with levels, % change, draw-paired difference
+    and "models with more deaths" (how many of the 24 climate models have a
+    higher own-average under the scenario than under SSP2-4.5), all defined;
+  - variance slide: share of pooled variance between climate models, world
+    2041-2050 (heat 41-50%, cold 7-10%, heat + cold 2-4%); the rest is across
+    the 500 draws, each pairing one risk-curve draw with one IHME
+    mortality-forecast draw (not separable in this run);
+  - negative cold values for injuries explained (the minimum-risk temperature
+    is set by all 17 causes weighted by deaths; injury risk is lower on colder
+    days than at it); all nine injury causes negative, -118,826 deaths per year
+    in total, SSP2-4.5 2041-2050;
+  - range-includes-zero counts recomputed for SSP2-4.5 2041-2050 (strict
+    inequality): country x cause 60% of cells for heat, 29% for cold; country
+    totals at most 2 of 204 in any scenario and decade;
+  - heat-overtakes-cold table labeled as counts of countries, with a share
+    example (SSP2-4.5: India 85/15/0.3%, Iraq 33/36/32%, China 0/0/100% for
+    before 2022 / during 2022-2050 / after 2050);
+  - model-set sensitivity in % change; "at most 1 point" defined (largest is
+    SSP3-7.0 heat, +0.8% common-24 vs -0.2% all-available);
+  - SSP5-8.5 no longer singled out (Aaron: the field is moving away from it);
+  - Caspar's-machine requests on their own slide (question, current state,
+    cost).
+- output/report-multimodel-2026-11/make_figures.R changed accordingly (slide
+  versions saved at displayed size, base font 7 pt). The report's own figures
+  (docs/reports/multimodel-2026-11/figures/) were NOT regenerated, so they
+  still match the report text of 2026-11-06.
+- Meeting notes recorded: docs/meetings/team-meeting-2026-11-09-notes.org
+  (Aaron's notes and Charlie's 2026-11-10 email, verbatim).
+
+* Decisions made, and why
+- Aaron, 2026-11-09: "reference scenario" means SSP2-4.5; every figure shows
+  all four scenarios with SSP2-4.5 labeled. Maps stay SSP2-4.5 only.
+- Aaron, 2026-11-09: do not highlight SSP5-8.5.
+- Aaron, 2026-11-13: commit the PDF under the name
+  team-bod-meeting-2026-11-09-slides.pdf; merge the slide branch to main.
+- Team, 2026-11-09 (from Aaron's notes): shapefile labels and income groupings
+  to use are in /var/home/aoz/data/wb-temp-attr-projections/wbg-shapes-loc-data
+  (CLASS_2026_10_08.csv, WBG_adm0.csv, WBG_adm0.xlsx). This replaces the
+  agent-built mapping of 2026-11-06 (from the World Bank API list), pending a
+  comparison.
+- Charlie's vote: if only one kind of rate, age-standardized rates (ASRs) for
+  comparability.
+
+* Tried and ruled out
+- Nothing new this session.
+
+* Current state
+** Git
+- main at 6e95be0 plus the status commit (pushed). Holds the revised deck,
+  make_figures.R, and the meeting notes.
+- Branch worktree-slides-2026-11-09-revise: merged, pushed. Its worktree
+  .claude/worktrees/slides-2026-11-09-revise still exists (the session runs in
+  it); it can be removed once this session closes (ExitWorktree prompt, or
+  git worktree remove).
+- Untouched, not from this session: local branches samuel-verification-patches
+  and verification-depto-day (no upstream); in Aaron's main checkout, an
+  uncommitted edit to docs/meetings/team-meeting-2026-10-27-slides.tex.
+** Running or scheduled
+- Nothing.
+** Flagged before shutdown but not done
+- None.
+** Permissions Aaron granted this session
+- The merge of worktree-slides-2026-11-09-revise to main (done). Does not carry over.
+
+* Todos for the next agent
+Do not start building. First propose a plan to Aaron (self-contained, per the
+global CLAUDE.md "no homework" rule) covering the asks below, with order, cost
+and what needs Caspar. Suggested order and known facts:
+
+1. Answer the meeting's factual questions (cheap, unblocks other choices).
+   - Future populations: the report (docs/reports/multimodel-2026-11/
+     multimodel-summary.tex, Measures and Limitations sections) says population
+     is the mean of IHME's forecast draws (~/data/wb-temp-attr-projections/
+     gbd-forecasts/population.csv, GBD 2021 Foresight reference forecast, which
+     IHME defines under SSP2-4.5) and is held the same across all four climate
+     scenarios. Confirm in code (output/report-multimodel-2026-11/
+     build_tables.R reads pop_by_loc.rds) and find IHME's published assumption
+     source (Vollset et al. 2020 / GBD 2021 Foresight papers; cite only what
+     is verified).
+   - "why are low income countries lower burden than low-income?": probably
+     means low income lower than lower-middle income in the income-rate
+     figure. Check against the data (crude rates; age structure is the likely
+     reason, unverified) and ask Aaron if the question means something else.
+   - Age-structure tables for projections: population.csv has age-by-sex
+     population for every location and year (used for the age-slice rates),
+     so population age structure exists. What is missing for full ASRs is
+     deaths by all age groups: the export has only three age slices (under 5,
+     15-49, 65+) by sex, in 5-year blocks. Say this precisely when answering
+     "is that a strong vote for ASRs".
+   - Cost for Caspar of age-sex-cause splits by decade and scenario: the
+     export step (global-scripts/util_summarize_workflow_b.R) was benchmarked
+     at about 153 CPU-hours, about 10 hours on 16 workers (Caspar's benchmark,
+     2026-10-28); output size of a new breakdown unknown, estimate it on the
+     fixture (output/review-workflow-b-2026-10-26/test_draw_export/) before
+     quoting.
+2. Income groups and regions from the new files: compare
+   wbg-shapes-loc-data/CLASS_2026_10_08.csv and WBG_adm0 with
+   output/report-multimodel-2026-11/income_groups_by_location.csv (list every
+   country that changes group, Taiwan, Venezuela, Cook Islands, Niue,
+   Tokelau); add World Bank regions as groups (Charlie may still send the
+   official classification; check with Aaron whether these files are it).
+   Then re-run, in order, run_pooling.sh, build_tables.R, country_extras.R,
+   make_figures.R, make_report_tables.R (all in output/report-multimodel-2026-11/).
+   Trap: population.csv has aggregate age rows; use single-age rows only, or
+   world population comes to 51.8 billion.
+   - "LMIC combined category": already computed as unit "Low and middle
+     income" in the tidy tables (build_tables.R gmap); it is missing only from
+     figures and slides. Add it there.
+3. Age-standardized rates alongside crude rates, where the data allow (Aaron:
+   "can we make rate calculations both ways?"). Needs a standard population
+   (GBD world standard is the usual choice; ask Aaron) and deaths by age;
+   with only three slices this may be limited to those slices unless Caspar
+   exports all ages. Propose options with what each can and cannot support.
+4. Historical anchor: burden for a present/historical period to compare with
+   the projections (Charlie's first action item). Inputs to look at: the
+   earlier GBD comparison (review of 2026-09-24,
+   docs/reviews/ssp245-round2-review-2026-09-24.org: our heat 0.68-0.77 of GBD
+   2023 for 2022, cold 0.93-0.98) and data/gbd-comparison/ (untracked in the
+   main checkout). Propose which period and source before computing.
+5. Slides: remake the age-sex figure with a free y axis per panel (Aaron: low
+   ages look flat at about 0). In make_figures.R the fig_age block uses
+   facet_grid(M ~ S, scales = "free_y"); free per panel needs facet_wrap or
+   per-age panels. Rebuild the deck under xelatex (bittensor-ubuntu,
+   /usr/bin/biber not needed) and pdflatex (emacs-r).
+6. Heat-crossing countries: look for shared features of the three groups
+   (already crossed, crossing by 2050, after 2050) and the estimated order of
+   crossing. Data: ~/data/wb-temp-attr-projections/review/multimodel-2026-11/
+   extras/crossover_country.csv (median, 95% range and shares per country and
+   scenario). Candidate features: income group, region, latitude or mean
+   temperature, age structure. Exploratory; label findings as suggestive.
+7. A methods summary, 2 pages maximum, citing current IHME methods heavily.
+   Every citation must be verified (the report cites Burkart et al. and GBD
+   2021 Foresight by name only; full references still missing).
+8. A standalone worked-example calculation document with simple equations,
+   built from the examples already written (look in docs/methodology/, e.g.
+   methodology-walkthrough.tex, and output/trace_*.md in Aaron's main
+   checkout, untracked).
+9. Also from Charlie (not Aaron's to do, track only): Samuel reviews the
+   literature against our results; subnational disaggregation is a "next step
+   to consider", not yet asked for.
+
+* Todos for Aaron
+1. Confirm whether the files in /var/home/aoz/data/wb-temp-attr-projections/
+   wbg-shapes-loc-data are Charlie's official classification (his email says he
+   will send it). If not, the region work waits for his file; the income
+   regrouping can proceed. Blocks: final income and region tables.
+2. Choose the age standard for ASRs when the next agent proposes options
+   (GBD world standard population is the usual default). Blocks: ASR tables.
+3. Whether colleagues stay named if the report goes beyond the team
+   (carried over). Recommendation: keep for the team draft, remove if it goes
+   further. Blocks nothing now.
+
+* Documentation updated this session
+- docs/meetings/team-meeting-2026-11-09-slides.tex and
+  team-bod-meeting-2026-11-09-slides.pdf, figures in figures-2026-11-09/
+  (cc5bc7d, 6addd5d; merged 6e95be0).
+- output/report-multimodel-2026-11/make_figures.R (cc5bc7d).
+- docs/meetings/team-meeting-2026-11-09-notes.org: new, meeting notes and
+  asks (status commit).
+- Project memory: team-meeting-2026-11-09.md.
+
+* Key files
+- docs/meetings/team-meeting-2026-11-09-notes.org: what the team asked for.
+- docs/reports/multimodel-2026-11/multimodel-summary.tex: draft report.
+- docs/meetings/team-meeting-2026-11-09-slides.tex: deck.
+- output/report-multimodel-2026-11/: pooling, tables, figures (run order in todo 2).
+- ~/data/wb-temp-attr-projections/review/multimodel-2026-11/: pooled output (tidy_common.rds, extras/).
+- ~/data/wb-temp-attr-projections/wbg-shapes-loc-data/: team-designated labels and income groups.

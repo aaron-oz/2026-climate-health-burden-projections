@@ -1,0 +1,48 @@
+#+TITLE: Team meeting 2026-11-09: notes, decisions and asks
+#+DATE: 2026-11-13
+
+Deck presented: docs/meetings/team-bod-meeting-2026-11-09-slides.pdf (source
+docs/meetings/team-meeting-2026-11-09-slides.tex). Notes below are Aaron's
+(given 2026-11-13) and Charlie's follow-up email, copied verbatim apart from
+headings. Nothing here has been acted on yet; the work plan is in the latest
+multimodel-summary status doc (docs/status/STATUS.org points to it).
+
+* Aaron's notes
+
+** Decisions
+- appropriate shapefile labels and income groupings can be found in: /var/home/aoz/data/wb-temp-attr-projections/wbg-shapes-loc-data
+  (agent note, 2026-11-13: that directory holds CLASS_2026_10_08.csv,
+  WBG_adm0.csv and WBG_adm0.xlsx; not yet read or compared with the
+  mapping built 2026-11-06 in output/report-multimodel-2026-11/.)
+
+** Questions
+- what future popns are we using? are they fixed by gbd? do they vvary by sencario? where do these assumbtions come from?
+- why are low income countries lower burden than low-income?
+  (agent note: as written this compares low income with itself; probably
+  "lower than lower-middle income", as in the income-group rate figure. Ask
+  Aaron if unclear.)
+- how much work will it be for Caspar to make age-sex-cause splits by decade and scenario?
+- do we have age-structure tables for projections? if not, that's a strong vote for ASRs, right?
+
+** TODOs / asks
+- make some historical burden comparisons so we can anchor projections against present/historical
+- we should be using age-standardized rates from comparison purposes where we can. can we make rate calculations both ways? if we have to pick, ASRs for comparability is charlies vote
+- in addition to the individual income splits, we also should make a LMIC combined category
+- in the slides, we should remake age-sex splits with free y-axis since otherwise the low ages all look flat at ~0 or some other low value
+- can we find any similarities in the heat-crossing countries (those already crossed, those expected to cross by 2050, those expected to cross after) and/or order in which we estimate they cross?
+- we need to make a 2 page (max!) methods summary doc that relies heavily on citing current IHME methods.
+- since we will be making only a 2page methods doc, we should separately make a detailed example calculation doc that works through the examples we've already written. this can now be standalone from the methods doc but can/should have simple equations to make it standalone and followable
+
+* Charlie's follow-up email (2026-11-10)
+
+Action items:
+- Add historic time period for comparison to the deck and results (Aaron)
+- Review the literature and compare results to what other sources are reporting (Samuel)
+- Add the WBG group regions (Aaron, Charlie to send official classification)
+- Summarize age-sex-cause-scenario decadal results (Aaron with Caspar)
+
+Next steps to consider:
+- Age standardization to compare across countries / income levels better
+- Disaggregation of results to subnational units
+
+Charlie will send a follow-up meeting for the following week.
