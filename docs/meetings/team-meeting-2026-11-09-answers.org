@@ -1,0 +1,115 @@
+#+TITLE: Answers to the 2026-11-09 meeting's questions
+#+DATE: 2026-11-13
+
+Answers to the four questions in Aaron's notes of the 2026-11-09 team meeting
+(docs/meetings/team-meeting-2026-11-09-notes.org). Each says what was checked
+and how. Numbers are from the pooled output of 2026-11-06 (24 common climate
+models x 500 draws, SSP2-4.5), mapping of 2026-11-06; the income regrouping of
+2026-11-13 leaves the low and lower-middle income groups unchanged, so the
+numbers in question 2 stand.
+
+* 1. What future populations do we use, are they fixed by GBD, do they vary by scenario, and where do the assumptions come from?
+
+Two populations enter, in different roles.
+
+- National population by age and sex. Source:
+  =~/data/wb-temp-attr-projections/gbd-forecasts/population.csv= (6.9 GB,
+  file dated 2026-06-02, IHME's GBD 2021 forecast download that came with the
+  cause forecasts; 500 draws per location, age group, sex and year,
+  2021-2050).
+  It does two jobs:
+  - It turns IHME's forecast death rates into death counts. For each location,
+    cause, age, sex and year, deaths = mean over draws of (rate draw x
+    population draw) (global-scripts/util_convert_ihme_forecast.R, header).
+  - It is the denominator of every rate in the report: the mean over the 500
+    draws, averaged over a decade's years
+    (output/report-multimodel-2026-11/build_tables.R, which reads it via
+    pop_by_loc.rds).
+  It is the same in all four climate scenarios. The scenarios differ only in
+  temperature; IHME's population and mortality forecasts are held fixed
+  (Workflow B scales attributable deaths by scenario, it does not touch the
+  population). So yes: fixed by GBD, and not varying by scenario.
+- Gridded population within each country. Source: Gridded Population of the
+  World v4 rev 11 (GPW), as served by the World Bank Climate Change Knowledge
+  Portal at 0.25 degrees, in 20-year averages (2020-2039, 2040-2059), one file
+  per SSP (global-scripts/util_run_cckp_pipeline.R, POP_DATASET and
+  year_to_pop_bucket). It only weights pixels within a country (where people
+  live relative to the temperature), never totals. This one does differ by
+  scenario.
+
+Where the national assumptions come from: IHME's GBD 2021 forecasting work,
+whose reference scenario IHME describes as roughly SSP2-4.5 (our methodology
+walkthrough, docs/methodology/methodology-walkthrough.tex, "The unscale/rescale
+problem"). Citation still to be verified before it goes into a document: the
+population forecast is published in the GBD 2021 fertility and forecasting
+papers (Lancet, 2024) and its method descends from Vollset et al. (Lancet,
+2020). We have not read IHME's own download metadata to confirm which release
+the file is; the file itself does not say.
+
+* 2. Why do low-income countries have lower rates than lower-middle-income countries?
+
+(Aaron, 2026-11-13: the question is low income lower than lower-middle income.)
+
+Crude rates, SSP2-4.5, deaths per 100,000 people per year:
+
+| Decade    | Heat, low | Heat, lower middle | Cold, low | Cold, lower middle |
+|-----------+-----------+--------------------+-----------+--------------------|
+| 2022-2030 |      4.55 |               7.97 |      5.66 |               6.75 |
+| 2041-2050 |      5.16 |              10.74 |      5.41 |               7.48 |
+
+Mostly age structure, as far as our three age groups can show.
+
+- People aged 65 and over are 4.8% of the population in low-income countries
+  in 2041-2050, against 10.6% in lower-middle income (3.2% and 6.3% in
+  2022-2030), and 65+ is where most temperature deaths are (48% of heat and 80%
+  of cold deaths in low income, 67% and 82% in lower middle, 2041-2050).
+- A standard split of the gap (Kitagawa: average of the two one-sided
+  counterfactuals), done on the three age groups we hold (under 5, 15-49, 65+;
+  together 78 to 83% of each group's deaths):
+  - Heat: age structure accounts for 64% of the gap in 2022-2030 and 71% in
+    2041-2050. The rest is that heat death rates within age are lower in low
+    income: at 65+, 50.9 against 67.7 per 100,000 in 2041-2050 (under 5 is the
+    other way: 3.5 against 2.3).
+  - Cold: age structure accounts for more than the whole gap (258% in
+    2041-2050). At the same age structure, low-income countries would have the
+    higher cold rate: at 65+, 89.9 against 57.4 per 100,000 in 2041-2050.
+- Limits: the split ignores ages 5-14 and 50-64 (no deaths by those ages in
+  the export), uses means without uncertainty, and is on the 2026-11-06
+  pooled output. Age-standardized rates from the new summary run will answer
+  this properly. Why low-income heat rates within age are lower (climate,
+  cause mix, IHME's baseline death rates) is not examined.
+
+* 3. Do we have age-structure tables for projections? If not, is that a strong vote for age-standardized rates?
+
+- Population: yes. population.csv has every 5-year age group (Under 5, 5 to
+  9, ..., 95 plus) by sex for every location and year 2021-2050, which is
+  what an age-standardized rate needs on the population side.
+- Deaths: not here. The per-draw export we hold has deaths in three age
+  groups only (under 5, 15-49, 65+, by sex). The Workflow B files on the
+  production machine have every age group (0-4, 5-9, ..., 75-79, 80+), cause,
+  sex and draw, so the age detail exists; it was not exported.
+- So the age structure exists on both sides; what is missing is the export.
+  Aaron's ruling (2026-11-13): age-standardized rates are computed on the
+  production machine within the new summary run, not from a data dump.
+  Crude and age-standardized rates can both be reported. Standard population:
+  GBD world standard or WHO 2000-2025, Aaron asking Charlie; both will be
+  computed. Our age groups end at 80+, so a standard's older groups are
+  summed into 80+.
+
+* 4. How much work is it for Caspar to make age-sex-cause splits by decade and scenario?
+
+- Machine time: the last export step read all Workflow B files once and was
+  benchmarked on the production machine at about 153 CPU-hours, about 10
+  hours on 16 workers (34 GB memory) or 5 hours on 32 (reported 2026-10-27,
+  3 sample countries; about 52 GB of input per country, 51 to 53 seconds per
+  GB). A new run has to read the same files again, so expect at least that.
+  The extra cost of the finer split and of pooling on that machine is not
+  measured yet; it will be measured on the test fixture
+  (output/review-workflow-b-2026-10-26/test_draw_export/) before the request
+  goes out.
+- His time: one command to start, if the new code works as delivered, plus
+  sending back summary tables (size to be estimated with the code).
+- Our time: writing and testing that code is the larger part. Its scope
+  (whether the joint age x sex x cause split is wanted for every country or
+  only for income groups, regions and the world) sets both the code's size
+  and the run's memory; put to Aaron as a decision on 2026-11-13.
