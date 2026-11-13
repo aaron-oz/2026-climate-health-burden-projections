@@ -33,9 +33,15 @@ Two populations enter, in different roles.
   World v4 rev 11 (GPW), as served by the World Bank Climate Change Knowledge
   Portal at 0.25 degrees, in 20-year averages (2020-2039, 2040-2059), one file
   per SSP (global-scripts/util_run_cckp_pipeline.R, POP_DATASET and
-  year_to_pop_bucket). It only weights pixels within a country (where people
-  live relative to the temperature), never totals. This one does differ by
-  scenario.
+  year_to_pop_bucket). It only weights pixels within a country: pixel weight
+  = pixel population / the country's gridded total, so only where people
+  live relative to the temperature matters, never the totals. This one does
+  differ by scenario: each scenario's run spreads the same IHME population
+  over the country according to that SSP's spatial pattern. How much the
+  weights differ, and where the files come from:
+  docs/reviews/gridded-pop-by-scenario-2026-11-13.org (median location: under
+  2% of people placed differently; a few countries, led by Tajikistan and
+  Kyrgyzstan, differ more).
 
 Where the national assumptions come from: IHME's GBD 2021 forecasting work,
 whose reference scenario IHME describes as roughly SSP2-4.5 (our methodology
