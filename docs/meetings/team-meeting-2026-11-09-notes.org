@@ -103,6 +103,10 @@ Charlie will send a follow-up meeting for the following week.
 6. Heat-crossing countries: shared features and order of crossing.
    Exploratory.
 7. Two-page methods summary citing IHME methods (verified citations only;
-   no team names).
+   no team names). Must state the two populations (Aaron, 2026-11-16): IHME's
+   national population by age and sex sets deaths and rate denominators and
+   is the same in every scenario; each scenario's CCKP gridded population map
+   only weights grid cells within a country (see
+   docs/reviews/gridded-pop-by-scenario-2026-11-13.org).
 8. Standalone worked-example calculation document.
 9. Remove team names from the draft report.
