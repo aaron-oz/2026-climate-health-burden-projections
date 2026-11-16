@@ -68,12 +68,17 @@ later (open question 2 below).
   sex; by cause; by cause and sex; by cause and age group; by cause, age
   group and sex (the full split).
 - Age groups: the 17 five-year groups (0-4, 5-9, ..., 75-79, 80+) and broad
-  groups: under 5, 5-14, 15-49, 50-69, 70+, and 65+.
-- Causes: the 17 causes and groups of them: cardiovascular (ischemic heart
-  disease, stroke, hypertensive heart disease, cardiomyopathy), respiratory
-  (COPD, lower respiratory infections), diabetes and kidney disease, and
-  injuries (the nine injury causes); also all causes without "forces of
-  nature" (inj_disaster), for the Haiti and Honduras asterisk.
+  groups: under 5, 15-49, 15-64 (working age, for valuing lost
+  productivity), 50-69, and 65+ (Aaron, 2026-11-16).
+- Causes: the 17 causes and these groups (GBD-matching, 2026-11-16):
+  cardiovascular (cvd_ihd, cvd_stroke, cvd_htn, cvd_cmp); diabetes and kidney
+  disease (diabetes, ckd); injuries (all nine inj_*), split as GBD does into
+  transport (inj_trans_road, inj_trans_other), unintentional (inj_mech,
+  inj_drowning, inj_animal, inj_disaster, inj_othunintent), and self-harm and
+  violence (inj_suicide, inj_homicide); all non-injury causes (8); all causes
+  except forces of nature (inj_disaster), for the Haiti and Honduras
+  asterisk. COPD and lower respiratory infections stay single (not a GBD
+  group together).
 
 ** Age-standardized rates
 - Deaths and YLLs per 100,000, heat, cold, heat + cold.
@@ -110,10 +115,17 @@ income, regions, and country totals; decades; no age, sex or cause split):
    later. Options:
    - keep the production machine's scaled scenario files as they are (about
      52 GB per country in the 2026-10-27 benchmark, so roughly 10 TB);
-   - keep a per-draw copy of every cell (country, year, scenario, model,
-     draw, age, sex, cause): about 2.6 TB at 4 bytes per value for deaths and
-     YLLs, about 1.3 TB for deaths only (YLLs can be recomputed from deaths
-     and the life tables);
+   - keep a compact copy, written in the same pass: heat and cold PAFs and
+     scale factors per (country, year, model, scenario, cause, draw), plus
+     IHME deaths per (country, year, cause, age, sex, draw) and population.
+     Roughly 50 to 70 GB at 4 bytes per value (arithmetic, not measured).
+     The full output rebuilds exactly as IHME deaths x scale factor x PAF
+     (util_workflow_b_ratio.R lines 100-166: PAF and scale factor are per
+     cause and draw, broadcast across age and sex; scale factor =
+     (1 - PAF_SSP2-4.5) / (1 - PAF_scenario)). Rebuild error 0 on the four
+     local Colombia files; to be checked on a sample of production files in
+     the same pass before anything is deleted. Assumes national (not
+     subnational) production runs, the default;
    - keep nothing beyond these tables.
 3. For the valuation: are the values per death or per life-year (by country
    and year) and the discount rate already settled? If so, monetary totals
