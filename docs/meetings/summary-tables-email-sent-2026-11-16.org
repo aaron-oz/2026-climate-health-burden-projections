@@ -1,0 +1,55 @@
+#+TITLE: Email sent to the team: summary tables for the final pass (as sent)
+#+DATE: 2026-11-16
+
+Sent by Aaron on 2026-11-16, addressed "Hi all" (Charlie and Samuel at
+least). The text below is exactly as sent, typos included. The working list
+behind it is docs/meetings/summary-tables-request-2026-11-16.org, which still
+needs syncing to this version once the replies are in.
+
+Two places where the sent text differs from what we know (for our own
+reference; nothing needs correcting unless someone asks):
+- "The largest table, every country by year, age, sex and cause, comes to
+  roughly 13 GB": the 13 GB is for single years; with the decades plus
+  2022-2050 listed under "When", the largest table is roughly 2 GB
+  (arithmetic, not measured).
+- "I could also go back and download the 2000": the release that matches our
+  method (Burkart et al. 2021 companion data, GBD 2019 round) has only 1990,
+  2010 and 2019. A 2000 value would come from the newer GBD 2023 round, which
+  revised heat upward.
+
+#+begin_example
+Hi all -
+I've been working through my notes from last meeting and I found have some more questions about what results we want to keep and/or pre-process into summaries. My hope is that we can pin down everything and then get Caspar to do a single pass summarizing the existing output.
+The reason to do it all at once is two-fold:
+- All the draw files together are quite large.
+- Means can always be added up later from summary tables, but uncertainty ranges cannot due to correlation between the quantities, and ignoring this can make a pretty big difference. For example, for low- and middle-income heat deaths under SSP2-4.5 in 2041-2050, the correct 95% range is 456,000 to 992,000 deaths per year. Adding up the country ranges gives 390,000 to 1,102,000, and treating countries as independent gives 542,000 to 798,000.
+Together, this means that any totals we want to show/share should be pre-computed. The same goes for monetary values: a valued total (deaths or life-years times a value per country and year, possibly discounted) is a sum across countries and years, so its uncertainty range has to be computed from the draws too. If the values per death or life-year and the discount rate are settled now, we can include valued totals in this run. If not, keeping the draws is the only way to put a valid range on them later. We then also need to decide if we want to keep the raw draws files somewhere for later additional calculations.
+Here is my current list of summaries I plan to run. Please tell me what should be added.
+For each of the four scenarios (SSP2-4.5 as reference), pooled over the 24 climate models and 500 draws:
+- Deaths and years of life lost, each for heat, cold, and heat plus cold
+- Mean, and 95%, 80% and 66% uncertainty ranges
+- For the three non-ref scenarios, the difference from SSP2-4.5 (mean and ranges), that is, the burden each scenario adds or avoids
+- Population and IHME's forecast deaths, for rates and context
+Where:
+- Each of the 204 countries, the world, the four World Bank income groups, low and middle income combined, and the seven World Bank regions
+When:
+- the decades 2022-2030, 2031-2040 and 2041-2050, and 2022-2050 as a whole. Do we want annual or 5 year combos too?
+Breakdowns, each as its own table for every place and period:
+- Totals; by sex; by age; by age and sex; by cause; by cause and sex; by cause and age; and by cause, age and sex together
+- Ages: 17 five-year groups (0-4 up to 80+), plus under 5, 15-49, 15-64 (working age, for valuing lost productivity), 50-69, and 65+
+- Causes: the 17 causes, plus these groups: cardiovascular (ischemic heart disease, stroke, hypertensive heart disease, cardiomyopathy); diabetes and kidney disease, injuries (all nine injury causes),  and all causes except forces of nature (for Haiti and Honduras).
+Age-standardized rates:
+- Deaths and years of life lost, heat, cold, and heat plus cold, for every place and period, by sex and by cause group
+- Under both the GBD world standard population and the WHO 2000-2025 standard, so we can report whichever we choose (unless Samuel want to pick one now, which would be fine with me too).
+The largest table, every country by year, age, sex and cause, comes to roughly 13 GB of text. The rest is much smaller, so size is not a constraint. I'll also compute a few quantities for our own checks, at country and group level by decade.
+Two questions:
+1. What else would you want? Any place, period, breakdown, measure or statistic not listed above would later have correct means but no valid uncertainty range (unless we recalculate from the raw draws).
+2. Should we keep the full output for summaries we haven't thought of yet? Here are the options as I see them:
+a. Keep Caspar's full scenario output as it is, roughly 10 TB.supply
+b. Keep a compact copy of the draw results, roughly 50 to 70 GB by my estimate, which Caspar can write in the same pass and from which the full output can be rebuilt exactly with nothing else needed. If we go this route, I'll supply scripts alongside the compact draws objects with code needed to recreate the full draws.
+c. Keep only the tables above.
+Either of the first two options (2a or 2b) would let us compute any new total, including financially valued ones, with a valid range later. I don't know where/who would be able to store that, or really any of this, but I'll leave that to Charlie and/or Caspar.
+Finally, for the historical comparison, I have GBD's published estimates for 1990, 2010 and 2019 from the round that matches our method (where our 2022 numbers agree with theirs). I could also go back and download the 2000 if that's useful. Let me know.
+Thanks,
+Aaron
+#+end_example
