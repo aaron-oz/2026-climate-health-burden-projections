@@ -12,6 +12,10 @@ Aaron's rulings (2026-11-16):
   understanding go on a separate list; the team is asked whether anyone wants
   them, and they are not needed at full resolution.
 - The gridded-population test is dropped (it was for Aaron's understanding).
+- No model-set sensitivity tables: the check across model sets (common 24,
+  paired, all available) is already done and can be reported from the
+  2026-11-06 pooling (largest change at world level, 2041-2050: SSP3-7.0 heat
+  ratio 1.008 common vs 0.998 all available).
 
 Why everything has to be listed now: from a summary table, means of any
 aggregate can be added up exactly later, but uncertainty ranges cannot,
@@ -96,8 +100,6 @@ income, regions, and country totals; decades; no age, sex or cause split):
   draw), and the share of model-draw pairs with heat above cold per decade.
 - Population-weighted annual mean temperature per country, year, scenario and
   model.
-- Totals under the two other model sets (models with both the scenario and
-  SSP2-4.5; all available models), for the sensitivity check.
 
 * Open questions for the team
 1. Any other final quantity: a unit, period, breakdown, measure or statistic
