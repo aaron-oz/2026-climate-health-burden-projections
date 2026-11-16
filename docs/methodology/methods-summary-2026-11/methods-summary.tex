@@ -1,0 +1,65 @@
+% methods-summary.tex -- two-page summary of methods for the temperature-attributable
+% mortality projections, 2022-2050, written November 2026.
+% Build: plain pdflatex (emacs, emacs-r container) or xelatex (bittensor-ubuntu), run
+% twice. ozreport.cls, ozcolors.sty and ozfonts.sty in this directory are symlinks to
+% ~/code/oz-templates/, and the logo is set by absolute path below, so no TEXINPUTS
+% setting is needed. References are typed in the thebibliography environment, so no
+% biber step is needed.
+% Every reference with a DOI was checked against its doi.org record on 2026-11-16; the
+% World Bank classification file, UN WPP 2024 and the GBD 2023 Results tool are cited by
+% publisher and title (the last as IHME's suggested citation in the download).
+\documentclass[11pt]{ozreport}
+\usepackage{multicol}
+\renewcommand{\ozdocmark}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
+
+\doctype{Methods Summary}
+\shorttitle{Temperature-Attributable Mortality, 2022--2050}
+\title{Mortality Attributable to Non-Optimal Temperature Under Four Climate Scenarios, 2022--2050: Summary of Methods}
+\author{Aaron Osgood-Zimmerman \quad\textperiodcentered\quad OZ Labs, for the World Bank}
+\date{November 16, 2026}
+
+\begin{document}
+\maketitle
+
+\section{Attributable deaths}
+
+We estimate deaths and years of life lost attributable to heat and to cold in 204 countries and territories, following the Global Burden of Disease (GBD) study of the Institute for Health Metrics and Evaluation (IHME)~\cite{burkart2021,gbd2021rf}. GBD links 17 causes of death to temperature: four cardiovascular causes, chronic obstructive pulmonary disease, lower respiratory infections, diabetes, chronic kidney disease, and nine injury causes. For each cause, Burkart et al.\ estimated the relative risk (RR) of death as a function of a day's mean temperature, separately for each temperature zone, defined by the annual mean temperature of the place~\cite{burkart2021}. We use these curves unchanged, setting the zone of each grid cell (6 to 28\,\textdegree C) each year from that year's mean temperature.
+
+Risk is measured relative to the theoretical minimum risk exposure level (TMREL), the daily temperature at which the average RR across the 17 causes, weighted by the country's deaths from each cause, is lowest. We derive the TMREL for each draw of the curves and each year as GBD defines it~\cite{burkart2021}, and days warmer than the TMREL count toward heat and colder days toward cold. The population attributable fraction (PAF) of a cause, its share of deaths attributable to heat or to cold, is the average over grid-cell days of $(\mathrm{RR}-1)/\mathrm{RR}$, weighted by each cell's share of the country's population, with RR taken relative to the TMREL (a day with RR below 1 contributes $\mathrm{RR}-1$~\cite{burkart2021}).
+
+\section{Temperature and population}
+
+Daily mean temperature comes from the World Bank Climate Change Knowledge Portal (CCKP), which provides Coupled Model Intercomparison Project Phase 6 (CMIP6) projections downscaled and bias-corrected to a 0.25-degree grid~\cite{cckp}, for the 24 climate models that provide all four Shared Socioeconomic Pathway (SSP) scenarios we use (SSP1-2.6, SSP2-4.5, SSP3-7.0 and SSP5-8.5).
+
+Two populations enter the calculation, in different roles. Within a country, grid cells are weighted by the gridded population counts that CCKP publishes for each SSP as 20-year averages, based on the Gridded Population of the World, version 4~\cite{gpw4}. These maps follow each SSP's pattern of where people live, so they differ by scenario, but they set only the within-country weights, and the number of people comes from IHME's national forecast, the same in every scenario.
+
+\section{Mortality forecasts and the four scenarios}
+
+Deaths are IHME's GBD 2021 reference forecasts of cause-specific death rates times IHME's population forecast, by age, sex and year~\cite{gbd2021fc}. IHME's reference forecast uses SSP2-4.5 for climate~\cite{gbd2021fc}, and we treat it as our SSP2-4.5 scenario, so population and the drivers of mortality other than temperature are the same in all four scenarios. That forecast already contains the effect of SSP2-4.5 temperature for the causes that correspond to 13 of our 17, through a scalar $1/(1-\mathrm{PAF})$ on the underlying death rate~\cite{gbd2021fc}. For another scenario $X$ we replace that effect with the scenario's own, using PAFs from our pipeline for both scenarios with the same climate model and draw: $m_X = m_{\mathrm{IHME}}\,(1 - \mathrm{PAF}_{\mathrm{SSP2\text{-}4.5}})/(1 - \mathrm{PAF}_X)$, where $m_{\mathrm{IHME}}$ is IHME's forecast deaths for one cause, age group, sex, year and draw, and each PAF is the combined heat and cold fraction for that cause. Attributable deaths under $X$ are then $m_X$ times the heat or cold PAF of $X$. The ratio is 1 for SSP2-4.5 itself and for the four causes IHME does not scale (cardiomyopathy and myocarditis, animal contact, forces of nature, and other unintentional injuries). Because both PAFs come from our pipeline, systematic differences from IHME's temperature inputs largely cancel.
+
+\section{Uncertainty}
+
+Draw $d$ pairs the $d$-th draw of the exposure-response curves, with its own TMREL, with the $d$-th draw of IHME's mortality forecast, and the same index is used in every country, year, cause and scenario, so sums and scenario differences are formed draw by draw within each climate model. Pooling the 500 draws of each of the 24 models, with equal weight per model, gives 12,000 values per quantity, and we report the mean and the 95\%, 80\% and 66\% intervals of that pool. The intervals exclude uncertainty in the downscaling and bias correction of temperature, the gridded population and the choice of curves, and the fixed curves make no allowance for adaptation. Because several of the 24 models share code, we do not read the intervals as strict probabilities.
+
+\section{Measures and agreement with GBD}
+
+Years of life lost (YLLs) are attributable deaths times the remaining life expectancy at the start of each 5-year age group (80 for 80+) in the country's life table from the United Nations World Population Prospects 2024~\cite{wpp2024}, so they are not comparable with GBD's, which use a single reference life table. Rates use the mean of IHME's population draws, and countries are grouped by World Bank income group and region~\cite{wbclass}.
+
+Our 2022 total under SSP2-4.5 was 1.07 times the 2019 estimate of the GBD round whose method we implement~\cite{ihme2021temp}, with 182 of 204 countries inside its 95\% interval. Against the later GBD 2023 estimates for 2022~\cite{gbd2023results}, our heat and cold deaths were 0.68 to 0.77 and 0.93 to 0.98 times GBD's, consistent with GBD's upward revisions between rounds in hot countries.
+
+\begin{multicols}{2}
+\begin{thebibliography}{10}
+\scriptsize\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}
+\bibitem{burkart2021} Burkart KG, Brauer M, Aravkin AY, et al. Estimating the cause-specific relative risks of non-optimal temperature on daily mortality: a two-part modelling approach applied to the Global Burden of Disease Study. \emph{Lancet} 2021;398:685--697. doi:10.1016/S0140-6736(21)01700-1.
+\bibitem{gbd2021rf} GBD 2021 Risk Factors Collaborators. Global burden and strength of evidence for 88 risk factors in 204 countries and 811 subnational locations, 1990--2021. \emph{Lancet} 2024;403:2162--2203. doi:10.1016/S0140-6736(24)00933-4.
+\bibitem{gbd2021fc} GBD 2021 Forecasting Collaborators. Burden of disease scenarios for 204 countries and territories, 2022--2050. \emph{Lancet} 2024;403:2204--2256. doi:10.1016/S0140-6736(24)00685-8.
+\bibitem{cckp} World Bank. Climate Change Knowledge Portal: Projected Climate Data, CMIP6 0.25-Degree. doi:10.57966/b54h-7s87.
+\bibitem{gpw4} CIESIN, Columbia University. Gridded Population of the World, Version 4 (GPWv4): Population Count, Revision 11. NASA SEDAC; 2018. doi:10.7927/H4JW8BX5.
+\bibitem{wpp2024} UN DESA Population Division. World Population Prospects 2024. New York: United Nations; 2024.
+\bibitem{wbclass} World Bank. Country and lending groups, classification file of October 8, 2026.
+\bibitem{ihme2021temp} IHME. Mortality Burden Attributable to Non-Optimal Temperature 1990--2019. IHME; 2021. doi:10.6069/7QWW-PF74.
+\bibitem{gbd2023results} GBD Collaborative Network. GBD 2023 Results. IHME; 2024.
+\end{thebibliography}
+\end{multicols}
+
+\end{document}
