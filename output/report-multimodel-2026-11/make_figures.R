@@ -103,18 +103,29 @@ save_both("fig_causes", function(p) {
 }, 6.6, 5.2, 3.3, 2.45)
 
 # --- Figure: rates by income group, every scenario, one column per decade ---
-d5 <- tot[unit %in% INC & measure %in% c("deaths_heat", "deaths_cold")]
-for (v in c("mean", "lower95", "upper95", "lower80", "upper80", "lower66", "upper66")) set(d5, j = v, value = d5[[paste0("rate_", v)]])
-d5[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), I = factor(unit, INC), S = factor(SC[scenario], SC), period = factor(period, DEC3))]
-save_both("fig_income_rates", function(p) {
-  pos <- position_dodge(width = 0.72)
-  ggplot(d5, aes(I, mean, color = S, shape = S)) + nested(pos, sz = 0.8) + geom_point(position = pos, size = 1.5, fill = p$bg) +
-    facet_grid(M ~ period, scales = "free_y", switch = "y") +
-    scale_y_continuous(limits = c(0, NA)) + scale_x_discrete(labels = function(v) sub(" middle", "\nmiddle", gsub(" income", "", v))) +
-    scale_color_manual(values = p$sc) + scale_shape_manual(values = c(21, 16, 24, 17)) +
-    labs(x = NULL, y = "Deaths per 100,000 people per year") + mk_theme(p) +
-    theme(strip.placement = "outside", axis.text.x = element_text(size = rel(0.8)))
-}, 6.6, 4.2, 5.5, 2.15)
+# the combined low- and middle-income group sits between high income and its three parts
+# (team, 2026-11-09)
+INC5 <- c("High income", "Low and middle income", "Upper middle income", "Lower middle income", "Low income")
+rate_plot <- function(units, lab, xsize = 0.8) {
+  d <- tot[unit %in% units & measure %in% c("deaths_heat", "deaths_cold")]
+  for (v in c("mean", "lower95", "upper95", "lower80", "upper80", "lower66", "upper66")) set(d, j = v, value = d[[paste0("rate_", v)]])
+  d[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), I = factor(unit, units), S = factor(SC[scenario], SC), period = factor(period, DEC3))]
+  function(p) {
+    pos <- position_dodge(width = 0.72)
+    ggplot(d, aes(I, mean, color = S, shape = S)) + nested(pos, sz = 0.8) + geom_point(position = pos, size = 1.5, fill = p$bg) +
+      facet_grid(M ~ period, scales = "free_y", switch = "y") +
+      scale_y_continuous(limits = c(0, NA)) + scale_x_discrete(labels = lab) +
+      scale_color_manual(values = p$sc) + scale_shape_manual(values = c(21, 16, 24, 17)) +
+      labs(x = NULL, y = "Deaths per 100,000 people per year") + mk_theme(p) +
+      theme(strip.placement = "outside", axis.text.x = element_text(size = rel(xsize)))
+  }
+}
+save_both("fig_income_rates", rate_plot(INC5, function(v) sub("Low and\nmiddle", "Low and\nmiddle\n(all)", sub(" middle", "\nmiddle", gsub(" income", "", v)), fixed = TRUE)),
+          6.6, 4.2, 5.5, 2.25)
+# World Bank regions (CLASS_2026_10_08.csv), names wrapped on the axis
+REG <- c("East Asia & Pacific" = "E. Asia\nPacific", "Europe & Central Asia" = "Europe\nC. Asia", "Latin America & Caribbean" = "Latin Am.\nCarib.",
+         "Middle East, North Africa, Afghanistan & Pakistan" = "MENA,\nAfg., Pak.", "North America" = "North\nAmerica", "South Asia" = "South\nAsia", "Sub-Saharan Africa" = "Sub-Sah.\nAfrica")
+if (all(names(REG) %in% tot$unit)) save_both("fig_region_rates", rate_plot(names(REG), function(v) REG[v], xsize = 0.62), 6.6, 4.2, 5.5, 2.25)
 
 # --- Figure: age and sex, every scenario and decade: color = decade, shape = sex ---
 d6 <- age[unit == "World" & measure %in% c("deaths_heat", "deaths_cold")]
@@ -124,12 +135,17 @@ d6[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), S = factor(SC[scenario], SC), pe
 save_both("fig_age", function(p) {
   ramp <- if (p$family == "serif") c("#B4B4C8", "#6E6E88", "#14141F") else c("#5A5A78", "#9C9CBC", "#F0F0F8")
   pos <- position_dodge(width = 0.8)
-  ggplot(d6, aes(A, mean, color = period, shape = Sex, group = interaction(period, Sex, lex.order = TRUE))) + geom_hline(yintercept = 0, color = p$zero, linewidth = 0.4) +
+  # one panel per (heat or cold) x age group, each with its own y axis (Aaron, 2026-11-09:
+  # with a shared axis the under-5 and 15-49 values sat flat near zero); scenarios on x
+  ggplot(d6, aes(S, mean, color = period, shape = Sex, group = interaction(period, Sex, lex.order = TRUE))) + geom_hline(yintercept = 0, color = p$zero, linewidth = 0.4) +
     nested(pos, sz = 0.7) + geom_point(position = pos, size = 1.4, fill = p$bg) +
-    facet_grid(M ~ S, scales = "free_y", switch = "y") +
-    scale_y_continuous(labels = fmt_k) + scale_color_manual(values = ramp) + scale_shape_manual(values = c(Male = 16, Female = 24)) +
-    labs(x = NULL, y = "Deaths per year (thousands)") + mk_theme(p) + theme(strip.placement = "outside")
-}, 6.6, 4.0, 5.5, 2.1)
+    facet_wrap(M ~ A, scales = "free_y", nrow = 2, labeller = labeller(.multi_line = FALSE)) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, big.mark = ",")) + scale_x_discrete(labels = function(v) sub(" (reference)", "\n(ref.)", v, fixed = TRUE)) +
+    scale_color_manual(values = ramp) + scale_shape_manual(values = c(Male = 16, Female = 24)) +
+    guides(shape = guide_legend(override.aes = list(color = p$ink))) +
+    labs(x = NULL, y = "Deaths per year (thousands)", color = "Decade", shape = NULL) + mk_theme(p) +
+    theme(axis.text.x = element_text(size = rel(0.72)))
+}, 6.6, 4.4, 5.5, 2.6)
 
 # --- Figure: maps of rates ---
 s <- st_read(SHP, quiet = TRUE)

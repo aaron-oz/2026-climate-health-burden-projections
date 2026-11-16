@@ -1,0 +1,136 @@
+#+TITLE: Summary tables for the final run on the production machine
+#+DATE: 2026-11-16
+
+Aaron's rulings (2026-11-16):
+- Collect every summary the team can think of and compute each as a complete
+  table in one run, before the per-draw output is deleted. Cost accepted
+  without measuring (the run re-reads all scenario output, about 153
+  CPU-hours last time, plus an unmeasured but tolerable amount for the
+  interval calculations).
+- The goal is tables of final publishable numbers from which the monetary
+  value of the burden can be calculated. Quantities for our own vetting and
+  understanding go on a separate list; the team is asked whether anyone wants
+  them, and they are not needed at full resolution.
+- The gridded-population test is dropped (it was for Aaron's understanding).
+- No model-set sensitivity tables: the check across model sets (common 24,
+  paired, all available) is already done and can be reported from the
+  2026-11-06 pooling (largest change at world level, 2041-2050: SSP3-7.0 heat
+  ratio 1.008 common vs 0.998 all available).
+
+Why everything has to be listed now: from a summary table, means of any
+aggregate can be added up exactly later, but uncertainty ranges cannot,
+because cells share draws (draw d uses the same risk-curve and mortality draw
+in every country, year, cause and age). Checked on the 2026-11-06 output:
+low and middle income heat deaths, SSP2-4.5, 2041-2050, true 95% range
+455,997 to 992,219 per year; summing the countries' bounds gives 389,739 to
+1,102,029, and treating countries as independent gives 542,291 to 798,197.
+Crude rates are the exception: population is held at the mean of IHME's
+forecast draws, so a rate's range is the count's range divided by a fixed
+number and can be computed later from any count table. Ratios of means can
+also be formed later from the means.
+
+The same applies to money: a monetary total (deaths or YLLs times a value per
+country and year, possibly discounted, summed over countries and years) is a
+weighted sum of cells, so its mean can be computed from these tables but its
+uncertainty range cannot. A valid range on a monetary total needs either the
+valuation inputs (value per death or per life-year by country and year,
+discount rate) inside this run, or a per-draw copy of the output kept for
+later (open question 2 below).
+
+* A. Final publishable tables
+
+** Settings shared by every table
+- Scenarios: SSP1-2.6, SSP2-4.5 (reference), SSP3-7.0, SSP5-8.5.
+- Climate models: the 24 common to all four scenarios, pooled with the 500
+  draws (12,000 values per number).
+- Measures: deaths and years of life lost (YLLs), each for heat, cold, and
+  heat + cold (heat + cold needs its own row: its range cannot be built from
+  the heat and cold ranges).
+- Numbers per cell: mean, and 95%, 80% and 66% uncertainty ranges.
+- For SSP1-2.6, SSP3-7.0 and SSP5-8.5 also: the difference from SSP2-4.5
+  taken draw by draw (mean and the three ranges); this is the burden added or
+  avoided by a scenario, which a valuation of scenarios needs.
+- Population (mean of IHME's forecast draws) and IHME's forecast deaths from
+  the 17 causes (mean), for rates and context.
+
+** Units
+- Each of the 204 countries; the world; the four income groups
+  (CLASS_2026_10_08.csv); low and middle income combined; the seven World
+  Bank regions.
+
+** Periods
+- Each single year, 2022 to 2050 (valuation with discounting needs years).
+- Decades: 2022-2030, 2031-2040, 2041-2050.
+- The whole period 2022-2050.
+
+** Breakdowns (each is its own table for every unit and period)
+- All ages, both sexes, all causes; by sex; by age group; by age group and
+  sex; by cause; by cause and sex; by cause and age group; by cause, age
+  group and sex (the full split).
+- Age groups: the 17 five-year groups (0-4, 5-9, ..., 75-79, 80+) and broad
+  groups: under 5, 15-49, 15-64 (working age, for valuing lost
+  productivity), 50-69, and 65+ (Aaron, 2026-11-16).
+- Causes: the 17 causes and these groups (GBD-matching, 2026-11-16):
+  cardiovascular (cvd_ihd, cvd_stroke, cvd_htn, cvd_cmp); diabetes and kidney
+  disease (diabetes, ckd); injuries (all nine inj_*), split as GBD does into
+  transport (inj_trans_road, inj_trans_other), unintentional (inj_mech,
+  inj_drowning, inj_animal, inj_disaster, inj_othunintent), and self-harm and
+  violence (inj_suicide, inj_homicide); all non-injury causes (8); all causes
+  except forces of nature (inj_disaster), for the Haiti and Honduras
+  asterisk. COPD and lower respiratory infections stay single (not a GBD
+  group together).
+
+** Age-standardized rates
+- Deaths and YLLs per 100,000, heat, cold, heat + cold.
+- Two standard populations, GBD world standard and WHO 2000-2025 (the choice
+  is with Charlie); the older groups of each standard summed into 80+.
+- For every unit and period; both sexes and each sex; all causes and each
+  cause group.
+
+** Size
+Largest table, every country by year by age by sex by cause: 13.7 million
+cells per measure; 6 measures with 7 numbers each, plus 7 more for the
+difference from SSP2-4.5 in three scenarios, about 1 billion numbers, roughly
+13 GB as uncompressed CSV (bytes-per-number arithmetic, not measured).
+
+* B. Vetting and assessment quantities (ask whether anyone wants them; coarse resolution)
+Proposed at the coarse level only (world, income groups, low and middle
+income, regions, and country totals; decades; no age, sex or cause split):
+- Median, and the lowest and highest climate-model mean.
+- Between-model share of the pooled variance.
+- Number of the 24 models with a higher model mean than under SSP2-4.5.
+- Attributable fraction (attributable deaths / IHME deaths) with ranges.
+- Heat overtakes cold: per country and scenario, the distribution of the
+  crossing year (straight line through yearly heat minus cold, per model and
+  draw), and the share of model-draw pairs with heat above cold per decade.
+- Population-weighted annual mean temperature per country, year, scenario and
+  model.
+
+* Open questions for the team
+1. Any other final quantity: a unit, period, breakdown, measure or statistic
+   not in list A. Anything not listed gets correct means later but no valid
+   range.
+2. For Charlie: keep the full output for future re-summaries? This is also
+   what would allow valid uncertainty ranges on monetary totals computed
+   later. Options:
+   - keep the production machine's scaled scenario files as they are (about
+     52 GB per country in the 2026-10-27 benchmark, so roughly 10 TB);
+   - keep a compact copy, written in the same pass: heat and cold PAFs and
+     scale factors per (country, year, model, scenario, cause, draw), plus
+     IHME deaths per (country, year, cause, age, sex, draw) and population.
+     Roughly 50 to 70 GB at 4 bytes per value (arithmetic, not measured).
+     The full output rebuilds exactly as IHME deaths x scale factor x PAF
+     (util_workflow_b_ratio.R lines 100-166: PAF and scale factor are per
+     cause and draw, broadcast across age and sex; scale factor =
+     (1 - PAF_SSP2-4.5) / (1 - PAF_scenario)). Rebuild error 0 on the four
+     local Colombia files; to be checked on a sample of production files in
+     the same pass before anything is deleted. Assumes national (not
+     subnational) production runs, the default;
+   - keep nothing beyond these tables.
+3. For the valuation: are the values per death or per life-year (by country
+   and year) and the discount rate already settled? If so, monetary totals
+   with valid ranges could be computed in this run.
+4. Does anyone want any of list B, and at what resolution?
+5. Not part of this run: the historical anchor (Charlie's action item). If it
+   needs pipeline runs for past years on the production machine, it could be
+   requested at the same time.

@@ -1,0 +1,124 @@
+#+TITLE: Gridded population by scenario: where it comes from and how much it moves the weights
+#+DATE: 2026-11-13
+
+Asked by Aaron, 2026-11-13: where the scenario populations come from, how much
+the within-country weights differ between scenarios, and what the
+inconsistency (national population fixed at IHME's forecast, spatial pattern
+following each SSP) does to the results.
+
+* Two populations in the pipeline
+- National population by age and sex: IHME's GBD 2021 forecast
+  (=~/data/wb-temp-attr-projections/gbd-forecasts/population.csv=). Turns
+  forecast death rates into deaths and is the rate denominator. The same in
+  all four scenarios.
+- Gridded population: CCKP's =gpw-v4-rev11-<ssp>= files, 0.25 degree, 20-year
+  means (2020-2039 for 2022-2039, 2040-2059 for 2040-2050), chosen per run by
+  =year_to_pop_bucket()= in =global-scripts/util_run_cckp_pipeline.R=. Used
+  only as within-country weights: pixel weight pi_p = pixel population /
+  location's gridded total (=03_load_temperature.R=). Gridded totals never
+  become counts.
+
+* Where the scenario gridded populations come from
+- What the files themselves show (read 2026-11-13): the NetCDF metadata names
+  only CCKP labels (=wb_model_label= "gpw-v4", =wb_variant_label= "rev11",
+  =wb_scenario_label= the SSP) and a bilinear regrid; no source citation.
+  CCKP serves seven population sets: historical, ssp119, ssp126, ssp245,
+  ssp370, ssp4, ssp585. The ssp119 and ssp126 files for 2040-2059 are
+  identical in every pixel (maximum absolute difference 0), so the population
+  depends on the socioeconomic pathway (SSP1) and not on the forcing level, as
+  SSP population projections do. World totals in the 2040-2059 files: SSP1
+  8.43, SSP2 9.13, SSP3 9.95, SSP5 8.53 billion. For comparison, IHME's
+  forecast gives 9.24 billion as the 2041-2050 mean (our report).
+- What CCKP's documentation says: not read directly. The CCKP metadata page
+  (climateknowledgeportal.worldbank.org/metadata) is behind a browser check
+  that blocked our fetch. A web search summary of that page reports that the
+  population data are GPWv4 rev 11 (CIESIN/SEDAC) for the baseline, projected
+  under the SSPs with age and sex proportions from the IIASA (Wittgenstein)
+  human-capital projections by a cohort-component method. This is unverified
+  until someone reads the page; how national SSP totals are spread over the
+  grid is not stated in what we saw.
+
+* How much the weights differ (all locations)
+Script: =output/review-gridded-pop-2026-11-13/weights_by_scenario.R=; output
+=~/data/wb-temp-attr-projections/review/gridded-pop-2026-11-13/weights_by_scenario.csv=.
+Pixels are assigned to locations by pixel center in polygon, as in the
+conversion step. 184 of 204 locations have at least one pixel center; the
+other 20 (small islands and microstates) use a single nearest pixel in the
+pipeline, so their weights cannot differ between scenarios.
+
+Measures, per location, each scenario s against SSP2-4.5 in the same 20-year
+period:
+- tv = 0.5 * sum_p |pi_s,p - pi_245,p|, total variation distance: the share
+  of people placed in a different pixel (0 identical, 1 disjoint).
+- dT = sum_p (pi_s,p - pi_245,p) * T_p, in degrees C, with T_p the annual
+  mean daily temperature of one fixed field (access-cm2, SSP5-8.5, 2050): how
+  far the reweighting alone moves the population-weighted mean temperature.
+- dT_clim = sum_p pi_245,p * (T_ssp585,p - T_ssp245,p), same model and year:
+  the climate difference between SSP5-8.5 and SSP2-4.5 with the weights held
+  at SSP2-4.5. One model, one year, so a rough yardstick only.
+
+Quantiles over the 184 locations (minimum / median / 90% / 99% / maximum):
+
+| Period    | Scenario | tv                                 | abs(dT), C                         |
+|-----------+----------+------------------------------------+------------------------------------|
+| 2020-2039 | SSP1-2.6 | 0.000 / 0.010 / 0.024 / 0.029 / 0.036 | 0.000 / 0.005 / 0.040 / 0.129 / 0.187 |
+| 2020-2039 | SSP3-7.0 | 0.000 / 0.010 / 0.029 / 0.044 / 0.049 | 0.000 / 0.007 / 0.053 / 0.122 / 0.150 |
+| 2020-2039 | SSP5-8.5 | 0.000 / 0.009 / 0.025 / 0.035 / 0.037 | 0.000 / 0.006 / 0.041 / 0.123 / 0.195 |
+| 2040-2059 | SSP1-2.6 | 0.000 / 0.016 / 0.039 / 0.055 / 0.058 | 0.000 / 0.010 / 0.068 / 0.208 / 0.402 |
+| 2040-2059 | SSP3-7.0 | 0.000 / 0.018 / 0.055 / 0.081 / 0.105 | 0.000 / 0.013 / 0.089 / 0.233 / 0.315 |
+| 2040-2059 | SSP5-8.5 | 0.000 / 0.017 / 0.040 / 0.067 / 0.084 | 0.000 / 0.011 / 0.067 / 0.226 / 0.432 |
+
+So for the median location under 2 percent of people sit elsewhere, and the
+population-weighted mean temperature moves by about 0.01 C. Against the
+climate yardstick (SSP5-8.5, 2040-2059 weights), abs(dT) / abs(dT_clim) has
+median 0.02, 90th percentile 0.18 and maximum 0.89; in 14 of 184 locations
+abs(dT) exceeds a quarter of abs(dT_clim):
+
+| Location        | tv    | dT, C  | dT_clim, C |
+|-----------------+-------+--------+------------|
+| Tajikistan      | 0.084 |  0.432 |      1.081 |
+| Kyrgyzstan      | 0.067 |  0.325 |      0.786 |
+| Senegal         | 0.049 | -0.206 |      0.463 |
+| Mexico          | 0.038 | -0.115 |      0.431 |
+| Zimbabwe        | 0.068 | -0.108 |      0.234 |
+| Haiti           | 0.040 | -0.077 |      0.303 |
+| Solomon Islands | 0.058 | -0.066 |      0.228 |
+| Azerbaijan      | 0.031 |  0.064 |      0.111 |
+| Kenya           | 0.026 | -0.040 |      0.103 |
+| Fiji            | 0.036 |  0.034 |     -0.038 |
+| South Africa    | 0.035 | -0.033 |     -0.060 |
+| North Macedonia | 0.027 |  0.032 |      0.110 |
+| DPR Korea       | 0.008 |  0.023 |     -0.028 |
+| Morocco         | 0.034 |  0.022 |     -0.045 |
+
+Some of these have small dT_clim in this one model-year (Fiji, South Africa,
+DPR Korea, Morocco), which inflates the ratio. The largest countries move
+little: India dT 0.029 C (dT_clim 1.017), China 0.046 (0.744), Pakistan 0.117
+(0.829), Nigeria -0.016 (1.122), Indonesia 0.020 (0.544), Brazil -0.008
+(0.554), United States -0.016 (-0.202).
+
+Locations with tv above 0.05 in 2040-2059: 7 under SSP1-2.6, 26 under
+SSP3-7.0, 12 under SSP5-8.5.
+
+* What this does and does not show about the burden
+- Shown: the weights differ little for most locations, and the reweighting's
+  effect on population-weighted mean temperature is small next to the climate
+  difference for most of them; a handful of mostly mountainous or
+  coastal-to-interior countries are exceptions (Tajikistan, Kyrgyzstan,
+  Senegal, Mexico, Zimbabwe).
+- Not shown: the effect on attributable deaths. That depends on the daily
+  temperature distribution and the risk curves, not on the annual mean, and
+  dT can be offset or amplified. Measuring it faithfully means running the
+  production burden pipeline with the SSP2-4.5 gridded population swapped in
+  for a target scenario and comparing. That needs each location's 17-cause
+  mortality for the derived minimum-risk temperature, which is on the
+  production machine; this machine has only ischemic heart disease (plus a
+  cached minimum-risk temperature for Honduras, where dT is about 0.005 C and
+  the test would say little).
+- Direction of the inconsistency, as a design question rather than an error:
+  the scenario runs pair each SSP's spatial pattern with IHME's SSP2-like
+  national population and mortality. Using the SSP2-4.5 pattern everywhere
+  would make the population side fully SSP2 (consistent with IHME) and leave
+  temperature as the only scenario difference; the current choice lets the
+  SSP's urbanization and migration pattern shift exposure within a country.
+  Neither is wrong; the report should say which one was used.
