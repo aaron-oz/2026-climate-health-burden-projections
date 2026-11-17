@@ -7,23 +7,26 @@ status doc in this directory. Git history holds older versions of this file.
 
 * Active lines of work
 ** multimodel-summary
-- Latest status doc: [[file:2026-11-13a-multimodel-summary.org]] (2026-11-13)
-- State: the 2026-11-09 team meeting is done; the revised deck is on main
-  (merge 6e95be0). The meeting's questions and asks are recorded verbatim in
-  docs/meetings/team-meeting-2026-11-09-notes.org and none is started.
-- Next agent action: propose to Aaron a plan and order for the meeting asks
-  (new income/label files, regions, age-standardized rates, historical anchor,
-  free-y age-sex figure, crossing-country patterns, 2-page methods summary,
-  worked-example doc) before building anything.
-- Open Aaron todos: confirm whether ~/data/wb-temp-attr-projections/wbg-shapes-loc-data
-  is Charlie's official classification; choose the age standard for
-  age-standardized rates when offered options; decide whether colleagues stay
-  named if the report goes beyond the team.
+- Latest status doc: [[file:2026-11-17a-multimodel-summary.org]] (2026-11-17)
+- State: 2026-11-09 meeting asks largely done (groups and regions rebuilt,
+  answers written, report fixes merged in 343763e); summary-tables email sent
+  to the team 2026-11-16, no reply yet; methods summary and worked example on
+  branch methods-summary (pushed, not merged). Next team meeting 2026-11-18.
+- Next agent action: build the deck for the 2026-11-18 meeting (30 min) that
+  turns the summary-tables email into open questions and a proposed plan;
+  then the historical comparison; then draft code for Caspar's final pass.
+- Open Aaron todos: read the methods summary and worked example (blocks the
+  merge of methods-summary); decide who stores the kept output (compact copy
+  of about 50-70 GB recommended) before Caspar deletes draws; age standard for
+  ASRs (both computed); pull main in his own checkout.
 - Still running: nothing.
 
 * Dormant or closed
 
 * All status docs (newest first)
+- [[file:2026-11-17a-multimodel-summary.org]] 2026-11-17 multimodel-summary:
+  groups/regions rebuild, meeting answers, summary-tables email sent, methods
+  summary and worked example (branch methods-summary); next: deck for 2026-11-18.
 - [[file:2026-11-13a-multimodel-summary.org]] 2026-11-13 multimodel-summary:
   slides revised from Aaron's review and merged; 2026-11-09 meeting asks recorded, not started.
 - [[file:2026-11-06a-multimodel-summary.org]] 2026-11-06 multimodel-summary:

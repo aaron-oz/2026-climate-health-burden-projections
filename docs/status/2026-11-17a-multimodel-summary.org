@@ -1,0 +1,248 @@
+#+TITLE: Status: multimodel-summary (2026-11-17)
+#+DATE: 2026-11-17
+
+* Read this first
+- This line of work turns the finished scenario runs (four climate scenarios
+  SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5; 204 countries; 2022-2050; deaths
+  and years of life lost (YLLs) attributable to heat and cold) into results
+  the World Bank team can use. SSP2-4.5 is the "reference scenario": IHME's
+  mortality forecast is defined under it. This session worked through the
+  asks from the 2026-11-09 team meeting, sent the team an email asking what
+  summary tables to compute in one final pass on Caspar's machine, and wrote
+  a 2-page methods summary and a worked-example document.
+- *The next team meeting is on 2026-11-18 (30 minutes). The team has not
+  replied to the email.* Aaron's instruction: the first job is a short deck
+  that turns the email's questions into open questions plus a proposed plan,
+  so the meeting can pin the plan down. Then the historical comparison, then
+  draft code for Caspar's final pass. Details in "Todos for the next agent".
+- Previous status doc in this line of work: docs/status/2026-11-13a-multimodel-summary.org.
+- Session ended with: /handoff. Session notes: no compaction. The session ran
+  2026-11-13 to 2026-11-17. Everything below was verified by running code or
+  reading files; no sub-agents were used.
+
+* What this session accomplished
+All merged to main in 343763e unless marked otherwise (verified with git).
+- Meeting notes extended with Aaron's rulings and a revised work plan:
+  docs/meetings/team-meeting-2026-11-09-notes.org.
+- Answers to the meeting's four questions (future populations; why
+  low-income rates are below lower-middle-income rates; age-structure data;
+  cost of new summaries): docs/meetings/team-meeting-2026-11-09-answers.org.
+  Key results: two populations enter (IHME national population by age and
+  sex, the same in every scenario, sets deaths and rate denominators; CCKP
+  gridded population per SSP only weights grid cells within a country). Low
+  vs lower-middle income: age structure explains 64 to 71% of the heat-rate
+  gap and more than all of the cold gap (Kitagawa split on the three age
+  slices held: under 5, 15-49, 65+).
+- Gridded population by scenario: docs/reviews/gridded-pop-by-scenario-2026-11-13.org,
+  script output/review-gridded-pop-2026-11-13/weights_by_scenario.R, output
+  ~/data/wb-temp-attr-projections/review/gridded-pop-2026-11-13/. Median
+  country: under 2% of people placed in a different cell between scenario
+  maps (2040-2059); population-weighted mean temperature moves about
+  0.01 C. Largest: Tajikistan (0.43 C under SSP5-8.5), Kyrgyzstan, Senegal,
+  Mexico, Zimbabwe, Haiti. Effect on deaths not measured; Aaron said the
+  test is not needed (it was for his understanding).
+- Income groups and World Bank regions from the official file
+  ~/data/wb-temp-attr-projections/wbg-shapes-loc-data/CLASS_2026_10_08.csv
+  (Aaron confirmed it is official): output/report-multimodel-2026-11/build_groups_wbg.R,
+  income_groups.csv, income_groups_by_location.csv. No country changes
+  income group; Cook Islands, Niue, Tokelau move from "Not classified" to
+  High income / East Asia & Pacific (territories of New Zealand in
+  WBG_adm0.csv). Groups now: 4 income groups, "Low and middle income", 7
+  regions, World.
+- Full rebuild with the new groups: output/report-multimodel-2026-11/run_rebuild.sh
+  (pooling, tables, extras, figures) into
+  ~/data/wb-temp-attr-projections/review/multimodel-2026-11-wbg/ (the
+  2026-11-06 output beside it is untouched). All build_tables.R checks pass;
+  regions sum to World. Figures changed in make_figures.R: income-rate
+  figure adds "Low and middle income"; new fig_region_rates; age-sex figure
+  now one panel per (heat/cold x age group) with its own y axis. These
+  figures are NOT yet in any deck or the report.
+- Draft report fixes (docs/reports/multimodel-2026-11/multimodel-summary.tex):
+  team members' names removed; the GBD comparison text corrected (the gap
+  with GBD 2023 was explained in August as GBD's own revision between
+  rounds; we agree with the round we implement: 2022 total 1.07 times the
+  2019 estimate, 182 of 204 countries inside its 95% interval).
+- Summary-tables request: docs/meetings/summary-tables-request-2026-11-16.org
+  (working list) and docs/meetings/summary-tables-email-sent-2026-11-16.org
+  (the email exactly as Aaron sent it to the team on 2026-11-16, typos
+  included, with two notes on where it differs from what we know).
+- Methods summary, 2 pages, Aaron's voice, OZ Labs template:
+  docs/methodology/methods-summary-2026-11/methods-summary.tex and .pdf.
+  Branch methods-summary (ce413db), pushed, NOT merged. DOIs checked against
+  doi.org.
+- Worked example, 5 pages: docs/methodology/worked-example-2026-11/worked-example.tex
+  and .pdf, script output/worked-example-2026-11/trace_colombia_2022.R and
+  its output .txt. Colombia 2022, ACCESS-CM2, ischemic heart disease, draw
+  0, SSP2-4.5 and SSP5-8.5, real inputs. A local rerun of the production
+  pipeline reproduced the accepted ssp585 test bundle
+  (~/data/wb-temp-attr-projections/review/ssp585/bundle-v2) exactly; all 9
+  checks in the trace script agree exactly. Branch methods-summary
+  (6a41584), pushed, NOT merged.
+
+* Decisions made, and why
+- Aaron, 2026-11-13: CLASS_2026_10_08.csv and WBG_adm0.csv are the official
+  classification; regions do not wait for another file.
+- Aaron, 2026-11-13: reports and methods documents never name team members;
+  only meeting summaries and contribution requests may (memory saved).
+- Aaron, 2026-11-16: get every summary the team can think of computed as
+  complete tables in ONE pass of Caspar's machine over his existing output
+  (no model reruns), including age-standardized rates (ASRs), before the
+  per-draw output is deleted. Reason: uncertainty ranges cannot be added up
+  from summary tables (example: low and middle income heat deaths, SSP2-4.5,
+  2041-2050, true 95% range 456,000 to 992,000 per year; summing country
+  bounds gives 390,000 to 1,102,000; assuming independence 542,000 to
+  798,000). Means can.
+- Aaron, 2026-11-16: final tables are publishable numbers usable for
+  monetary valuation; vetting quantities (model min/max, models above
+  SSP2-4.5, attributable fraction, crossover year, population-weighted
+  temperature) only at country/group by decade. Model-set sensitivity tables
+  dropped (already checked; can be reported from 2026-11-06 output).
+- Aaron, 2026-11-16 (in the sent email): periods are decades plus 2022-2050
+  (annual or 5-year asked as a question); ages are 17 five-year groups plus
+  under 5, 15-49, 15-64, 50-69, 65+; cause groups cardiovascular, diabetes
+  and kidney, injuries, all causes except forces of nature; ASRs under both
+  the GBD world standard and WHO 2000-2025.
+- Agent finding, 2026-11-16: the full Caspar output (roughly 10 TB, scaled
+  from his benchmark of about 52 GB per country) can be rebuilt exactly from
+  a compact copy of about 50 to 70 GB (rough arithmetic): attributable
+  deaths = IHME deaths (cause, age, sex, draw) x scale factor (cause, draw)
+  x PAF (cause, draw), because PAF and scale factor are broadcast across age
+  and sex (global-scripts/util_workflow_b_ratio.R lines 100-166). Verified
+  exactly on the 4 local Colombia files only; must be checked on a sample of
+  production files in the final pass before anything is deleted.
+- Agent, 2026-11-16: historical anchor uses GBD's published estimates, no
+  runs: the GBD 2019 round (Burkart et al. companion data, 1990, 2010, 2019;
+  the round our method matches) and GBD 2023 (2019, 2022). Both on disk.
+  There is no 2000 in the matching round (the sent email offers to download
+  2000; it would come from the GBD 2023 round, which revised heat upward).
+- Agent, 2026-11-17: the worked example uses a fresh real example rather
+  than the older examples in docs/methodology/methodology-walkthrough.tex,
+  which predate derived per-draw TMRELs and national weighting and use
+  synthesized cross-scenario numbers.
+
+* Tried and ruled out
+- Comparing against the v1 ssp585 test bundle (review/ssp585/bundle): its
+  ssp585 burden differs from the current pipeline; v1 was superseded. Use
+  bundle-v2, which matches exactly.
+
+* Current state
+** Git
+- main at 343763e (merge of multimodel-meeting-asks) plus this status commit.
+- Branch methods-summary: 2 commits ahead of main (ce413db methods summary,
+  6a41584 worked example), pushed, not merged; waits for Aaron to read both
+  documents. No merge conflicts expected (docs only).
+- Branches multimodel-meeting-asks and worktree-slides-2026-11-09-revise:
+  merged and pushed; can be deleted.
+- Worktree .claude/worktrees/slides-2026-11-09-revise (this session's):
+  can be removed after the session closes.
+- Aaron's main checkout ~/code/wbg-climate-health-burden-projections is
+  behind origin/main; pull before editing. It also had an uncommitted edit
+  to docs/meetings/team-meeting-2026-10-27-slides.tex (not checked this
+  session).
+- Untouched, not from this session: local branches samuel-verification-patches
+  and verification-depto-day (no upstream).
+** Running or scheduled
+- Nothing.
+** Flagged before shutdown but not done
+- None.
+** Permissions Aaron granted this session
+- Merge multimodel-meeting-asks to main (done); push branches
+  multimodel-meeting-asks and methods-summary (done). None carry over.
+
+* Todos for the next agent
+1. Deck for the 2026-11-18 team meeting (30 minutes), FIRST. The team has
+   not replied to the 2026-11-16 email. Turn the email
+   (docs/meetings/summary-tables-email-sent-2026-11-16.org) into a short
+   deck of open questions plus a proposed plan, so the meeting can decide.
+   Suggested content, one slide each, in Aaron's voice, no team names except
+   on request slides (meeting deck is allowed):
+   - why one final pass (correlation means ranges cannot be added later;
+     the 456k-992k vs 390k-1,102k vs 542k-798k example as a small figure or
+     table);
+   - the proposed table list (scenarios, measures, statistics, places,
+     periods, breakdowns, ages, causes, ASRs), with the open items marked:
+     annual or 5-year periods? which age standard? anything missing?
+   - valuation: are values per death or life-year and the discount rate
+     settled? if not, keep the draws;
+   - keeping the output: 10 TB as is, compact copy of about 50-70 GB that
+     rebuilds everything, or tables only;
+   - historical comparison plan (GBD 2019 round 1990/2010/2019 plus GBD 2023
+     2019/2022; 2000 only from the newer round);
+   - proposed timeline: code tested on the fixture, then Caspar runs one
+     pass (about 10 hours on 16 workers last time), then report and deck.
+   Optionally a backup slide with the new region and low-and-middle-income
+   figures from ~/data/wb-temp-attr-projections/review/multimodel-2026-11-wbg/figures-slides/.
+   Start from docs/meetings/team-meeting-2026-11-09-slides.tex (OZ Labs
+   beamer theme; build recipe in its header: symlinked .sty files, absolute
+   logo path, no TEXINPUTS). Build under xelatex (bittensor-ubuntu) and
+   pdflatex (emacs-r) and view every page. Done when Aaron has a PDF he can
+   present.
+2. Historical comparison (agent todo 2 from 2026-11-17). Figure and table:
+   GBD 2019-round heat and cold deaths for 1990, 2010, 2019 by country and
+   World (~/data/wb-temp-attr-projections/review/gbd-2019-results/IHME_MORTALITY_TEMPERATURE_1990_2019_DATA_Y2021M09D27.CSV;
+   it has Percent and Rate metrics, not counts, so counts need a population
+   or all-cause-deaths denominator; the August review's analysis8_revision.R
+   in output/review-ssp245/ shows how it reconstructed counts, about +/-10%
+   noise), GBD 2023 2019 and 2022 counts
+   (~/code/wbg-climate-health-burden-projections/data/gbd-comparison/gbd_A_anchor_2019_2022.csv,
+   untracked, in the main checkout), and our 2022-2050 pooled results
+   (~/data/wb-temp-attr-projections/review/multimodel-2026-11-wbg/tidy_common.rds
+   and world_yearly_common24.csv). State the GBD round revision wherever the
+   two GBD rounds appear together. Rates per 100,000 avoid the denominator
+   problem and may be the cleaner display.
+3. Draft code for Caspar's final pass (agent todo 4). One read-through of
+   his existing Workflow B output that writes (a) the summary tables in
+   docs/meetings/summary-tables-request-2026-11-16.org, synced to the sent
+   email's choices, (b) the compact copy (PAFs and scale factors per country,
+   year, model, scenario, cause, draw; IHME deaths per country, year, cause,
+   age, sex, draw; population), (c) a rebuild check on a sample of his files.
+   Start from global-scripts/util_summarize_workflow_b.R and
+   util_pool_workflow_b_draws.R; test on the fixture
+   output/review-workflow-b-2026-10-26/test_draw_export/ (make_fixture.R,
+   run_tests.sh). Group pooling needs per-draw sums across countries for
+   every cell; plan memory per (scenario, period) chunk. Do not finalize the
+   list until the team answers; keep it data-driven so additions are cheap.
+4. Exploratory: what the heat-crossing countries share (already crossed,
+   crossing by 2050, after 2050): income, region, mean temperature, age
+   structure. Data: extras/crossover_country.csv in the multimodel-2026-11-wbg
+   output. Label findings as suggestive.
+5. Revise the draft report once the final tables exist (new groups, regions,
+   figures, citations from the methods summary).
+6. Merge branch methods-summary to main after Aaron has read the two
+   documents (needs his OK).
+
+* Todos for Aaron
+1. Read the methods summary and the worked example
+   (docs/methodology/methods-summary-2026-11/methods-summary.pdf and
+   docs/methodology/worked-example-2026-11/worked-example.pdf, branch
+   methods-summary). Choices made to fit 2 pages that you may want back:
+   naming the four cardiovascular causes, the TMREL search range 6.6 to
+   34.6 C, the gridded-population difference figures, and the CMIP6
+   overview reference (Eyring et al. 2016). Blocks: merging the branch.
+2. Before Caspar deletes anything: who stores the kept output (10 TB as is,
+   or the compact copy of about 50-70 GB). Recommendation: the compact copy,
+   which rebuilds everything and is easy to host. Blocks: telling Caspar
+   what to keep; the email asked Charlie and Caspar.
+3. Age standard for ASRs (GBD world standard or WHO 2000-2025); the run
+   computes both, so this blocks only which one is reported.
+4. Pull main in your own checkout (~/code/wbg-climate-health-burden-projections
+   is behind origin/main).
+
+* Documentation updated this session
+- docs/meetings/team-meeting-2026-11-09-notes.org, team-meeting-2026-11-09-answers.org,
+  summary-tables-request-2026-11-16.org, summary-tables-email-sent-2026-11-16.org;
+  docs/reviews/gridded-pop-by-scenario-2026-11-13.org;
+  docs/reports/multimodel-2026-11/multimodel-summary.tex (names, GBD text).
+  All merged in 343763e.
+- docs/methodology/methods-summary-2026-11/, docs/methodology/worked-example-2026-11/,
+  output/worked-example-2026-11/: branch methods-summary (ce413db, 6a41584).
+- Memory: no-team-names-in-reports.md, final-summary-pass-2026-11.md.
+
+* Key files
+- docs/meetings/summary-tables-email-sent-2026-11-16.org: the email the deck turns into questions.
+- docs/meetings/summary-tables-request-2026-11-16.org: working table list (needs syncing to the sent email).
+- docs/meetings/team-meeting-2026-11-09-slides.tex: deck template for the 2026-11-18 deck.
+- ~/data/wb-temp-attr-projections/review/multimodel-2026-11-wbg/: pooled output with the new groups and regions, figures.
+- output/report-multimodel-2026-11/run_rebuild.sh: rebuild driver (pooling to figures).
+- ~/data/wb-temp-attr-projections/review/gbd-2019-results/ and data/gbd-comparison/ (main checkout): historical comparison inputs.
+- global-scripts/util_summarize_workflow_b.R, util_pool_workflow_b_draws.R, util_workflow_b_ratio.R: starting points for the final-pass code.
