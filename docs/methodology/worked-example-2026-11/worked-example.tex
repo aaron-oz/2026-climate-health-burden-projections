@@ -1,0 +1,150 @@
+% worked-example.tex -- step-by-step worked example of the temperature-attributable
+% mortality calculation, using real inputs for Colombia in 2022. Written November 2026.
+% Build: plain pdflatex (emacs, emacs-r container) or xelatex (bittensor-ubuntu), run
+% twice. ozreport.cls, ozcolors.sty and ozfonts.sty in this directory are symlinks to
+% ~/code/oz-templates/, and the logo is set by absolute path below, so no TEXINPUTS
+% setting is needed.
+% Every number is produced by output/worked-example-2026-11/trace_colombia_2022.R, which
+% recomputes it from the pipeline's inputs and checks it against the pipeline's outputs
+% (all checks agree exactly). The inputs come from a local rerun of the production
+% pipeline for Colombia, ACCESS-CM2, 2022, SSP2-4.5 and SSP5-8.5, which reproduces the
+% accepted ssp585 test bundle exactly.
+\documentclass[11pt]{ozreport}
+\usepackage{amsmath}
+\renewcommand{\ozdocmark}{/var/home/aoz/code/oz-templates/assets/ozlabs-seed-logo.pdf}
+
+\doctype{Worked Example}
+\shorttitle{Colombia, 2022}
+\title{Temperature-Attributable Deaths, Step by Step: A Worked Example for Colombia in 2022}
+\author{Aaron Osgood-Zimmerman \quad\textperiodcentered\quad OZ Labs, for the World Bank}
+\date{November 17, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document follows one calculation from daily temperature to attributable deaths, using the real inputs of our projections rather than illustrative values. The example is Colombia in 2022, under one climate model (ACCESS-CM2), for one cause of death (ischemic heart disease) and one uncertainty draw, first under SSP2-4.5 and then under SSP5-8.5. Every number was recomputed by hand from the pipeline's inputs and agrees exactly with the pipeline's own output. The last two sections show how the single-draw result fits into the full results, which add the other 16 causes, the other 499 draws and the other 23 climate models. The methods themselves are summarized in a separate two-page note.
+\end{abstract}
+
+\section{What is being calculated}
+
+For one country, year and cause of death, the number of deaths attributable to heat is
+\begin{equation}
+  \text{heat-attributable deaths} = \text{deaths from the cause} \times \mathrm{PAF}^{\text{heat}},
+\end{equation}
+and likewise for cold, where the population attributable fraction (PAF) is the share of the cause's deaths that would not have occurred had every day been at the temperature of lowest risk. Most of the work is in computing the PAF, which combines three things: the daily temperature where people live, the exposure-response curve that gives the relative risk (RR) of death at each temperature, and the temperature of lowest risk, called the theoretical minimum risk exposure level (TMREL). We take these in order, then turn the PAF into deaths, adjust the deaths to a second climate scenario, convert deaths to years of life lost, and finally show how the results for one draw are combined with the others.
+
+Throughout, we use Colombia (GBD location 125) in 2022, daily temperature from the ACCESS-CM2 climate model, ischemic heart disease, and uncertainty draw number 0 of 500. Ischemic heart disease is the cause with the most deaths in Colombia, about a third of the deaths from the 17 temperature-related causes in 2022.
+
+\section{Step 1: temperature and population on the grid}
+
+The temperature data come on a grid of 0.25 degrees (about 28\,km). Colombia covers 1,493 grid cells, so a year of daily temperature is $1{,}493 \times 365 = 544{,}945$ cell-days. Each cell also has a population count $N_p$ from the gridded population map for the scenario. Within the country, a cell-day is weighted by its share of the year's person-days,
+\begin{equation}
+  \pi_{p} = \frac{N_p}{365 \times \sum_{q} N_q},
+\end{equation}
+where the sum runs over all 1,493 cells, so the weights of all cell-days add to 1. The SSP2-4.5 map places 55,574,470 people in Colombia's cells and the SSP5-8.5 map 53,128,210. That difference does not carry into the death counts, because only the shares $\pi_p$ are used, and the number of people comes from IHME's national forecast instead.
+
+We follow two cells through the example. The first, centered at 4.75\textdegree\,N, 74.00\textdegree\,W, is in the Bogotá area, at high altitude, with 1,877,691 people and an annual mean temperature of 15.2\,\textdegree C in 2022. The second, at 11.00\textdegree\,N, 74.75\textdegree\,W, is in the Barranquilla area on the Caribbean coast, with 2,835,782 people and an annual mean of 28.0\,\textdegree C. For the Bogotá cell, for example,
+\[
+  \pi = \frac{1{,}877{,}691}{365 \times 55{,}574{,}470} = 9.2567 \times 10^{-5}
+\]
+for each of its 365 days.
+
+\section{Step 2: temperature zones}
+
+The exposure-response curves of Burkart et al.\ differ by temperature zone, the annual mean temperature of a place rounded to the nearest degree, from 6 to 28\,\textdegree C. A cell's zone is set each year from that year's mean. The Bogotá cell is therefore in zone 15 in 2022 and the Barranquilla cell in zone 28. People living in a hot place have a different curve from people in a cool place, so the same day's temperature can carry a different risk in the two cells.
+
+\section{Step 3: the temperature of lowest risk}
+
+The TMREL is the daily temperature at which the average relative risk across the 17 causes, weighted by how many deaths each cause accounts for, is lowest. It is computed separately for each zone and for each draw of the curves. For draw 0 in 2022, IHME's forecast gives these shares of deaths among the 17 causes in Colombia: ischemic heart disease 33.8\%, chronic obstructive pulmonary disease 12.5\%, stroke 12.1\%, interpersonal violence 10.0\%, chronic kidney disease 6.8\%, and the remaining 12 causes 24.7\% together. Writing $w_c$ for these shares and $\mathrm{RR}_c(z, T)$ for cause $c$'s relative risk at daily temperature $T$ in zone $z$,
+\begin{equation}
+  \mathrm{TMREL}_z = \arg\min_{T} \; \sum_{c} w_c \, \mathrm{RR}_c(z, T),
+\end{equation}
+searched in steps of 0.1\,\textdegree C between 6.6 and 34.6\,\textdegree C. In zone 15, the weighted relative risk reaches its minimum of 0.9400 at 23.0\,\textdegree C, and is 0.9730 at 5 degrees on either side, so the TMREL for the Bogotá cell is 23.0\,\textdegree C. In zone 28 the TMREL is 26.9\,\textdegree C. The curves have an arbitrary baseline, which is why the weighted relative risk is below 1 at its minimum, and the next step removes that baseline.
+
+\section{Step 4: one day in one place}
+
+For a given day, the relative risk is read from the curve at that day's temperature (rounded to 0.1\,\textdegree C) and divided by the relative risk at the TMREL, so that the rescaled relative risk equals 1 at the TMREL:
+\begin{equation}
+  \widetilde{\mathrm{RR}} = \frac{\mathrm{RR}(z, T)}{\mathrm{RR}(z, \mathrm{TMREL}_z)}.
+\end{equation}
+A day warmer than the TMREL counts toward heat and a colder day toward cold. Its contribution to the PAF is its weight times the attributable fraction for that day,
+\begin{equation}
+  \text{contribution} = \pi_p \times \frac{\widetilde{\mathrm{RR}} - 1}{\widetilde{\mathrm{RR}}}
+  \qquad \text{(and } \pi_p \times (\widetilde{\mathrm{RR}} - 1) \text{ when } \widetilde{\mathrm{RR}} < 1\text{)}.
+\end{equation}
+Table~\ref{tab:days} works through three days for ischemic heart disease, draw 0, under SSP2-4.5.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Three cell-days for ischemic heart disease, Colombia 2022, ACCESS-CM2, SSP2-4.5, draw 0. RR at $T$ and at the TMREL are read from the zone's curve; the rescaled RR is their ratio, and the contribution is $\pi_p (\widetilde{\mathrm{RR}}-1)/\widetilde{\mathrm{RR}}$.}
+\label{tab:days}
+\begin{tabular}{lccc}
+\toprule
+ & Bogotá, coldest day & Barranquilla, coldest day & Barranquilla, hottest day \\
+\midrule
+Date & July 30 & February 18 & June 16 \\
+Zone, TMREL & 15, 23.0\,\textdegree C & 28, 26.9\,\textdegree C & 28, 26.9\,\textdegree C \\
+Temperature $T$ & 12.4\,\textdegree C & 26.1\,\textdegree C & 29.3\,\textdegree C \\
+Counts toward & cold & cold & heat \\
+RR at $T$ & 1.065343 & 1.007091 & 1.026168 \\
+RR at TMREL & 0.951500 & 0.981220 & 0.981220 \\
+Rescaled RR & 1.119647 & 1.026366 & 1.045808 \\
+Weight $\pi_p$ & $9.2567 \times 10^{-5}$ & $1.3980 \times 10^{-4}$ & $1.3980 \times 10^{-4}$ \\
+Contribution & $9.8918 \times 10^{-6}$ & $3.5913 \times 10^{-6}$ & $6.1235 \times 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For the Bogotá day, for instance, the rescaled relative risk is $1.065343 / 0.951500 = 1.119647$, and the contribution is
+\[
+  9.2567 \times 10^{-5} \times \frac{0.119647}{1.119647} = 9.8918 \times 10^{-6}.
+\]
+ The middle column shows that ``cold'' is relative to the local TMREL: a day of 26.1\,\textdegree C in Barranquilla counts toward cold, because the TMREL there is 26.9\,\textdegree C. Bogotá, in turn, never reaches its TMREL of 23.0\,\textdegree C in this simulated year (its warmest day is 18.8\,\textdegree C), so all of its days count toward cold.
+
+\section{Step 5: the country's attributable fractions}
+
+The country's PAF for heat is the sum of the contributions of all cell-days that count toward heat, and the PAF for cold the sum over cell-days that count toward cold. For ischemic heart disease, draw 0, SSP2-4.5, the 544,945 cell-days give
+\[
+  \mathrm{PAF}^{\text{heat}} = 0.549\%, \qquad \mathrm{PAF}^{\text{cold}} = 4.305\%.
+\]
+The Bogotá cell alone contributes 0.226 percentage points of the cold fraction (it holds 3.4\% of the person-days), and the Barranquilla cell 0.044 percentage points of the heat fraction (5.1\% of the person-days). Because the curves do not distinguish age or sex, the same fractions apply to every age group and sex.
+
+\section{Step 6: attributable deaths}
+
+IHME's forecast for draw 0 has 55,058 deaths from ischemic heart disease in Colombia in 2022, summed over age groups and sexes. Under SSP2-4.5, which is IHME's own reference scenario, the attributable deaths are the forecast deaths times the fractions:
+\[
+  55{,}058 \times 0.549\% = 302.3 \text{ heat deaths}, \qquad 55{,}058 \times 4.305\% = 2{,}370.3 \text{ cold deaths}.
+\]
+In practice the multiplication is done for each age group and sex and then summed, which gives the same totals because the fraction is the same in every group.
+
+\section{Step 7: a second scenario}
+
+IHME's forecast already contains the effect of SSP2-4.5 temperatures for ischemic heart disease, through a scalar of $1/(1-\mathrm{PAF})$ on the death rate. To obtain deaths under another scenario $X$, we take that effect out and put the scenario's own in, using fractions computed for both scenarios with the same climate model and draw:
+\begin{equation}
+  m_X = m_{\text{IHME}} \times \frac{1 - \mathrm{PAF}_{\text{SSP2-4.5}}}{1 - \mathrm{PAF}_X},
+\end{equation}
+where $m$ is deaths and each PAF is the combined heat and cold fraction. Running Steps 1 to 5 on the SSP5-8.5 temperatures for the same model and year gives $\mathrm{PAF}^{\text{heat}} = 0.301\%$ and $\mathrm{PAF}^{\text{cold}} = 4.730\%$, so the combined fractions are 4.854\% under SSP2-4.5 and 5.031\% under SSP5-8.5. Then
+\[
+  \frac{1 - 0.048542}{1 - 0.050311} = 1.001863, \qquad m_{\text{SSP5-8.5}} = 55{,}058 \times 1.001863 = 55{,}160.5,
+\]
+and the attributable deaths under SSP5-8.5 are $55{,}160.5 \times 0.301\% = 165.9$ for heat and $55{,}160.5 \times 4.730\% = 2{,}609.3$ for cold.
+
+This single model-year has fewer heat deaths and more cold deaths under SSP5-8.5 than under SSP2-4.5. That is a property of the weather the climate model simulated for 2022 under each scenario, not of the scenarios, which have barely diverged by 2022. It is one reason the results are reported as averages over decades and over many models (Step 9).
+
+\section{Step 8: years of life lost}
+
+Years of life lost (YLLs) multiply attributable deaths in each age group by the remaining life expectancy at the start of that group, from the country's life table in the United Nations World Population Prospects 2024. For men aged 70 to 74, the forecast has 3,944.2 deaths from ischemic heart disease for draw 0, of which $3{,}944.2 \times 4.305\% = 169.80$ are attributable to cold under SSP2-4.5. Life expectancy at age 70 for Colombian men in 2022 is 12.525 years, so these deaths account for $169.80 \times 12.525 = 2{,}126.8$ years of life lost. The country's YLLs are the sum over all age groups and sexes.
+
+\section{Step 9: from one draw to the reported numbers}
+
+Steps 1 to 8 are repeated for all 17 causes and all 500 draws. Each draw uses its own draw of the exposure-response curves, its own TMREL derived from those curves, and its own draw of IHME's mortality forecast, so each draw is one internally consistent version of the calculation. Summed over the 17 causes, the 500 draws for Colombia in 2022 under ACCESS-CM2 give a mean of 954 heat deaths (95\% of draws between 580 and 1,351) and 4,248 cold deaths (3,467 to 5,098) under SSP2-4.5, and 620 heat deaths (355 to 908) and 4,711 cold deaths (3,871 to 5,680) under SSP5-8.5.
+
+The whole calculation is then repeated for each of the 24 climate models, and the 500 draws of all 24 models (12,000 values) are pooled, so that the reported range reflects both the uncertainty in the curves and the mortality forecast and the disagreement between climate models. Differences between scenarios are computed draw by draw within each model before pooling. For Colombia, averaged over 2041--2050, this gives 1,712 heat deaths per year under SSP2-4.5 (95\% interval 776 to 3,112) and 2,217 under SSP5-8.5 (1,004 to 4,095), a difference of 505 per year (153 to 1,206). For cold, the figures are 8,336 (5,947 to 11,297) and 7,913 (5,549 to 10,798), a difference of $-423$ (from $-907$ to $-116$). By the 2040s, and over many models, SSP5-8.5 has more heat deaths and fewer cold deaths than SSP2-4.5 in Colombia, the opposite of the single model-year in Step 7.
+
+\section{How the numbers were checked}
+
+Each value above was recomputed from the pipeline's inputs (the converted daily temperature, the exposure-response curves, the derived TMRELs and IHME's mortality draws) by a separate script, \texttt{output/worked-example-2026-11/trace\_colombia\_2022.R}, and compared with the pipeline's output. The country fractions for both scenarios, the TMRELs for both zones, the scenario adjustment and the SSP5-8.5 attributable deaths all agree to the precision stored, and the inputs come from a local rerun of the production pipeline whose output for this model, year and both scenarios matches the production output exactly. The example covers one model, one year, one cause and one draw, so it shows how the calculation works, not how large or uncertain the burden is. Those questions are answered by the pooled results.
+
+\end{document}

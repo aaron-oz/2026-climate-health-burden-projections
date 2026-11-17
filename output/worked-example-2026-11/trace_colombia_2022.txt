@@ -1,0 +1,76 @@
+
+== 1. Cause-death shares, Colombia 2022, draw 0 (TMREL weights) == 
+             acause deaths  share
+             <char>  <num>  <num>
+ 1:         cvd_ihd  55058 0.3380
+ 2:       resp_copd  20384 0.1251
+ 3:      cvd_stroke  19768 0.1213
+ 4:    inj_homicide  16248 0.0997
+ 5:             ckd  11164 0.0685
+ 6:             lri   9899 0.0608
+ 7:  inj_trans_road   9221 0.0566
+ 8:        diabetes   8691 0.0533
+ 9:         cvd_htn   4652 0.0286
+10:     inj_suicide   4073 0.0250
+11:         cvd_cmp   1464 0.0090
+12:    inj_drowning    938 0.0058
+13:        inj_mech    453 0.0028
+14: inj_trans_other    371 0.0023
+15: inj_othunintent    203 0.0012
+16:      inj_animal    192 0.0012
+17:    inj_disaster    139 0.0009
+
+== 2. ssp245: 1493 pixels, 544,945 pixel-days, total pixel population 55,574,470 == 
+CHECK ssp245 PAF heat, cvd_ihd, draw 0                        mine 0.00549146913  pipeline 0.00549146913  OK 
+CHECK ssp245 PAF cold, cvd_ihd, draw 0                        mine 0.04305026414  pipeline 0.04305026414  OK 
+
+== 2. ssp585: 1493 pixels, 544,945 pixel-days, total pixel population 53,128,210 == 
+CHECK ssp585 PAF heat, cvd_ihd, draw 0                        mine 0.003007205239  pipeline 0.003007205239  OK 
+CHECK ssp585 PAF cold, cvd_ihd, draw 0                        mine 0.04730350891  pipeline 0.04730350891  OK 
+
+== 3. Example pixels == 
+   pixel_id     pop      ann  zone   lat
+      <int>   <num>    <num> <int> <num>
+1:   546184 1877691 15.20908    15    NA
+2:   582181 2835782 28.03474    28    NA
+pixel 546184 coldest day 2022-07-30: T = 12.434 C (t10 124, used 124), zone 15, TMREL 23.0 C, raw RR 1.065343, RR at TMREL 0.951500, rescaled RR 1.119647, risk cold, pr 9.2567e-05, contribution 9.8918e-06 
+pixel 546184 hottest day 2022-01-20: T = 18.848 C (t10 188, used 188), zone 15, TMREL 23.0 C, raw RR 0.968011, RR at TMREL 0.951500, rescaled RR 1.017353, risk cold, pr 9.2567e-05, contribution 1.5789e-06 
+pixel 546184 over the year: heat contribution 0.0000e+00, cold contribution 2.2644e-03; pixel share of person-days 0.0338 
+pixel 582181 coldest day 2022-02-18: T = 26.102 C (t10 261, used 261), zone 28, TMREL 26.9 C, raw RR 1.007091, RR at TMREL 0.981220, rescaled RR 1.026366, risk cold, pr 1.3980e-04, contribution 3.5913e-06 
+pixel 582181 hottest day 2022-06-16: T = 29.342 C (t10 293, used 293), zone 28, TMREL 26.9 C, raw RR 1.026168, RR at TMREL 0.981220, rescaled RR 1.045808, risk heat, pr 1.3980e-04, contribution 6.1235e-06 
+pixel 582181 over the year: heat contribution 4.3620e-04, cold contribution 1.5069e-05; pixel share of person-days 0.0510 
+zone 15, draw 0: TMREL from cache 230; argmin of death-weighted RR here 230 (weighted RR there 0.94005; at -5 C 0.97302; at +5 C 0.97296) 
+CHECK TMREL zone 15 draw 0                                    mine 230  pipeline 230  OK 
+ 
+CHECK TMREL zone 28 draw 0                                    mine 269  pipeline 269  OK 
+
+== 4. Deaths, cvd_ihd, draw 0 == 
+ssp245: IHME deaths 55057.972; PAF heat 0.005491 cold 0.043050 nonopt 0.048542; unscaled attributable heat 302.349 cold 2370.260 
+ssp585: IHME deaths 55057.972; PAF heat 0.003007 cold 0.047304 nonopt 0.050311; unscaled attributable heat 165.571 cold 2604.435 
+scale factor (1 - 0.048542) / (1 - 0.050311) = 1.001863 
+CHECK scale factor cvd_ihd draw 0                             mine 1.001862694  pipeline 1.001862694  OK 
+scaled deaths 55160.528; attributable heat 165.879, cold 2609.287 
+CHECK SSP5-8.5 heat attributable cvd_ihd draw 0               mine 165.8790286  pipeline 165.8790286  OK 
+CHECK SSP5-8.5 cold attributable cvd_ihd draw 0               mine 2609.286525  pipeline 2609.286525  OK 
+
+== 5. YLLs: men 70-74, SSP2-4.5, cvd_ihd, draw 0: deaths 3944.2337, cold attributable 169.8003, life expectancy at 70 12.525, cold YLLs 2126.7997 
+
+== 6. All 17 causes, access-cm2, 2022, mean over 500 draws == 
+ssp245: heat mean 953.6 (2.5% 580.3, 97.5% 1350.9); cold mean 4248.3 (3466.6, 5097.9) 
+ssp585: heat mean 620.4 (2.5% 355.1, 97.5% 907.9); cold mean 4711.1 (3871.3, 5679.5) 
+
+== 7. Pooled (24 models x 500 draws), Colombia == 
+    scenario    period     measure  mean lower95 upper95  diff    dl    du
+      <char>    <char>      <char> <num>   <num>   <num> <num> <num> <num>
+ 1:   ssp245 2022-2030 deaths_cold  4983    4002    6071    NA    NA    NA
+ 2:   ssp245 2031-2040 deaths_cold  6570    5091    8276    NA    NA    NA
+ 3:   ssp245 2041-2050 deaths_cold  8336    5947   11297    NA    NA    NA
+ 4:   ssp585 2022-2030 deaths_cold  4944    4006    6007   -40  -367   187
+ 5:   ssp585 2031-2040 deaths_cold  6415    4941    8151  -155  -365   205
+ 6:   ssp585 2041-2050 deaths_cold  7913    5549   10798  -423  -907  -116
+ 7:   ssp245 2022-2030 deaths_heat   893     456    1585    NA    NA    NA
+ 8:   ssp245 2031-2040 deaths_heat  1208     588    2149    NA    NA    NA
+ 9:   ssp245 2041-2050 deaths_heat  1712     776    3112    NA    NA    NA
+10:   ssp585 2022-2030 deaths_heat   931     505    1490    38  -311   293
+11:   ssp585 2031-2040 deaths_heat  1388     656    2506   180  -142   437
+12:   ssp585 2041-2050 deaths_heat  2217    1004    4095   505   153  1206
