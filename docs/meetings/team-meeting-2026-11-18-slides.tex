@@ -41,7 +41,7 @@
     \item \textbf{Anything missing from the table list?} Places, periods, breakdowns, measures or statistics.
     \item \textbf{Periods:} decades only, or also single years, or 5-year periods?
     \item \textbf{Age standard} for age-standardized rates: GBD world standard or WHO 2000--2025?
-    \item \textbf{Valuation:} are the values per death or per life-year, and the discount rate, settled?
+    \item \textbf{Valuation:} is the valuation math already fixed?
     \item \textbf{Keeping the output:} the full output, a compact copy, or tables only; and who stores it?
     \item \textbf{Historical sources:} the two GBD rounds as planned, and do we want a 2000 value?
     \item \textbf{Showing historical data:} which round, which measure, which figures, and where?
@@ -140,12 +140,14 @@
 \end{frame}
 
 \begin{frame}{Question 4: valuation}
-  \small
+  \large
+  \medskip
+  \textbf{Is the valuation math already fixed?}
+
+  \bigskip\normalsize
   \begin{itemize}
-    \item A valued total is deaths or years of life lost times a value per country and year, possibly discounted, summed. Its mean can be computed later from the yearly tables; its range can't be computed from tables, only from the draws.
-    \item \textbf{If the values and the discount rate are settled now}, I can add valued totals with ranges to this pass. I'd need: value per death or per life-year by country and year (or the rule that makes them), the discount rate, and the base year.
-    \item \textbf{If they aren't settled}, the only way to put a valid range on a valued total later is to keep the draws (next slide).
-    \item Also useful to know: do we value deaths, years of life lost, or both; and is the working-age split (15--64) what a productivity valuation needs?
+    \item If yes, valued totals with ranges can go in this pass.
+    \item If no, a valid range on a valued total later needs the draws (Question 5).
   \end{itemize}
 \end{frame}
 
