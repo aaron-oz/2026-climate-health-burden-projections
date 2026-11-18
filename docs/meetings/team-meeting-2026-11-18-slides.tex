@@ -184,7 +184,7 @@
       \item GBD 2019 round (Burkart et al.\ 2021 companion data): 1990, 2010, 2019. This is the round our method follows; our 2022 total was 1.07 times its 2019 estimate, with 182 of 204 countries inside its 95\% range.
       \item GBD 2023 round: 2019 and 2022. GBD revised heat upward between rounds, mostly in hot countries, so its heat numbers are higher than ours (our 2022 heat is 0.68 to 0.77 times its value).
     \end{itemize}
-    \item I've put these next to our results as crude rates per 100,000 (the 2019-round file gives rates and percentages, not counts). Examples on the next four slides; how to show them is Question 7.
+    \item I've put these next to our results as crude rates per 100,000 (the 2019-round file gives rates and percentages, not counts). Examples on the next three slides; how to show them is Question 7.
     \item A 2000 value exists only in the GBD 2023 round, so it would sit on the higher heat line. \textbf{My suggestion:} skip 2000 unless someone needs it.
   \end{itemize}
 \end{frame}
@@ -213,14 +213,6 @@
   Our decade means (SSP2-4.5) are plotted mid-decade; all points with 95\% ranges. India shows the round revision most (heat 9.1 against 16.7 for 2019). China's cold rises in our projection; with crude rates I suspect much of that is aging (not yet split).
 \end{frame}
 
-\begin{frame}{Example: every country, as a check}
-  \centering
-  \includegraphics[width=\textwidth,height=0.64\textheight,keepaspectratio]{figures-2026-11-18/fig_hist_countries.pdf}
-
-  \footnotesize\raggedright
-  Ours 2022--2030 against the GBD 2019 round's 2019, log scales; dashed lines at a factor of 2. Within that: 177 of 204 countries for heat, 178 for cold, most of the rest below 1 per 100,000. Not shown: Lesotho heat (negative in GBD). Not yet investigated: Venezuela heat (ours 11.1, GBD 4.6).
-\end{frame}
-
 \begin{frame}{Question 7: how do we want to show historical data?}
   \scriptsize
   \renewcommand{\arraystretch}{0.92}
@@ -232,7 +224,7 @@
     \midrule
     Measure & Crude rates (now); age-standardized (ours after the final pass; the 2023 round needs another download); counts (2023 round only) & Age-standardized to compare, crude for the size of the burden \\
     \midrule
-    Figures & World over time (earlier slide); groups side by side; a few countries over time; every country as a scatter & World and income groups in the main text; countries in an appendix \\
+    Figures & World over time (earlier slide); groups side by side; a few countries over time; every country (table or scatter) & World and income groups in the main text; countries in an appendix \\
     \midrule
     Years & 1990, 2010, 2019 (2019 round); 2019, 2022 (2023 round); 2000 only from the 2023 round & As listed, no 2000 \\
     \midrule
@@ -262,11 +254,11 @@
   \small
   \begin{enumerate}
     \item \textbf{Today:} settle the seven questions, or name who answers each and by when.
-    \item \textbf{Me:} write the code for the pass from the settled list, and test it on a small test tree built from real Colombia output. It writes the tables, the compact copy if we choose it, and the rebuild check.
-    \item \textbf{Me:} send Caspar the code and instructions, with output size and run time per file measured on the test tree.
+    \item \textbf{Aaron:} write the code for the pass from the settled list, and test it on a small test tree built from real Colombia output. It writes the tables, the compact copy if we choose it, and the rebuild check.
+    \item \textbf{Aaron:} send Caspar the code and instructions, with output size and run time per file measured on the test tree.
     \item \textbf{Caspar:} one pass over the existing output, no model reruns. The last full read took about 153 CPU-hours, about 10 hours on 16 workers; this pass adds pooling and ranges on top, not yet measured.
-    \item \textbf{Me:} check the tables and the rebuild check. Only then does anything get deleted.
-    \item \textbf{Me:} revise the report and the slides with the final tables, the new groups and regions, and the historical comparison.
+    \item \textbf{Aaron:} check the tables and the rebuild check. Only then does anything get deleted.
+    \item \textbf{Aaron:} revise the report and the slides with the final tables, the new groups and regions, and the historical comparison.
   \end{enumerate}
   \smallskip
   I'll start the code now from the current list, kept data-driven so additions are cheap.
