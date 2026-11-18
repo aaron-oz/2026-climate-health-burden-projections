@@ -43,10 +43,10 @@ save_both("fig_hist_world", function(p) {
     scale_color_manual(values = p$sc) +
     facet_wrap(~R, scales = "free_y") + expand_limits(y = 0) +
     scale_x_continuous(breaks = c(1990, 2010, 2030, 2050)) +
-    labs(x = NULL, y = "Deaths per 100,000 (crude, all ages)") + mk_theme(p) +
+    labs(x = NULL, y = "Deaths per 100,000 (crude)") + mk_theme(p) +
     guides(color = guide_legend(order = 2, nrow = 1, override.aes = list(linewidth = 1.2)), shape = guide_legend(order = 1), fill = guide_legend(order = 1)) +
     theme(legend.box = "vertical", legend.spacing.y = unit(0, "pt"))
-}, 6.6, 3.0, 5.5, 2.75)
+}, 6.6, 3.0, 5.5, 2.15)
 
 # ---- Figure 2: groups ----------------------------------------------------------------
 grp <- copy(x$grp)
@@ -75,7 +75,7 @@ plot_groups <- function(G, ord, name, w, h, ws, hs) {
   fwrite(dcast(G, group + R ~ col, value.var = "rate", fun.aggregate = function(v) round(v, 2)), file.path(OUT, paste0(name, ".csv")))
 }
 plot_groups(grp, c("World", "High income", "Upper middle income", "Lower middle income", "Low income", "Low and middle income"),
-            "fig_hist_income", 6.6, 3.6, 5.5, 2.9)
+            "fig_hist_income", 6.6, 3.6, 5.5, 2.2)
 plot_groups(grp, c("World", "East Asia & Pacific", "Europe & Central Asia", "Latin America & Caribbean",
                    "Middle East, North Africa, Afghanistan & Pakistan", "North America", "South Asia", "Sub-Saharan Africa"),
             "fig_hist_region", 6.6, 4.2, 5.5, 3.1)
@@ -99,5 +99,5 @@ save_both("fig_hist_countries", function(p) {
     scale_color_manual(values = p$sc, na.value = p$soft) +
     facet_wrap(~R, scales = "free") +
     labs(x = "GBD 2019 round, 2019 (deaths per 100,000)", y = "Ours, SSP2-4.5, 2022-2030") + mk_theme(p)
-}, 6.6, 3.3, 5.5, 2.75)
+}, 6.6, 3.3, 5.5, 2.15)
 cat("figures done\n")
