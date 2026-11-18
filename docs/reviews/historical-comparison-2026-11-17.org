@@ -1,0 +1,171 @@
+#+TITLE: Historical comparison: GBD's published estimates against our 2022-2050 results
+#+DATE: 2026-11-17
+
+* Expectations written before computing (2026-11-17)
+Written after reading only the GBD 2019-round world rows (heat 4.62, cold
+17.23 deaths per 100,000 in 2019) and the decade tables already in the
+2026-11 report, before running build_historical.R.
+- World heat crude rate, ours, 2022 (SSP2-4.5, mean of 12,000 values):
+  between 4 and 6 per 100,000, close to the GBD 2019-round 2019 value
+  (4.62), since our 2022 total was 1.07 times that round's 2019 count.
+- World cold crude rate, ours, 2022: between 15 and 20 per 100,000, close
+  to the GBD 2019-round 2019 value (17.23).
+- GBD 2023-round 2022 heat rate: higher than ours, our value 0.68 to 0.77
+  times theirs (the August finding). Cold: ours 0.93 to 0.98 times theirs.
+- Countries: our 2022-2030 crude rates against the GBD 2019-round 2019
+  rates should scatter around the 1:1 line, most countries within a factor
+  of 2 for cold; heat will scatter more (one year's observed weather in
+  GBD, model climate averaged over a decade in ours).
+
+* Question and sources
+Where do our 2022-2050 projections sit against GBD's published estimates for
+past years? No pipeline runs; published numbers only.
+- GBD 2019 round, the round our method follows: GHDx companion data to
+  Burkart et al. 2021 (DOI 10.6069/7QWW-PF74), file
+  ~/data/wb-temp-attr-projections/review/gbd-2019-results/IHME_MORTALITY_TEMPERATURE_1990_2019_DATA_Y2021M09D27.CSV.
+  Years 1990, 2010, 2019; deaths and YLLs as Rate (per person; multiplied by
+  100,000 here) and Percent, all ages and age-standardized, with 95% ranges.
+  No counts.
+- GBD 2023 round: GBD Results Tool download,
+  data/gbd-comparison/gbd_A_anchor_2019_2022.csv (untracked, in the main
+  checkout). Years 2019 and 2022; Number, Percent and Rate per 100,000, all
+  ages, the 204 countries only (no world row).
+- Ours: the 2026-11 pooled results with the WBG groups (24 common climate
+  models x 500 draws) in review/multimodel-2026-11-wbg/, plus the per-draw
+  world yearly series and IHME's population in
+  review/workflow-b-2026-11-05-review/.
+
+* Method
+- Measure: crude death rate per 100,000, all ages, both sexes, for heat,
+  cold, and heat + cold. Rates sidestep the missing counts in the
+  2019-round file and the population growth between 2019 and 2050.
+- Ours: world by single year (mean and 95% range of the 12,000 pooled
+  values, divided by IHME's mean population that year) and by decade;
+  countries and groups by decade (the existing pooled tables).
+- GBD groups (world in the 2023 round; income groups and regions in both
+  rounds): sum of country counts over sum of population. Means only, no
+  ranges, since ranges cannot be added across countries. The 2019-round
+  counts are rate x the 2023 round's 2019 population (Number / Rate), so
+  2019-round group values exist for 2019 only and carry the two rounds'
+  population difference (not measured).
+- Deaths only: our YLLs use each country's own life table, so they are not
+  comparable with GBD's.
+- Code: output/historical-comparison-2026-11/build_historical.R (tables)
+  and make_historical_figures.R (figures). Output in
+  ~/data/wb-temp-attr-projections/review/historical-comparison-2026-11/:
+  world_rates.csv, group_rates.csv, country_rates.csv,
+  country_agreement.csv, ours_world_yearly_rates.csv, figures-report/,
+  figures-slides/.
+
+* Results
+** Expectations against results
+| Expectation                                     | Result                                       | Met?           |
+|-------------------------------------------------+----------------------------------------------+----------------|
+| Ours, world heat 2022, 4 to 6 per 100,000       | 4.97 (95% range 3.81 to 6.43)                | yes            |
+| Ours, world cold 2022, 15 to 20 per 100,000     | 17.65 (15.59 to 19.69)                       | yes            |
+| Ours / GBD 2023 round, heat 2022, 0.68 to 0.77  | 4.97 / 6.54 = 0.76                           | yes            |
+| Ours / GBD 2023 round, cold 2022, 0.93 to 0.98  | 17.65 / 17.85 = 0.99                         | no, just above |
+| Countries, cold, most within a factor of 2      | 178 of 204                                   | yes            |
+| Countries, heat scatters more than cold         | within 1.5: heat 143, cold 156; within 2: heat 177, cold 178 | yes, mildly |
+The cold ratio of 0.99 against an expected 0.93 to 0.98: the expected range
+came from earlier runs reviewed in August and September 2026; I have not
+checked what differs. Not investigated further.
+
+** World (crude deaths per 100,000; ours under SSP2-4.5)
+| Source                      | Year or period | Heat              | Cold                | Heat + cold         |
+|-----------------------------+----------------+-------------------+---------------------+---------------------|
+| GBD 2019 round (our method) | 1990           | 3.84 (3.06-4.66)  | 18.98 (17.44-20.52) | 22.79 (21.08-24.43) |
+| GBD 2019 round              | 2010           | 5.27 (4.38-6.20)  | 17.15 (15.61-18.56) | 22.33 (20.53-23.88) |
+| GBD 2019 round              | 2019           | 4.62 (3.74-5.57)  | 17.23 (15.28-18.76) | 21.74 (19.53-23.56) |
+| GBD 2023 round (revised)    | 2019           | 6.62              | 17.37               | 23.73               |
+| GBD 2023 round              | 2022           | 6.54              | 17.85               | 24.12               |
+| Ours                        | 2022           | 4.97 (3.81-6.43)  | 17.65 (15.59-19.69) | 22.62 (20.27-24.90) |
+| Ours                        | 2022-2030      | 5.25 (4.00-6.94)  | 18.06 (15.86-20.22) | 23.31 (20.80-25.64) |
+| Ours                        | 2031-2040      | 6.26 (4.57-8.68)  | 19.79 (16.75-22.97) | 26.05 (22.24-30.03) |
+| Ours                        | 2041-2050      | 7.89 (5.40-11.63) | 21.63 (17.34-26.23) | 29.53 (23.79-35.88) |
+Ranges are 95%. GBD 2023-round world values are sums over the 204
+countries, so they have no range. All four scenarios are in
+world_rates.csv (2022 heat: 4.81 to 4.97 across the four).
+
+Reading, with caveats:
+- Our 2022 values sit close to the GBD 2019 round's 2019 values, the round
+  whose method we implement, and inside its 95% ranges. Our heat sits below
+  the GBD 2023 round, consistent with that round's upward revision of heat
+  in hot countries (August review).
+- GBD's own heat rate moves from year to year with observed weather (5.27
+  in 2010, 4.62 in 2019). Our yearly values come from climate-model
+  weather, so a single year of ours is not a forecast of that year's
+  weather; decades are the better comparison.
+- Crude rates rise in our projection partly because populations age: the
+  cold crude rate goes from 17.65 (2022) to 21.63 (2041-2050), while cold's
+  share of deaths from the 17 causes stays about flat (4.66% to 4.62%
+  between 2022-2030 and 2041-2050, from the 2026-11-09 slides). An
+  age-standardized comparison would separate this; the GBD 2019 round has
+  age-standardized rates, ours will come from the final summary pass.
+
+** Income groups and regions
+Crude deaths per 100,000, from group_rates.csv. GBD values are means only.
+| Group                 | Risk | GBD 2019 rd, 2019 | GBD 2023 rd, 2019 | GBD 2023 rd, 2022 | Ours 2022-2030 | Ours 2041-2050 |
+|-----------------------+------+-------------------+-------------------+-------------------+----------------+----------------|
+| High income           | heat |              2.08 |              1.93 |              2.19 |           2.24 |           4.12 |
+| Upper middle income   | heat |              3.34 |              3.45 |              3.84 |           4.18 |           7.41 |
+| Lower middle income   | heat |              7.40 |             12.47 |             11.63 |           7.97 |          10.74 |
+| Low income            | heat |              4.08 |              6.78 |              6.34 |           4.55 |           5.16 |
+| Low and middle income | heat |              5.15 |              7.64 |              7.46 |           5.87 |           8.59 |
+| High income           | cold |             32.65 |             31.46 |             30.77 |          33.84 |          40.18 |
+| Upper middle income   | cold |             21.17 |             19.84 |             22.09 |          24.67 |          35.06 |
+| Lower middle income   | cold |              7.49 |              9.99 |              9.60 |           6.75 |           7.48 |
+| Low income            | cold |              6.31 |              6.19 |              6.45 |           5.66 |           5.41 |
+| Low and middle income | cold |             13.86 |             14.29 |             15.10 |          14.78 |          18.21 |
+- The revision between rounds is concentrated in heat in lower middle
+  income (7.40 to 12.47 for 2019) and, by region, South Asia (8.66 to
+  15.50) and Middle East, North Africa, Afghanistan & Pakistan (7.10 to
+  11.25). Our 2022-2030 values follow the 2019 round in each of these
+  (7.97, 9.59, 7.57).
+- High income and upper middle income: the two rounds agree within 7% for
+  2019, and our 2022-2030 values are close to both, rising with time.
+
+** Countries
+Our 2022-2030 crude rate (SSP2-4.5) against the GBD 2019 round's 2019 rate:
+| Risk        | Median ratio (ours / GBD) | Within a factor of 1.5 | Within a factor of 2 |
+|-------------+---------------------------+------------------------+----------------------|
+| Heat        |                      0.98 | 143 of 204             | 177 of 204           |
+| Cold        |                      1.06 | 156 of 204             | 178 of 204           |
+| Heat + cold |                      1.06 | 189 of 204             | 201 of 204           |
+- Most disagreements are countries with very small rates (below 1 per
+  100,000), where small absolute differences give large ratios. Among
+  countries with a GBD rate of at least 1 per 100,000, 135 of 144 (heat)
+  and 138 of 142 (cold) are within a factor of 2.
+- Among those, the larger differences (ours / GBD 2019 round): heat in
+  Haiti 4.63 (13.19 against 2.85; the forces-of-nature asterisk),
+  American Samoa 3.08, Venezuela 2.42 (11.13 against 4.59), Gambia 2.04;
+  below, Cook Islands 0.10, Mauritius 0.36, Namibia 0.41, Tonga 0.47,
+  Botswana 0.49; cold in Northern Mariana Islands 0.27, Cabo Verde 0.40,
+  Nicaragua 0.49, Gambia 0.49. Not investigated. Venezuela is the one I
+  would look at first: large, and no asterisk.
+- One sign difference: heat in Lesotho, GBD 2019 round -1.24, ours 0.02.
+  It is left off the log-scale figure only (listed in
+  fig_hist_countries_not_shown.csv); nothing else is excluded.
+
+* Figures
+In ~/data/wb-temp-attr-projections/review/historical-comparison-2026-11/,
+light (figures-report/) and dark (figures-slides/) versions:
+- fig_hist_world.pdf: world crude rates 1990-2050 for heat, cold, and
+  heat + cold; GBD 2019-round points with 95% ranges, GBD 2023-round points
+  (no range), our four scenarios by year, with the SSP2-4.5 95% band.
+- fig_hist_income.pdf, fig_hist_region.pdf: groups; GBD values for 2019 and
+  2022 and our three decades (SSP2-4.5) with 95% ranges.
+- fig_hist_countries.pdf: countries, ours 2022-2030 against the GBD 2019
+  round's 2019, log scales, 1:1 and factor-of-2 lines, colored by income
+  group.
+
+* Not done, and open
+- Age-standardized comparison: needs our age-standardized rates from the
+  final summary pass; the GBD 2019-round age-standardized rates are already
+  in the file.
+- GBD 2023-round ranges for the world and groups: would need another GBD
+  Results Tool download. Only needed if the 2023 round is shown with
+  ranges.
+- 2000: only in the GBD 2023 round (asked of the team in the 2026-11-18
+  deck).
+- Country differences listed above (Venezuela first) not investigated.
