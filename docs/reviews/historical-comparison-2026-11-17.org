@@ -158,6 +158,10 @@ light (figures-report/) and dark (figures-slides/) versions:
 - fig_hist_countries.pdf: countries, ours 2022-2030 against the GBD 2019
   round's 2019, log scales, 1:1 and factor-of-2 lines, colored by income
   group.
+- fig_hist_country_examples.pdf (make_country_examples.R, added
+  2026-11-18): India, China, Nigeria, United States; heat and cold; GBD
+  2019 round 1990, 2010, 2019 and GBD 2023 round 2019, 2022, each with 95%
+  ranges, and our three decade means under SSP2-4.5 with 95% ranges.
 
 * Not done, and open
 - Age-standardized comparison: needs our age-standardized rates from the
