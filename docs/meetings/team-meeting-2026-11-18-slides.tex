@@ -104,7 +104,7 @@
 
   \medskip
   \raggedright
-  \textbf{Question 1: anything missing?} Anything not listed gets correct means later but no valid range. (Crude rates are fine: population is fixed, so their ranges follow from the count tables.)
+  \textbf{Question 1: anything missing?} Anything not listed gets correct means later from the tables, but a valid range only from a new summary run over the draws, which needs the draws kept (Question 5). (Crude rates are fine: population is fixed, so their ranges follow from the count tables.)
 \end{frame}
 
 \begin{frame}{Question 2: which periods?}
@@ -123,8 +123,8 @@
   \raggedright\footnotesize
   \begin{itemize}
     \item Sizes are my arithmetic for the table split by country, year, age, sex and cause, not measured. Size isn't a constraint either way.
-    \item A range on a 5-year or decade total can't be built from yearly ranges, so each period we want ranges for has to be listed.
-    \item \textbf{My suggestion:} add single years, since a valuation with discounting is done year by year, and add 5-year periods only if someone needs them. This is cheap to include and impossible to recover later.
+    \item A range on a 5-year or decade total can't be built from yearly ranges, so each period we want ranges for has to be listed now or summarized again from the draws.
+    \item \textbf{My suggestion:} add single years, since a valuation with discounting is done year by year, and add 5-year periods only if someone needs them. Cheap to include now; adding it later means another summary run over the draws, possible only if we keep them.
   \end{itemize}
 \end{frame}
 
@@ -142,7 +142,7 @@
 \begin{frame}{Question 4: valuation}
   \small
   \begin{itemize}
-    \item A valued total is deaths or years of life lost times a value per country and year, possibly discounted, summed. Its mean can be computed later from the yearly tables; its range can't.
+    \item A valued total is deaths or years of life lost times a value per country and year, possibly discounted, summed. Its mean can be computed later from the yearly tables; its range can't be computed from tables, only from the draws.
     \item \textbf{If the values and the discount rate are settled now}, I can add valued totals with ranges to this pass. I'd need: value per death or per life-year by country and year (or the rule that makes them), the discount rate, and the base year.
     \item \textbf{If they aren't settled}, the only way to put a valid range on a valued total later is to keep the draws (next slide).
     \item Also useful to know: do we value deaths, years of life lost, or both; and is the working-age split (15--64) what a productivity valuation needs?
