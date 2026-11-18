@@ -1,0 +1,45 @@
+#+TITLE: Team meeting 2026-11-18: decisions for the final summary pass
+#+DATE: 2026-11-18
+
+Deck: docs/meetings/team-meeting-2026-11-18-slides.tex (seven questions).
+Decisions as relayed by Aaron after the meeting, 2026-11-18. The table
+list they apply to is docs/meetings/summary-tables-request-2026-11-16.org,
+synced to these decisions on the same date.
+
+* Decided
+- Periods (deck question 2): the decades 2022-2030, 2031-2040, 2041-2050,
+  and 2022-2050 as a whole, for every table. One annual table in addition:
+  all ages, both sexes, all causes combined, for every year 2022-2050, with
+  the same contents as the decade tables (deaths and YLLs for heat, cold,
+  heat + cold; mean and 95/80/66% ranges; difference from SSP2-4.5 for the
+  other three scenarios; 204 countries, World Bank groups, world). No
+  5-year periods.
+- Age groups: 50-69 dropped. Kept: the 17 five-year groups, under 5,
+  15-49, 15-64, 65+.
+- Age standard (deck question 3): the IHME (GBD) world standard population
+  only. WHO 2000-2025 is not computed.
+- Table list (deck question 1): nothing missing; the list in the email of
+  2026-11-16 stands, with the changes above.
+- Vetting quantities: coarse only (country and group by decade), for our
+  own checks; nobody else needs them.
+- Historical data (deck question 7): no figures from us for now (others may
+  make them). Our job is to put the historical estimates into the tables so
+  they can be queried alongside the projections.
+- Timing: aim to have the final pass done by Thanksgiving (2026-11-26).
+  Caspar does not need to delete anything before the end of 2026.
+
+* Leaning, not fully decided
+- Historical sources (deck question 6): not fully discussed. Aaron is
+  inclined to use the GBD 2019 round only (1990, 2010, 2019), the round our
+  method follows, so readers don't see our estimates set against the GBD
+  2023 round, which is not really comparable to our numbers. No 2000 value
+  (it exists only in the 2023 round).
+- What we keep (deck question 5): almost certainly the compact copy (about
+  50-70 GB, rough arithmetic, from which the full output rebuilds exactly),
+  but it depends on the valuation answer. Hosting not resolved; it will not
+  be us.
+
+* Open
+- Valuation (deck question 4): waiting on the valuations team (email to
+  Jacx and Patrick Fahr, 2026-11-18): is the transform linear, do they want
+  propagated uncertainty, is the math ready for this pass.
