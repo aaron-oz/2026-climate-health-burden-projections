@@ -1,6 +1,12 @@
 #+TITLE: Summary tables for the final run on the production machine
 #+DATE: 2026-11-16
 
+Synced 2026-11-18 to the team meeting decisions
+(docs/meetings/team-meeting-2026-11-18-notes.org): decades plus one annual
+totals table, 50-69 dropped, GBD world standard only, cause groups as in
+the sent email, vetting quantities coarse, historical estimates added as
+tables (section C).
+
 Aaron's rulings (2026-11-16):
 - Collect every summary the team can think of and compute each as a complete
   table in one run, before the per-draw output is deleted. Cost accepted
@@ -59,9 +65,12 @@ later (open question 2 below).
   Bank regions.
 
 ** Periods
-- Each single year, 2022 to 2050 (valuation with discounting needs years).
-- Decades: 2022-2030, 2031-2040, 2041-2050.
-- The whole period 2022-2050.
+- Decades: 2022-2030, 2031-2040, 2041-2050, and the whole period 2022-2050,
+  for every table.
+- Annual, 2022 to 2050: one table only, all ages, both sexes, all causes
+  combined, with the settings shared by every table (all units, measures,
+  statistics and scenario differences). Decided 2026-11-18.
+- No 5-year periods.
 
 ** Breakdowns (each is its own table for every unit and period)
 - All ages, both sexes, all causes; by sex; by age group; by age group and
@@ -69,21 +78,19 @@ later (open question 2 below).
   group and sex (the full split).
 - Age groups: the 17 five-year groups (0-4, 5-9, ..., 75-79, 80+) and broad
   groups: under 5, 15-49, 15-64 (working age, for valuing lost
-  productivity), 50-69, and 65+ (Aaron, 2026-11-16).
-- Causes: the 17 causes and these groups (GBD-matching, 2026-11-16):
-  cardiovascular (cvd_ihd, cvd_stroke, cvd_htn, cvd_cmp); diabetes and kidney
-  disease (diabetes, ckd); injuries (all nine inj_*), split as GBD does into
-  transport (inj_trans_road, inj_trans_other), unintentional (inj_mech,
-  inj_drowning, inj_animal, inj_disaster, inj_othunintent), and self-harm and
-  violence (inj_suicide, inj_homicide); all non-injury causes (8); all causes
-  except forces of nature (inj_disaster), for the Haiti and Honduras
-  asterisk. COPD and lower respiratory infections stay single (not a GBD
-  group together).
+  productivity), and 65+ (50-69 dropped 2026-11-18).
+- Causes: the 17 causes and the groups in the sent email: cardiovascular
+  (cvd_ihd, cvd_stroke, cvd_htn, cvd_cmp); diabetes and kidney disease
+  (diabetes, ckd); injuries (all nine inj_*); all causes except forces of
+  nature (inj_disaster), for the Haiti and Honduras asterisk. The GBD injury
+  subgroups and the all-non-injury group in the earlier working list were
+  not in the sent email and are not computed (team added nothing,
+  2026-11-18).
 
 ** Age-standardized rates
 - Deaths and YLLs per 100,000, heat, cold, heat + cold.
-- Two standard populations, GBD world standard and WHO 2000-2025 (the choice
-  is with Charlie); the older groups of each standard summed into 80+.
+- One standard population: the GBD (IHME) world standard, its groups above
+  80 summed into 80+. WHO 2000-2025 dropped (2026-11-18).
 - For every unit and period; both sexes and each sex; all causes and each
   cause group.
 
@@ -92,8 +99,11 @@ Largest table, every country by year by age by sex by cause: 13.7 million
 cells per measure; 6 measures with 7 numbers each, plus 7 more for the
 difference from SSP2-4.5 in three scenarios, about 1 billion numbers, roughly
 13 GB as uncompressed CSV (bytes-per-number arithmetic, not measured).
+With the 2026-11-18 decision (no single years in the split tables) the
+same table has 4 periods instead of 29 years, so roughly 2 GB by the same
+arithmetic; the annual totals table is small.
 
-* B. Vetting and assessment quantities (ask whether anyone wants them; coarse resolution)
+* B. Vetting and assessment quantities (for our own checks only; coarse resolution, decided 2026-11-18)
 Proposed at the coarse level only (world, income groups, low and middle
 income, regions, and country totals; decades; no age, sex or cause split):
 - Median, and the lowest and highest climate-model mean.
@@ -106,7 +116,25 @@ income, regions, and country totals; decades; no age, sex or cause split):
 - Population-weighted annual mean temperature per country, year, scenario and
   model.
 
-* Open questions for the team
+* C. Historical estimates in the same tables (decided 2026-11-18)
+No figures from us; the historical estimates go into the tables so they can
+be queried next to the projections. Source, as Aaron leans (not fully
+discussed): the GBD 2019 round only (Burkart et al. 2021 companion data,
+1990, 2010, 2019), the round our method follows. Format (Aaron, 2026-11-18):
+- Measures: deaths only, as crude rate per 100,000, age-standardized rate
+  (GBD world standard, the same standard as our projections), and percent of
+  all deaths; heat, cold, heat + cold; mean and GBD's 95% range (no 66% or
+  80% range in the source). No YLLs.
+- Places: countries and world as published; World Bank income groups and
+  regions built from countries using GBD 2019-round population for 1990,
+  2010, 2019 (if that population file is easy to obtain; otherwise
+  countries and world only). Group values are means only, since ranges
+  cannot be summed across countries.
+- Shape: the same long table as the projections, with a source column
+  ("GBD 2019 round" against each projection scenario), so one query returns
+  both; empty 66% and 80% columns for GBD rows.
+
+* Open questions for the team (status 2026-11-18: 1 and 4 answered, nothing added and B coarse only; 2 leaning to the compact copy, hosting not us; 3 waiting on the valuations team; 5 replaced by section C)
 1. Any other final quantity: a unit, period, breakdown, measure or statistic
    not in list A. Anything not listed gets correct means later but no valid
    range.
