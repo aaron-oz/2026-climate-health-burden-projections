@@ -120,8 +120,19 @@ income, regions, and country totals; decades; no age, sex or cause split):
 No figures from us; the historical estimates go into the tables so they can
 be queried next to the projections. Source, as Aaron leans (not fully
 discussed): the GBD 2019 round only (Burkart et al. 2021 companion data,
-1990, 2010, 2019), the round our method follows. Format details still to
-settle (see the status of open questions below).
+1990, 2010, 2019), the round our method follows. Format (Aaron, 2026-11-18):
+- Measures: deaths only, as crude rate per 100,000, age-standardized rate
+  (GBD world standard, the same standard as our projections), and percent of
+  all deaths; heat, cold, heat + cold; mean and GBD's 95% range (no 66% or
+  80% range in the source). No YLLs.
+- Places: countries and world as published; World Bank income groups and
+  regions built from countries using GBD 2019-round population for 1990,
+  2010, 2019 (if that population file is easy to obtain; otherwise
+  countries and world only). Group values are means only, since ranges
+  cannot be summed across countries.
+- Shape: the same long table as the projections, with a source column
+  ("GBD 2019 round" against each projection scenario), so one query returns
+  both; empty 66% and 80% columns for GBD rows.
 
 * Open questions for the team (status 2026-11-18: 1 and 4 answered, nothing added and B coarse only; 2 leaning to the compact copy, hosting not us; 3 waiting on the valuations team; 5 replaced by section C)
 1. Any other final quantity: a unit, period, breakdown, measure or statistic

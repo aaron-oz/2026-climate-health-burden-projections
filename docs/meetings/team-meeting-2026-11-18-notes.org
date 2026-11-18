@@ -28,6 +28,12 @@ synced to these decisions on the same date.
 - Timing: aim to have the final pass done by Thanksgiving (2026-11-26).
   Caspar does not need to delete anything before the end of 2026.
 
+- Historical table format (Aaron, after the meeting): deaths only (crude
+  rate, age-standardized rate, percent of all deaths; no YLLs); World Bank
+  groups built from countries with GBD 2019-round population if easy to get;
+  same long table shape as the projections with a source column. Details in
+  the table list, section C.
+
 * Leaning, not fully decided
 - Historical sources (deck question 6): not fully discussed. Aaron is
   inclined to use the GBD 2019 round only (1990, 2010, 2019), the round our
