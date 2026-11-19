@@ -173,3 +173,32 @@ light (figures-report/) and dark (figures-slides/) versions:
 - 2000: only in the GBD 2023 round (asked of the team in the 2026-11-18
   deck).
 - Country differences listed above (Venezuela first) not investigated.
+
+* Historical table for querying alongside the projections (2026-11-19)
+Decided 2026-11-18: no figures from us; the GBD 2019-round estimates go into
+a long table shaped like the projection tables (table list, section C).
+- Script: output/historical-comparison-2026-11/build_historical_table.R.
+  Output:
+  ~/data/wb-temp-attr-projections/review/historical-comparison-2026-11/historical_gbd2019_table.csv
+  (7,596 rows).
+- Population: GBD 2019-round population, all ages, both sexes, for 1990,
+  2010 and 2019 (GHDx "GBD 2019 Population Estimates 1950-2019", DOI
+  10.6069/7EGY-0354, files IHME_GBD_2019_POP_1990_1999 and _2010_2019,
+  downloaded by Aaron 2026-11-19), extracted to
+  gbd-2019-results/gbd2019_pop_allages_1990_2010_2019.csv. All 204
+  countries are present; they sum to 99.94% of GBD's global population in
+  each of the three years.
+- Rows: countries and world with crude rate, age-standardized rate (GBD
+  world standard) and percent of all deaths, mean and 95% range as
+  published, plus deaths = crude rate x population (mean only). World Bank
+  income groups, low and middle income, and the seven regions with deaths
+  and crude rate, means only (ranges cannot be summed across countries); no
+  age-standardized rate or percent for groups (they need age-specific or
+  all-cause numbers the file lacks). The 80% and 66% columns are empty (GBD
+  publishes 95% only).
+- Checks: world deaths from the published global rate agree with the sum
+  of the 204 countries' deaths within 0.4% for every year and measure
+  (largest gap 2010 heat, ratio 0.996); the seven regions sum exactly to
+  the 204 countries. Group crude rates for 2019 are within a few hundredths
+  per 100,000 of the earlier approximation that used the GBD 2023 round's
+  population (low and middle income heat 5.17 against 5.15).
