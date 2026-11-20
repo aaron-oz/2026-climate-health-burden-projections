@@ -40,12 +40,11 @@ synced to these decisions on the same date.
   method follows, so readers don't see our estimates set against the GBD
   2023 round, which is not really comparable to our numbers. No 2000 value
   (it exists only in the 2023 round).
-- What we keep (deck question 5): almost certainly the compact copy (about
-  50-70 GB, rough arithmetic, from which the full output rebuilds exactly),
-  but it depends on the valuation answer. Hosting not resolved; it will not
-  be us.
+- Hosting of the kept output: not resolved; it will not be us.
 
-* Open
-- Valuation (deck question 4): waiting on the valuations team (email to
-  Jacx and Patrick Fahr, 2026-11-18): is the transform linear, do they want
-  propagated uncertainty, is the math ready for this pass.
+* Decided after the meeting (Aaron, 2026-11-20)
+- Valuation (deck question 4): no valuations in this run.
+- What we keep (deck question 5): the compact copy (about 60-70 GB by
+  arithmetic from a production-sized test, docs/ops/final-summary-pass-2026-11.org),
+  from which the full per-draw output rebuilds exactly, for later valuation
+  work at the draw level.

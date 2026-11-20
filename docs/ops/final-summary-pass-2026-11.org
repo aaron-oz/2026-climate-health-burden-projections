@@ -17,8 +17,8 @@ It runs in two stages:
    population and the standard population. It never touches the 10 TB.
 
 Why two stages rather than one pass that writes tables directly: the
-compact copy is the thing the team is likely to keep anyway (decision
-pending the valuation team's answer), and with it the tables can be
+compact copy is what we keep for later valuation work at the draw level
+(Aaron, 2026-11-20: no valuations in this run), and with it the tables can be
 computed, checked and recomputed without another pass over the 10 TB. If a
 table turns out wrong or a new one is needed, only stage B reruns. Stage A
 is a plain read-and-copy with no table logic in it, so it is the part least
@@ -136,8 +136,7 @@ measurement):
   be downloaded here (journal sites refuse automated access). Stage B takes
   them from --std_pop; the tests use uniform weights, which are for testing
   only.
-- Valuation: waiting on the valuations team. If their transform is linear
-  with fixed values and they want only means, the tables suffice; otherwise
-  they need the compact copy.
+- Valuation: none in this run (Aaron, 2026-11-20). The compact copy is kept
+  so valued totals with valid ranges can be computed later from the draws.
 - Who runs stage B (production machine or here) and how the compact copy
   travels: to be decided.
