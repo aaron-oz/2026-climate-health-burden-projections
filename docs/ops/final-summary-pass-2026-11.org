@@ -118,16 +118,22 @@ measurement):
   about 21 CPU-hours; with 3 workers here (20 GB of memory) about 7 hours.
 
 * Run plan
-1. On the production machine, from the repo root (current main), stage A:
-   Rscript global-scripts/util_export_compact.R --out=<compact dir> --jobs=<n>
-   Then send us <compact dir>/report.txt and manifest.csv. Restartable: a
-   finished location is skipped on a rerun.
-2. Stage B, either on the production machine or here after the compact copy
-   is transferred (about 65 GB): prepare_inputs.R (here), then
-   util_final_tables.R with population.csv, groups.csv, names.csv, the
-   standard population and the historical table.
-3. check_against_2026_11.R on the final tables, then the usual review.
-4. Nothing is deleted on the production machine until the compact copy's
+Decided (Aaron, 2026-11-20): Caspar runs both stages on the production
+machine; we receive the tables and the reports. The compact copy stays there
+until hosting is settled (not us).
+1. Pull main. The inputs stage B needs travel in the repo:
+   output/final-summary-pass-2026-11/inputs/ (population.csv, groups.csv,
+   names.csv, historical_gbd2019_table.csv, and std_pop.csv once we have the
+   weights). Life tables are already in data/lifetables.
+2. Stage A: bash output/final-summary-pass-2026-11/run_final_pass.sh a
+   (JOBS_A workers, default 16). Restartable. Send us the compact copy's
+   report.txt and manifest.csv when done.
+3. Stage B: bash output/final-summary-pass-2026-11/run_final_pass.sh b
+   (JOBS_B workers, default 8, about 7 GB of memory each). Needs std_pop.csv.
+4. bash output/final-summary-pass-2026-11/run_final_pass.sh pack, and send
+   the tar file (tables and reports, a few GB).
+5. Here: check_against_2026_11.R on the tables, then the usual review.
+6. Nothing is deleted on the production machine until the compact copy's
    report passes and its totals match the 2026-11 pooled results.
 
 * Open
@@ -138,5 +144,4 @@ measurement):
   only.
 - Valuation: none in this run (Aaron, 2026-11-20). The compact copy is kept
   so valued totals with valid ranges can be computed later from the draws.
-- Who runs stage B (production machine or here) and how the compact copy
-  travels: to be decided.
+- Hosting of the compact copy after the run: not settled (not us).
