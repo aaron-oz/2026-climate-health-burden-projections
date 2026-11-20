@@ -123,8 +123,7 @@ machine; we receive the tables and the reports. The compact copy stays there
 until hosting is settled (not us).
 1. Pull main. The inputs stage B needs travel in the repo:
    output/final-summary-pass-2026-11/inputs/ (population.csv, groups.csv,
-   names.csv, historical_gbd2019_table.csv, and std_pop.csv once we have the
-   weights). Life tables are already in data/lifetables.
+   names.csv, historical_gbd2019_table.csv, std_pop.csv). Life tables are already in data/lifetables.
 2. Stage A: bash output/final-summary-pass-2026-11/run_final_pass.sh a
    (JOBS_A workers, default 16). Restartable. Send us the compact copy's
    report.txt and manifest.csv when done.
@@ -137,11 +136,19 @@ until hosting is settled (not us).
    report passes and its totals match the 2026-11 pooled results.
 
 * Open
-- GBD world standard population weights (17 groups, 80+ summed): not on
-  disk, and the GBD 2019 demographics appendix that tabulates them could not
-  be downloaded here (journal sites refuse automated access). Stage B takes
-  them from --std_pop; the tests use uniform weights, which are for testing
-  only.
+- GBD world standard population: resolved 2026-11-20. Source: GBD 2019
+  demographics paper (Lancet 2020), appendix 1, section 5.4.5 and appendix
+  table 13 "GBD world population age standard" (the non-weighted mean of the
+  age distributions of national locations over 5 million people in 2019).
+  The PDF is kept at
+  ~/data/wb-temp-attr-projections/review/gbd-2019-results/GBD2019_demographics_Lancet2020_appendix1_mmc1.pdf
+  (Aaron downloaded it 2026-11-20). The table as printed is in
+  output/final-summary-pass-2026-11/inputs/std_pop_gbd2019_appendix_table13.csv;
+  std_pop.csv collapses it to our 17 groups: 0-4 = "<1" (2.025992886) +
+  "1 to 4" (7.909875913) = 9.935868799; 80+ = 80-84 + 85-89 + 90-94 + 95
+  plus = 2.069816682; the other groups as printed. The 17 weights sum to
+  99.999999998 percent; stage B normalizes them to 1. Checked: the three
+  neonatal rows sum exactly to "<1".
 - Valuation: none in this run (Aaron, 2026-11-20). The compact copy is kept
   so valued totals with valid ranges can be computed later from the draws.
 - Hosting of the compact copy after the run: not settled (not us).
