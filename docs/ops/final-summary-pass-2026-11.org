@@ -1,0 +1,154 @@
+#+TITLE: Final summary pass: design, tests and run plan
+#+DATE: 2026-11-19
+
+* What this is
+The code for the one final pass over the scaled scenario output, as decided
+by the team (docs/meetings/team-meeting-2026-11-18-notes.org) and listed in
+docs/meetings/summary-tables-request-2026-11-16.org (synced 2026-11-18).
+
+It runs in two stages:
+1. Stage A, on the production machine (Caspar's): global-scripts/util_export_compact.R
+   reads every scaled result file once and writes the compact copy, about
+   60-70 GB for 204 countries (arithmetic from the test below, not measured
+   at full scale), from which the full output (about 10 TB) rebuilds
+   exactly. It checks the rebuild on every file it reads, not a sample.
+2. Stage B, wherever the compact copy is: global-scripts/util_final_tables.R
+   computes every table from the compact copy, the life tables, IHME's
+   population and the standard population. It never touches the 10 TB.
+
+Why two stages rather than one pass that writes tables directly: the
+compact copy is what we keep for later valuation work at the draw level
+(Aaron, 2026-11-20: no valuations in this run), and with it the tables can be
+computed, checked and recomputed without another pass over the 10 TB. If a
+table turns out wrong or a new one is needed, only stage B reruns. Stage A
+is a plain read-and-copy with no table logic in it, so it is the part least
+likely to need a second run on the production machine.
+
+* Why the compact copy rebuilds the output exactly
+In Workflow B (global-scripts/util_workflow_b_ratio.R) attributable deaths
+for one (location, climate model, scenario, year) are
+  deaths_heat(cause, age, sex, draw) = ihme_deaths(cause, age, sex, draw) x S(cause, draw) x paf_heat(cause, draw)
+and the same for cold, where S is the scale factor (1 for SSP2-4.5 and for
+the four causes IHME does not temperature-scale) and the PAFs are the same
+for every age and sex. IHME's deaths do not depend on the climate model or
+scenario. So the output is the product of
+- ihme [draw, sex, age, cause, year], one per location, and
+- factor [draw, cause, (S, paf_heat, paf_cold), year], one per (location, model, scenario),
+stored as 4-byte floats. Stage A checks every assumption in that sentence on
+every file: complete grid, one national unit, PAFs and S constant across age
+and sex, IHME deaths identical across models and scenarios, and the rebuild
+from the stored values against the file's own numbers.
+
+* Files
+- global-scripts/util_export_compact.R: stage A.
+- global-scripts/util_compact_io.R: reader (read_compact, read_factor,
+  rebuild_combo); copied into the compact copy as read_compact.R, base R only.
+- global-scripts/util_final_tables.R: stage B.
+- output/final-summary-pass-2026-11/prepare_inputs.R: population.csv (IHME
+  forecast population, mean over its draws, ages 80+ summed), groups.csv
+  (World Bank income groups, low and middle income, regions), names.csv.
+- output/final-summary-pass-2026-11/check_against_2026_11.R: after the
+  production run, compares the final totals with the 2026-11 pooled results
+  (same runs, different route); expectation written down before any run:
+  agreement to a relative 1e-4.
+- output/final-summary-pass-2026-11/test/: make_fixture.R, check_tables.R,
+  run_tests.sh (end to end on a fixture), make_big_compact.R (timing).
+
+* What stage B computes, against the decided list
+| Decided (2026-11-16 email, 2026-11-18 meeting)                      | Stage B                                                                    | Same? |
+|---------------------------------------------------------------------+----------------------------------------------------------------------------+-------|
+| 4 scenarios, SSP2-4.5 reference, difference from it draw by draw     | every scenario in the compact copy; diff_* within model and draw           | SAME  |
+| 24 common climate models x 500 draws pooled                          | models present for every scenario at every location (checked); all draws   | SAME  |
+| deaths and YLLs, heat, cold, heat + cold                             | the six measures; heat + cold summed draw by draw                          | SAME  |
+| mean, 95/80/66% ranges                                               | mean and type-7 quantiles of the pooled values                             | SAME  |
+| population and IHME deaths for rates and context                     | pop and ihme_deaths columns in every main row                              | SAME  |
+| 204 countries, world, 4 income groups, LMIC, 7 regions               | every location, World, the groups in groups.csv                            | SAME  |
+| decades plus 2022-2050; one annual all-ages/sexes/causes table       | main and ASR tables by decade and 2022-2050; annual.csv.gz                 | SAME  |
+| breakdowns incl. cause x age x sex                                   | every combination of 22 cause slices x 22 age slices x 3 sexes            | SAME  |
+| ages: 17 groups, under 5, 15-49, 15-64, 65+ (50-69 dropped)          | as listed                                                                  | SAME  |
+| causes: 17, cardiovascular, diabetes and kidney, injuries, all but forces of nature | as listed                                                   | SAME  |
+| ASRs, GBD (IHME) world standard, by sex and cause group              | every cause slice and sex; standard weights from --std_pop                 | SAME, weights still needed |
+| vetting quantities, coarse                                           | vetting.csv.gz, crossing.csv.gz, temperature.csv.gz (unit by period)       | CHANGED: temperature at 4 years only |
+| historical estimates queryable alongside                             | historical.csv.gz with the same keys                                       | SAME  |
+The one change: population-weighted temperature is recorded at 2022, 2030,
+2040 and 2050 (the years the existing summarizer uses), not every year,
+because reading every daily temperature file would roughly double stage A's
+reading (the existing summarizer's note; not measured here). It is a vetting
+quantity only. --temp_years=2022-2050 restores every year at that cost.
+
+* Tests (2026-11-19)
+- Fixture: 3 locations (Colombia, India, USA ids), 29 years, 5 climate
+  models (3 in every scenario, 2 not), 4 scenarios, 40 draws, built from the
+  real Colombia 2022 sample and scaled with the production apply_ratio().
+- Stage A on the fixture: 1,305 files; every check passes; rebuild from the
+  stored values within a relative 1.7e-7.
+- Stage A on the two real production files we have (Colombia 2022,
+  ACCESS-CM2, SSP2-4.5 and SSP5-8.5): every check passes; rebuild within
+  1.6e-7.
+- Stage B on the fixture against independent brute-force code reading the
+  raw files (check_tables.R): 13 of 13 checks pass, worst relative
+  difference 8.6e-6 (from the 6-significant-digit rounding): a cause group x
+  age group x sex cell with its difference from the reference, a group
+  total, YLLs, the 2022-2050 period, the annual table with its difference,
+  an age-standardized rate, the pop and ihme_deaths columns, the
+  attributable fraction, and a full-detail rebuild of a raw file from the
+  compact copy. Models without every scenario are left out (n_models = 3).
+
+* Size and time
+Measured, then scaled by arithmetic (the scaling is a rough estimate, not a
+measurement):
+- Compact copy: 303 MB per location at production size (500 draws, 24
+  models x 4 scenarios, 29 years; synthetic values). With every model kept
+  (some scenarios have up to 29), roughly 330 MB, so 62-68 GB for 204
+  locations.
+- Stage A: readRDS of one 10.9 MB result file takes 0.20 s here, and the
+  whole export of 2 files 0.9 s including R start-up. At about 3,000 files
+  per location (about 105 model-scenario runs x 29 years), 621,000 files,
+  roughly 40-60 CPU-hours before disk limits; the previous full read of the
+  same files took about 10 hours on 16 workers (Caspar's benchmark), and
+  this should be of that order. Memory: under 1 GB per worker (each worker
+  holds one location's arrays).
+- Stage B, production-sized synthetic copy, this machine: one location 4.8
+  min, a two-location group 5.0 min; peak memory 6.6 GB per worker. 55% of
+  the time is quantiles (12,000 values x 1,452 slices x 6 measures, for each
+  scenario and difference), 23% slicing, 6% rebuilding (about 18 s per
+  location for all four scenarios, which is what each extra member adds to a
+  group). Whole run, rough: 204 locations x about 5 min (17 hours) plus 13
+  groups (about 742 member reads x 18 s, 3.7 hours, plus 13 x 3.5 min),
+  about 21 CPU-hours; with 3 workers here (20 GB of memory) about 7 hours.
+
+* Run plan
+Decided (Aaron, 2026-11-20): Caspar runs both stages on the production
+machine; we receive the tables and the reports. The compact copy stays there
+until hosting is settled (not us).
+1. Pull main. The inputs stage B needs travel in the repo:
+   output/final-summary-pass-2026-11/inputs/ (population.csv, groups.csv,
+   names.csv, historical_gbd2019_table.csv, std_pop.csv). Life tables are already in data/lifetables.
+2. Stage A: bash output/final-summary-pass-2026-11/run_final_pass.sh a
+   (JOBS_A workers, default 16). Restartable. Send us the compact copy's
+   report.txt and manifest.csv when done.
+3. Stage B: bash output/final-summary-pass-2026-11/run_final_pass.sh b
+   (JOBS_B workers, default 8, about 7 GB of memory each). Needs std_pop.csv.
+4. bash output/final-summary-pass-2026-11/run_final_pass.sh pack, and send
+   the tar file (tables and reports, a few GB).
+5. Here: check_against_2026_11.R on the tables, then the usual review.
+6. Nothing is deleted on the production machine until the compact copy's
+   report passes and its totals match the 2026-11 pooled results.
+
+* Open
+- GBD world standard population: resolved 2026-11-20. Source: GBD 2019
+  demographics paper (Lancet 2020), appendix 1, section 5.4.5 and appendix
+  table 13 "GBD world population age standard" (the non-weighted mean of the
+  age distributions of national locations over 5 million people in 2019).
+  The PDF is kept at
+  ~/data/wb-temp-attr-projections/review/gbd-2019-results/GBD2019_demographics_Lancet2020_appendix1_mmc1.pdf
+  (Aaron downloaded it 2026-11-20). The table as printed is in
+  output/final-summary-pass-2026-11/inputs/std_pop_gbd2019_appendix_table13.csv;
+  std_pop.csv collapses it to our 17 groups: 0-4 = "<1" (2.025992886) +
+  "1 to 4" (7.909875913) = 9.935868799; 80+ = 80-84 + 85-89 + 90-94 + 95
+  plus = 2.069816682; the other groups as printed. The 17 weights sum to
+  99.999999998 percent; stage B normalizes them to 1. Checked: the three
+  neonatal rows sum exactly to "<1".
+- Valuation: none in this run (Aaron, 2026-11-20). The compact copy is kept
+  so valued totals with valid ranges can be computed later from the draws.
+- Hosting of the compact copy after the run: not settled (not us).

@@ -18,9 +18,10 @@
 #    deaths; crude rate = deaths / group population x 100,000. Means only (ranges cannot
 #    be summed across countries). No age-standardized rate or percent for groups (they
 #    need age-specific or all-cause numbers this file does not have).
-# Columns follow the projection tables: source, scenario ("historical"), unit_type, unit,
-# location_id, period (the year), measure (deaths_heat, deaths_cold, deaths_nonopt), metric
-# (deaths, rate_crude, rate_asr, percent), mean, lower95, upper95, lower80, upper80, lower66,
+# Columns follow the projection tables: source, scenario ("historical"), unit_type (location or
+# group; World is a group), unit (location_id for a location, the group name otherwise), name,
+# location_id, period (the year), cause, age, sex ("all", "all", "both"), measure (deaths_heat,
+# deaths_cold, deaths_nonopt), metric (count = deaths per year, rate_crude, rate_asr, percent), mean, lower95, upper95, lower80, upper80, lower66,
 # upper66 (80% and 66% are NA: GBD publishes 95% only).
 #
 # Usage (repo root, emacs-r distrobox):
@@ -72,9 +73,15 @@ grows <- rbind(grp[, .(unit_type = "group", unit = group, location_id = NA_integ
                        mean = 1e5 * deaths / pop, lower95 = NA_real_, upper95 = NA_real_)])
 
 H <- rbind(pub, dth, grows)
-H[, `:=`(source = "GBD 2019 round", scenario = "historical", period = as.character(year),
+# the projection tables' keys (util_final_tables.R): a location's unit is its location_id, World is a
+# group, and these rows cover all causes, all ages and both sexes; "count" is deaths per year
+H[, name := unit]
+H[unit_type == "location", unit := as.character(location_id)]
+H[unit_type == "world", unit_type := "group"]
+H[metric == "deaths", metric := "count"]
+H[, `:=`(source = "GBD 2019 round", scenario = "historical", period = as.character(year), cause = "all", age = "all", sex = "both",
          lower80 = NA_real_, upper80 = NA_real_, lower66 = NA_real_, upper66 = NA_real_)]
-setcolorder(H, c("source", "scenario", "unit_type", "unit", "location_id", "period", "measure", "metric",
+setcolorder(H, c("source", "scenario", "unit_type", "unit", "name", "location_id", "period", "cause", "age", "sex", "measure", "metric",
                  "mean", "lower95", "upper95", "lower80", "upper80", "lower66", "upper66"))
 H[, year := NULL]
 setorder(H, unit_type, unit, period, measure, metric)
@@ -82,15 +89,15 @@ fwrite(H, OUT)
 
 # --- checks -------------------------------------------------------------------------------
 cat("rows:", nrow(H), "\n"); print(H[, .N, by = .(unit_type, metric)])
-w <- merge(H[unit == "World" & metric == "deaths", .(period, measure, world = mean)],
-           H[unit_type == "location" & metric == "deaths", .(sum204 = sum(mean)), by = .(period, measure)])
+w <- merge(H[unit == "World" & metric == "count", .(period, measure, world = mean)],
+           H[unit_type == "location" & metric == "count", .(sum204 = sum(mean)), by = .(period, measure)])
 w[, ratio := sum204 / world]
 cat("\nWorld deaths (published global rate x global population) against the sum of 204 countries:\n"); print(w)
-chk <- H[unit_type == "group" & metric == "deaths" & unit %in% c("Sub-Saharan Africa", "East Asia & Pacific", "Europe & Central Asia",
+chk <- H[unit_type == "group" & metric == "count" & unit %in% c("Sub-Saharan Africa", "East Asia & Pacific", "Europe & Central Asia",
           "Latin America & Caribbean", "Middle East, North Africa, Afghanistan & Pakistan", "North America", "South Asia"),
          .(regions = sum(mean)), by = .(period, measure)]
 cat("\nSeven regions sum to the 204-country total:\n")
 print(merge(chk, w[, .(period, measure, sum204)])[, d := regions / sum204 - 1][])
 cat("\nGroup crude rates per 100,000, 2019:\n")
-print(dcast(H[unit_type %in% c("group", "world") & metric == "rate_crude" & period == "2019"], unit ~ measure, value.var = "mean",
+print(dcast(H[unit_type == "group" & metric == "rate_crude" & period == "2019"], unit ~ measure, value.var = "mean",
             fun.aggregate = function(v) round(v, 2)))

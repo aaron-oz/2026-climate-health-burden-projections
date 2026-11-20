@@ -134,7 +134,7 @@ discussed): the GBD 2019 round only (Burkart et al. 2021 companion data,
   ("GBD 2019 round" against each projection scenario), so one query returns
   both; empty 66% and 80% columns for GBD rows.
 
-* Open questions for the team (status 2026-11-18: 1 and 4 answered, nothing added and B coarse only; 2 leaning to the compact copy, hosting not us; 3 waiting on the valuations team; 5 replaced by section C)
+* Open questions for the team (status 2026-11-20: 1 and 4 answered, nothing added and B coarse only; 2 the compact copy is kept, hosting not us; 3 no valuations in this run, the compact copy serves later valuation work; 5 replaced by section C)
 1. Any other final quantity: a unit, period, breakdown, measure or statistic
    not in list A. Anything not listed gets correct means later but no valid
    range.
