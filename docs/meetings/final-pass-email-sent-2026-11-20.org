@@ -1,0 +1,36 @@
+#+TITLE: Email sent to the team: launching the final summary pass (as sent)
+#+DATE: 2026-11-20
+
+Sent by Aaron on 2026-11-20, addressed "Hi all", with the run instructions
+for Caspar. The text below is exactly as sent. Code: main at db73046
+(merge of final-summary-pass); design, tests and timing in
+docs/ops/final-summary-pass-2026-11.org.
+
+Notes for our own reference (nothing needs correcting):
+- The timings are estimates: stage A's 10 hours leans on Caspar's earlier
+  full read of the same output, and stage B's 20-25 CPU-hours scales a
+  production-sized test on our machine. The 65 GB compact copy is
+  arithmetic from that test.
+- Stage B stops with an error if launched before stage A has finished every
+  location (the groups file lists all 204), so an early launch cannot give
+  partial group totals.
+
+#+begin_example
+Hi all -
+
+I got enough of an answer from the valuation folks to determine that we should go ahead with our run and save a condensed version of the objects for later use.
+
+Caspar,
+The final summary pass is ready on main. It only reads your existing output (no reruns) and runs in two stages, both restartable. If one dies you can relaunch by running the same command.
+First, pull main.
+1. Stage A writes a compact copy of the draws (about 65 GB) that rebuilds the full output exactly. Please keep it afterwards; it's what we'll use for later valuation work. My guess is it takes about as long as your last full read (about 10 hours on 16 workers):
+JOBS_A=16 bash output/final-summary-pass-2026-11/run_final_pass.sh a
+When it finishes, please send me output/compact/report.txt and output/compact/manifest.csv. If any line says FAIL or ERROR, stop there.
+2. Stage B relies on stage A outputs, computing the tables from the compact copy. Stage A should finish before you launch this. Each worker needs about 7 GB of memory, so set JOBS_B to fit (eg 8 workers is about 56 GB). My rough guess is 20-25 CPU-hours in total:
+JOBS_B=8 bash output/final-summary-pass-2026-11/run_final_pass.sh b
+3. Bundle the tables and reports and send me the tar file (a few GB):
+bash output/final-summary-pass-2026-11/run_final_pass.sh pack
+Details are in docs/ops/final-summary-pass-2026-11.org. Thanks!
+Best,
+Aaron
+#+end_example
