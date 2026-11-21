@@ -1,0 +1,87 @@
+#+TITLE: Two questions answered 2026-11-18/19: where age enters, and how many African countries
+#+DATE: 2026-11-19
+
+Answers given to Aaron in chat on 2026-11-18 and 2026-11-19, saved here.
+Code read on main at those dates; numbers computed by a throwaway script, not
+kept in the repo (the recipe is below).
+
+* Where age enters the analysis
+Not in the temperature risk itself:
+- Risk curves: the 17 cause-specific relative-risk curves have no age
+  dimension. Each file (for example data/erf/ckd_curve_samples.csv) has only
+  annual mean temperature (the zone), daily temperature and the draws. So,
+  for a given cause, the model assumes the same relative risk from a hot or
+  cold day at every age. (Believed to match Burkart et al., who did not
+  estimate age-specific curves; the paper was not re-checked.)
+- Minimum-risk temperature (TMREL): global-scripts/util_derive_tmrel.R
+  weights the 17 curves by each cause's share of deaths summed over all ages
+  and both sexes (line 55). Age structure affects it only through the cause
+  mix.
+- Attributable fraction (PAF): computed per year, cause and draw from daily
+  temperatures; the same for every age and sex within a country, year, cause
+  and draw (05_compute_pafs.R, comments at lines 257-266, "the merge
+  broadcasts paf across age and sex").
+- Exposure population: the gridded population maps used to weight grid cells
+  (CCKP gpw-v4-rev11-<ssp>, 0.25 degree) carry one total-population value per
+  cell, no age or sex (03_load_temperature.R requires pixel_id, date,
+  daily_temp, pop; line 49). So every age group in a country gets the same
+  temperature exposure.
+
+Where age does enter:
+1. Attributable deaths = IHME forecast deaths by cause, age, sex and draw x
+   PAF x the scenario scale factor S = (1 - PAF_SSP2-4.5) / (1 - PAF_scenario),
+   also per cause and draw (util_workflow_b_ratio.R). Within a cause,
+   attributable deaths split across ages exactly as IHME's deaths do; heat
+   and cold differ in age profile only through the cause mix (injuries are
+   younger, with negative cold values).
+2. YLLs = attributable deaths x remaining life expectancy at the start of the
+   5-year age group, UN WPP national life tables by sex and year
+   (07_compute_ylls.R). No mid-group adjustment in production (likely
+   overstates YLLs per death somewhat; not measured). The Colombia validation
+   mode used ex - 2.5 and 10 years for 80+, following Samuel's code.
+3. Rates: IHME population by age and sex as denominators; age-standardized
+   rates in the final pass reweight these by the GBD world standard.
+4. Age breakdowns: sums over IHME's 5-year age groups.
+
+Consequence: aging affects the projections only through IHME's forecast
+(older populations die more of the causes with steep curves). Crude rates
+therefore rise with aging even where warming does nothing (world cold, SSP2-4.5:
+17.65 per 100,000 in 2022 against 21.63 in 2041-2050), which is why the
+final pass adds age-standardized rates.
+
+* How many African countries could this be run on
+Africa here = the 54 UN member states: 48 in the World Bank's Sub-Saharan
+Africa region plus Algeria, Djibouti, Egypt, Libya, Morocco and Tunisia (in
+its Middle East, North Africa, Afghanistan and Pakistan region). All 54 are
+among the 204 GBD countries and all have complete results in all four
+scenarios. (Western Sahara, Reunion, Mayotte and St Helena are not GBD
+countries.)
+
+Burden thresholds use IHME's forecast deaths per year, mean over 2022-2050,
+from the SSP2-4.5 Workflow B bundle
+(review/scenarios-2026-10-20/workflow_b_bundle/workflow_b/by_cause.csv;
+IHME deaths are identical across climate models, checked). Counts only; no
+filter is applied to any result.
+
+Sum of the 8 non-injury diseases (ischemic heart disease, stroke,
+hypertensive heart disease, cardiomyopathy, diabetes, chronic kidney
+disease, lower respiratory infections, COPD), then filter (the version Aaron
+asked for, 2026-11-19):
+| Disease deaths per year at least | Kept of 54 | Dropped (disease deaths per year) |
+|----------------------------------+------------+-----------------------------------|
+| 100 or 500                       | 54         | none |
+| 1,000 or 2,000                   | 52         | Seychelles (587), Sao Tome and Principe (731) |
+| 5,000                            | 47         | also Cabo Verde (2,182), Comoros (2,509), Eswatini (4,090), Djibouti (4,191), Equatorial Guinea (4,674) |
+| 10,000                           | 40         | also Guinea-Bissau (6,655), Gabon (6,991), Gambia (7,216), Lesotho (8,057), Botswana (8,355), Mauritius (8,619), Namibia (9,218) |
+| 20,000                           | 36         | also Mauritania (13,003), Liberia (16,932), Central African Republic (18,571), Eritrea (19,895) |
+Any cutoff from about 750 to 2,000 gives the same 52.
+
+For comparison, all 17 causes summed: 54 kept at 500, 52 at 1,000, 49 at
+5,000, 42 at 10,000. Requiring every one of the 17 causes to reach 10 deaths
+per year keeps only 26, because forces of nature (inj_disaster) is tiny
+almost everywhere (median 9 per year; the smallest cause in 49 of 54
+countries); with the 8 diseases each required to reach 10, all 54 pass
+(cardiomyopathy is the smallest disease everywhere).
+
+The "David" data update Aaron mentioned as the model for this filter was not
+found in this repo, its history or memory; its exact cutoff is unconfirmed.
