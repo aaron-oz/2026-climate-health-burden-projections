@@ -1,0 +1,179 @@
+#+TITLE: Status: multimodel-summary (2026-11-20)
+#+DATE: 2026-11-20
+
+* Read this first
+- This line of work turns the finished scenario runs (four climate
+  scenarios SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5; 204 countries;
+  2022-2050; deaths and years of life lost (YLLs) attributable to heat and
+  cold) into results the World Bank team can use. SSP2-4.5 is the reference
+  scenario (IHME's mortality forecast is defined under it). This session ran
+  the 2026-11-18 team meeting's deck, recorded its decisions, built the
+  historical comparison and historical table, and wrote and tested the code
+  for the one final summary pass over Caspar's existing output. On
+  2026-11-20 Aaron emailed the team launching that pass; Caspar runs both
+  stages on his machine.
+- *Most important next action:* when Caspar sends stage A's report.txt and
+  manifest.csv, check them (every check PASS, 204 locations written, about
+  65 GB) before he runs stage B. Then, when the tables arrive, run
+  output/final-summary-pass-2026-11/check_against_2026_11.R.
+- Previous status doc in this line of work: docs/status/2026-11-17a-multimodel-summary.org.
+- Session ended with: /end-session. Session notes: no compaction; ran
+  2026-11-17 to 2026-11-20. Everything below was verified by running code
+  or reading files and git; no sub-agents were used.
+
+* What this session accomplished
+All merged to main (verified with git, main at a70c16d before this status commit).
+- Deck for the 2026-11-18 meeting (30 min): docs/meetings/team-meeting-2026-11-18-slides.tex
+  and .pdf; seven questions, historical example slides, proposed plan.
+- Historical comparison: docs/reviews/historical-comparison-2026-11-17.org;
+  scripts output/historical-comparison-2026-11/ (build_historical.R,
+  make_historical_figures.R, make_country_examples.R); outputs and figures
+  in ~/data/wb-temp-attr-projections/review/historical-comparison-2026-11/.
+  Our 2022 world crude rates under SSP2-4.5 (heat 4.97, cold 17.65 deaths
+  per 100,000) sit close to the GBD 2019 round's 2019 values (4.62, 17.23);
+  our heat is 0.76 times the GBD 2023 round's 2022 value (that round revised
+  heat upward). Not investigated: Venezuela heat (ours 11.1, GBD 4.6 per
+  100,000).
+- Meeting decisions: docs/meetings/team-meeting-2026-11-18-notes.org; table
+  list synced: docs/meetings/summary-tables-request-2026-11-16.org.
+- Historical GBD 2019-round table in the projection tables' key shape:
+  output/historical-comparison-2026-11/build_historical_table.R (inputs:
+  GBD 2019-round temperature file and the GBD 2019 population files Aaron
+  downloaded from GHDx, DOI 10.6069/7EGY-0354, unzipped in
+  ~/data/wb-temp-attr-projections/review/gbd-2019-results/pop/). Copy for
+  the final pass: output/final-summary-pass-2026-11/inputs/historical_gbd2019_table.csv.
+- Final summary pass code, merged in db73046:
+  - Stage A, global-scripts/util_export_compact.R: reads every scaled result
+    file once and writes the compact copy (IHME deaths per location; scale
+    factor and heat and cold PAFs per model and scenario; 4-byte floats;
+    about 65 GB by arithmetic), checking on every file that it rebuilds
+    exactly. Reader: global-scripts/util_compact_io.R.
+  - Stage B, global-scripts/util_final_tables.R: all decided tables from the
+    compact copy (22 cause x 22 age x 3 sex slices by decade and 2022-2050;
+    annual totals; age-standardized rates; coarse vetting quantities;
+    historical table with the same keys).
+  - Driver: output/final-summary-pass-2026-11/run_final_pass.sh (a, b, pack).
+  - Inputs in the repo: output/final-summary-pass-2026-11/inputs/
+    (population.csv, groups.csv, names.csv, historical_gbd2019_table.csv,
+    std_pop.csv).
+  - Tests: output/final-summary-pass-2026-11/test/run_tests.sh, 13 of 13
+    checks against brute-force code pass on a fixture; timing on a
+    production-sized synthetic copy.
+  - Design, decided-list comparison, tests, timing, run plan:
+    docs/ops/final-summary-pass-2026-11.org.
+- GBD world population age standard: GBD 2019 demographics paper (Lancet
+  2020) appendix 1, table 13; PDF kept at
+  ~/data/wb-temp-attr-projections/review/gbd-2019-results/GBD2019_demographics_Lancet2020_appendix1_mmc1.pdf;
+  collapsed to our 17 age groups in std_pop.csv.
+- Aaron's launch email (sent 2026-11-20), verbatim:
+  docs/meetings/final-pass-email-sent-2026-11-20.org (merged 0b10c8a).
+- Answers to two chat questions saved: docs/reviews/africa-and-age-2026-11-19.org
+  (where age enters the model; African country counts under burden
+  thresholds, e.g. 52 of 54 with at least 1,000 deaths per year from the 8
+  non-injury diseases). Merged a70c16d.
+
+* Decisions made, and why
+- Team, 2026-11-18 (relayed by Aaron): decades plus 2022-2050 for every
+  table, plus one annual all-ages, both-sexes, all-causes table; no 5-year
+  periods; age group 50-69 dropped; GBD (IHME) world standard population
+  only; nothing added to the table list; vetting quantities coarse, for us
+  only; historical estimates go into the tables (no figures from us);
+  target done by Thanksgiving (2026-11-26); Caspar need not delete anything
+  before end of 2026.
+- Aaron, 2026-11-18: historical source the GBD 2019 round only (the 2023
+  round is not comparable to our numbers); deaths only (crude rate,
+  age-standardized rate, percent), World Bank groups via GBD 2019-round
+  population, same long shape as the projection tables.
+- Aaron, 2026-11-20: no valuations in this run; keep the compact copy so
+  valuation work can later rebuild the draws. Valuation details belong to
+  the valuations team (Jacx and Patrick Fahr), not to us.
+- Aaron, 2026-11-20: Caspar runs both stages (we receive the tables and
+  reports; the compact copy stays on his machine until hosting is settled,
+  not us).
+- Agent, 2026-11-19: two stages (compact copy, then tables from it) rather
+  than one pass writing tables, so tables can be recomputed without another
+  pass over the 10 TB; rebuild check on every file, not a sample.
+- Agent: population-weighted temperature recorded at 2022, 2030, 2040, 2050
+  only (vetting quantity; --temp_years restores every year at extra reading
+  cost).
+
+* Tried and ruled out
+- Partial-sort quantiles to speed stage B: no faster than
+  matrixStats::colQuantiles at 12,000 values x 1,452 columns (1.2 s vs 1.1 s).
+- GHDx search for a dedicated age-standard dataset: none found; the standard
+  is in the GBD 2019 demographics appendix.
+
+* Current state
+** Git
+- main at a70c16d plus this status commit. All of this session's branches
+  were merged and deleted locally and on the remote (with Aaron's OK):
+  meeting-2026-11-18-deck, deck-historical-question, historical-comparison,
+  historical-table, meeting-2026-11-18-notes, final-summary-pass,
+  log-final-pass-email, note-africa-age, plus the older
+  multimodel-meeting-asks and worktree-slides-2026-11-09-revise (remote).
+- Unmerged: methods-summary (methods summary and worked example), pushed,
+  waits on Aaron's reading.
+- Worktree .claude/worktrees/slides-2026-11-09-revise (this session's) can
+  be removed after the session closes.
+- Aaron's main checkout ~/code/wbg-climate-health-burden-projections is
+  behind origin/main; pull before editing.
+** Running or scheduled
+- On Caspar's machine (not ours): the final pass, launched by email
+  2026-11-20. Stage A guessed at about 10 hours on 16 workers, stage B at
+  20-25 CPU-hours (both estimates). Check: wait for his reply with
+  output/compact/report.txt and manifest.csv.
+- Nothing running on our side.
+** Flagged before shutdown but not done
+- None.
+** Permissions Aaron granted this session
+- Branch, commit, push and merge for the deck, historical comparison,
+  historical table, meeting notes, final-pass code, email log and note
+  (done); delete the merged branches (done). None carry over.
+
+* Todos for the next agent
+1. Check Caspar's stage A report (output/compact/report.txt) and manifest:
+   every line PASS, 204 locations "written", 0 errors, size about 60-70 GB.
+   A FAIL on "IHME deaths identical" or "constant across age and sex" means
+   the factorization does not hold for some location: stop and look at that
+   location's checks.csv before stage B.
+2. When the tables arrive (tar from run_final_pass.sh pack): run
+   Rscript output/final-summary-pass-2026-11/check_against_2026_11.R <tables dir> ~/data/wb-temp-attr-projections/review/multimodel-2026-11-wbg/tables
+   Pre-registered expectation: every mean, bound and difference within a
+   relative 1e-4 of the 2026-11 pooled results. Then sanity review
+   (direction, magnitude, group sums, age-standardized vs crude rates).
+3. Revise the draft report (docs/reports/multimodel-2026-11/multimodel-summary.tex)
+   with the final tables: regions, age-standardized rates, historical table,
+   citations from the methods summary.
+4. Smaller: Venezuela heat difference against GBD; the cold ratio to the
+   GBD 2023 round (0.99 against an expected 0.93-0.98); what countries where
+   heat overtakes cold have in common (exploratory, label suggestive).
+5. Merge methods-summary once Aaron has read it (needs his OK).
+
+* Todos for Aaron
+1. Read the methods summary and worked example
+   (docs/methodology/methods-summary-2026-11/methods-summary.pdf,
+   docs/methodology/worked-example-2026-11/worked-example.pdf, branch
+   methods-summary). Blocks merging that branch only.
+2. Hosting of the compact copy (about 65 GB) after the run: with Charlie
+   and Caspar, not us; nothing blocked until end of 2026, when Caspar may
+   want to delete the full output.
+3. Pull main in your checkout:
+   #+begin_src bash
+   git -C ~/code/wbg-climate-health-burden-projections pull --ff-only origin main
+   #+end_src
+
+* Documentation updated this session
+- docs/meetings/team-meeting-2026-11-18-slides.tex/.pdf, team-meeting-2026-11-18-notes.org,
+  summary-tables-request-2026-11-16.org, final-pass-email-sent-2026-11-20.org.
+- docs/reviews/historical-comparison-2026-11-17.org, africa-and-age-2026-11-19.org.
+- docs/ops/final-summary-pass-2026-11.org.
+- Memory: team-questions-go-to-team, valuation-team-email-2026-11-18,
+  team-meeting-2026-11-18, final-summary-pass-2026-11 (valuation ruling).
+
+* Key files
+- docs/ops/final-summary-pass-2026-11.org: design, tests, timing, run plan of the final pass.
+- output/final-summary-pass-2026-11/run_final_pass.sh: what Caspar runs.
+- output/final-summary-pass-2026-11/check_against_2026_11.R: first check on the tables.
+- global-scripts/util_export_compact.R, util_final_tables.R, util_compact_io.R: the two stages and the reader.
+- docs/meetings/team-meeting-2026-11-18-notes.org: the decisions the tables follow.
+- docs/reviews/historical-comparison-2026-11-17.org: historical comparison and table.

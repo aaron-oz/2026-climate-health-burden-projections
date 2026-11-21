@@ -7,23 +7,26 @@ status doc in this directory. Git history holds older versions of this file.
 
 * Active lines of work
 ** multimodel-summary
-- Latest status doc: [[file:2026-11-17a-multimodel-summary.org]] (2026-11-17)
-- State: 2026-11-09 meeting asks largely done (groups and regions rebuilt,
-  answers written, report fixes merged in 343763e); summary-tables email sent
-  to the team 2026-11-16, no reply yet; methods summary and worked example on
-  branch methods-summary (pushed, not merged). Next team meeting 2026-11-18.
-- Next agent action: build the deck for the 2026-11-18 meeting (30 min) that
-  turns the summary-tables email into open questions and a proposed plan;
-  then the historical comparison; then draft code for Caspar's final pass.
-- Open Aaron todos: read the methods summary and worked example (blocks the
-  merge of methods-summary); decide who stores the kept output (compact copy
-  of about 50-70 GB recommended) before Caspar deletes draws; age standard for
-  ASRs (both computed); pull main in his own checkout.
-- Still running: nothing.
+- Latest status doc: [[file:2026-11-20a-multimodel-summary.org]] (2026-11-20)
+- State: 2026-11-18 meeting decisions recorded; historical comparison and
+  GBD 2019-round historical table done; final-pass code (stage A compact
+  copy, stage B tables) written, tested and merged (db73046); Aaron emailed
+  the launch 2026-11-20 and Caspar runs both stages. No valuations in this
+  run; the compact copy is kept for later valuation work.
+- Next agent action: check Caspar's stage A report.txt and manifest.csv
+  before he runs stage B; then run check_against_2026_11.R on the tables.
+- Open Aaron todos: read the methods summary and worked example (blocks
+  merging branch methods-summary); hosting of the compact copy is with
+  Charlie and Caspar (not us, by end of 2026); pull main in his checkout.
+- Still running: the final pass on Caspar's machine (launched 2026-11-20;
+  check by his reply with the stage A report). Nothing on our side.
 
 * Dormant or closed
 
 * All status docs (newest first)
+- [[file:2026-11-20a-multimodel-summary.org]] 2026-11-20 multimodel-summary:
+  meeting deck and decisions, historical comparison and table, final-pass
+  code merged and launched with Caspar; next: check his stage A report.
 - [[file:2026-11-17a-multimodel-summary.org]] 2026-11-17 multimodel-summary:
   groups/regions rebuild, meeting answers, summary-tables email sent, methods
   summary and worked example (branch methods-summary); next: deck for 2026-11-18.
