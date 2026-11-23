@@ -1,0 +1,171 @@
+#+TITLE: Review of the final summary pass (Caspar's run of 2026-11-22)
+#+DATE: 2026-11-23
+
+* What was received
+- Tar file final_pass_20261122-001.tar (2.28 GB), unpacked to
+  ~/data/wb-temp-attr-projections/review/final-pass-2026-11-22/: the
+  stage B tables (output/final_tables/), the stage A report and manifest
+  (output/compact/report.txt, manifest.csv), and both stage logs.
+- Zip final_summaries_A_B-...-002.zip (in ~/Downloads): the same report,
+  manifest and two logs; byte-identical to the copies in the tar (checked
+  with cmp). Unpacked to the same review directory under zip/.
+- The compact copy itself (69.70 GB) stays on Caspar's machine.
+
+* Run facts (from the logs and run_info.txt)
+- Stage A: 32 workers, 2026-11-22 08:27 to 11:22 (Caspar's clock), so
+  2 h 55 min wall-clock. 204 of 204 locations written, 0 errors, 615,264
+  files read.
+- Stage B: started 11:30, run_info.txt written 13:01, so about 1.5 h
+  wall-clock. 217 tables (204 countries, 13 groups), 0 skipped, 0 errors.
+  Per-table times in units.csv sum to 35.8 CPU-hours; the World table alone
+  took 90.3 min, which sets the floor on wall-clock time.
+- Common models 24 x 500 draws, scenarios SSP1-2.6, SSP2-4.5 (reference),
+  SSP3-7.0, SSP5-8.5; periods 2022-2030, 2031-2040, 2041-2050, 2022-2050;
+  intervals 95, 80 and 66%.
+- My timing estimates in the launch email were off in both directions:
+  stage A 10 h on 16 workers (actual: under 3 h on 32 workers; roughly 6 h
+  at 16 workers if the run scales linearly, unverified), stage B 20-25
+  CPU-hours (actual 35.8).
+- Stage B's log ends "There were 22 warnings"; their text was not printed,
+  so their content is unknown. Reading the tables here produced similar
+  data.table warnings (a fractional population value assigned to an
+  integer64 column while combining files), which suggests, without
+  confirming, that Caspar's are of the same harmless kind.
+
+* Stage A report: all checks pass
+| Check                                                     | Threshold | Worst     | Result |
+|-----------------------------------------------------------+-----------+-----------+--------|
+| IHME deaths identical across models and scenarios         | 1e-6 rel  | 0         | PASS   |
+| scale factor and PAFs constant across age and sex         | 1e-12     | 0         | PASS   |
+| rebuild from stored values, relative                      | 1e-6      | 1.8e-7    | PASS   |
+| heat + cold = non-optimal                                 | 1e-6      | 5.8e-11   | PASS   |
+| largest absolute rebuild difference (reported, not tested) |           | 0.037 deaths | -  |
+Size 69.70 GB, against an expected 60-70 GB.
+
+* Pre-registered comparison with the 2026-11 pooled results
+Script: output/final-summary-pass-2026-11/check_against_2026_11.R
+(expectation written before the run: every mean, bound and difference within
+a relative 1e-4, relative error = |new - old| / max(|old|, 1)).
+
+Result: 15,624 of 15,624 rows matched. Means, upper bounds and the 80% and
+66% bounds all pass (worst mean 5.1e-6). *As written, the check fails on 78
+rows*: 1 lower 95% bound and 77 differences from SSP2-4.5 (diff_mean 15,
+diff_lower95 34, diff_upper95 28 exceedances; worst 5.4e-3).
+
+What those rows are (output/final-summary-pass-2026-11/review/check_diffs_detail.R):
+- Every one is a quantity near zero relative to its own level, so the
+  relative error divides by a small number. Example: Middle East, North
+  Africa, Afghanistan & Pakistan, 2041-2050, SSP5-8.5, heat YLLs: level
+  2.17 million, lower 95% bound of the difference 555.137 (old) vs 555.220
+  (new); change 0.08 YLL, which is 4e-8 of the level.
+- Measured against the quantity's level, scale = max(|mean|, |lower95|, 1),
+  the largest change in any compared column is 1.5e-5.
+- The source of the change is consistent with 4-byte float storage in the
+  compact copy (relative precision about 6e-8) plus 6-significant-digit
+  rounding of the old files, carried into differences of two large
+  numbers. I did not trace individual rows to confirm this.
+- Judgment: the two routes agree; the pre-registered threshold was
+  mis-specified for differences and near-zero bounds, where a relative
+  criterion should have been scaled by the level, not the value itself.
+
+* Sanity review (output/final-summary-pass-2026-11/review/sanity_review.R)
+All figures are mean annual deaths unless stated.
+- Completeness: 30,248,064 rows in the main tables, 139,392 per unit for all
+  217 units; no missing means or bounds.
+- Additivity of means (max relative difference, rounding level):
+  World vs sum of 204 countries 3.7e-6; 7 regions vs World 4.0e-6;
+  4 income groups vs World 3.9e-6; low and middle income + high income vs
+  World 7.0e-6. Regional populations sum to World's (ratio 0.999999).
+- Causes and ages add up: World SSP2-4.5 2022-2050 cold deaths, all causes
+  1,749,870 = all but disaster 1,751,690 + disaster -1,821; the 17 age
+  groups sum to 1,749,873.
+- Decades vs annual table: the average of annual World means equals the
+  decade mean (for example 2022-2030 heat 431,244.2 vs 431,244).
+- Anchors: World 2022 crude rates under SSP2-4.5 are 4.97 (heat) and 17.65
+  (cold) deaths per 100,000, the same values as the historical comparison of
+  2026-11-17. The historical table's GBD 2019-round 2019 values are 4.62
+  and 17.23 per 100,000 (age-standardized 4.59 and 17.53); our 2022-2030
+  age-standardized rates are 4.69 and 15.59.
+- Direction by scenario, World 2041-2050: heat 703,149 (SSP1-2.6) < 729,507
+  (SSP2-4.5) < 735,317 (SSP3-7.0) < 821,948 (SSP5-8.5); cold lowest under
+  SSP5-8.5 (1,950,760; difference from SSP2-4.5 -48,176, 95% interval
+  -106,725 to -16,804). In 2022-2030 the scenarios do not order (heat
+  439,564, 431,244, 424,074, 438,032), which is expected this early when
+  scenario forcing barely differs and model-to-model spread dominates.
+- Age standardization goes the expected way: age-standardized rates are
+  below crude rates in older populations (high income cold 13.8 vs 33.8)
+  and above them in younger ones (low income cold 16.6 vs 5.7). Over time
+  World cold crude rates rise (18.1 to 21.6) while age-standardized rates
+  fall (15.6 to 11.3), consistent with population aging driving the count.
+  The 2022-2050 age-standardized rate is not the average of the three
+  decades' rates (cold 12.9 vs about 13.3); this fits rates pooled as
+  sum of deaths over sum of population across all 29 years, which weights
+  later years more. I did not confirm this in the stage B code.
+- Signs: cold deaths and YLLs from injuries are negative in almost every
+  unit (World SSP2-4.5 2022-2050 injuries cold -121,822), as the
+  injury exposure-response curves imply (injury risk falls with cold).
+  All-cause cold YLLs have a negative mean in 213 country rows (hot
+  countries where negative injury YLLs at young ages outweigh positive
+  disease YLLs); the 2026-11 pooled results had the same pattern.
+- Mean outside its own 95% interval in 2,752 of 30.2 million rows, most
+  often disaster injuries (1,277). These are skewed draw distributions
+  (example: Puerto Rico, SSP1-2.6, 2041-2050, disaster cold YLLs, mean
+  45.4, 95% interval -68.1 to 40.2), the same disaster-injury tail seen
+  for Haiti in 2026-09.
+- Vetting: share of World heat-death variance between climate models 0.42
+  to 0.48 by period (cold 0.08 to 0.13); no World heat/cold crossing by
+  2050 in any scenario. The temperature table carries all 27 models.
+
+* Open items
+- None blocking. The draft report revision with these tables is the next
+  step (status doc todo of 2026-11-20).
+- Caspar keeps the compact copy until hosting is settled.
+
+* Inventory of the final tables, against the decided list (added 2026-11-23)
+Script: output/final-summary-pass-2026-11/review/inventory.R. Directory:
+~/data/wb-temp-attr-projections/review/final-pass-2026-11-22/output/final_tables/.
+Units are the 204 countries plus 13 groups (World; low, lower middle, upper
+middle and high income; low and middle income; the 7 World Bank regions).
+
+| File                          | Rows       | Contents                                                                                                                                   | Against the decided list |
+|-------------------------------+------------+--------------------------------------------------------------------------------------------------------------------------------------------+--------------------------|
+| main/<unit>.csv.gz (217 files, 1.8 GB) | 139,392 per unit | 4 scenarios x 4 periods x 22 causes x 22 ages x 3 sexes x 6 measures; counts; mean, 95/80/66% bounds; pop; IHME deaths; differences from SSP2-4.5 | matches |
+| asr.csv.gz (80 MB)            | 1,374,912  | age-standardized rates per 100,000 (GBD world standard), 217 units x 4 scenarios x 4 periods x 3 sexes x 22 causes x 6 measures, with differences | matches |
+| annual.csv.gz (8 MB)          | 151,032    | 217 units x 4 scenarios x 29 years (2022-2050) x 6 measures, all ages, both sexes, all causes, with pop, IHME deaths and differences | matches |
+| historical.csv.gz (0.1 MB)    | 7,596      | GBD 2019 round, 1990/2010/2019, deaths heat/cold/total, all ages and causes, both sexes; same columns as the projection tables | see notes |
+| vetting.csv.gz (0.7 MB)       | 20,832     | 217 units x 4 scenarios x 4 periods x 6 measures: lowest and highest model mean, between-model variance share, attributable fraction (deaths only), models above SSP2-4.5, share with heat above cold | median model mean missing |
+| crossing.csv.gz               | 868        | per unit and scenario: share of model-draw pairs with heat above cold at 2022, crossing within 2022-2050, below at 2050; median crossing year | median and shares only, not the full distribution |
+| temperature.csv.gz (1 MB)     | 84,864     | population-weighted temperature, 204 countries x 27 models x 4 scenarios x 2022/2030/2040/2050 | 4 years only (agreed design change) |
+| units.csv, run_info.txt       |            | run log per unit; run settings                                                                                                              |                          |
+| parts/ (287 MB)               |            | per-unit pieces already combined into the files above                                                                                      | not needed for delivery  |
+
+Notes:
+- Crude rates are not stored; by design they are count / pop x 100,000,
+  with bounds scaled the same way (population is fixed per cell).
+- Historical: countries have count, crude rate, age-standardized rate and
+  percent of all deaths. Groups other than World have count and crude rate
+  only, means only (no ASR or percent; those would need age-specific and
+  all-cause country deaths). As delivered, country and World counts had no
+  95% range although their crude rates did.
+  *Fixed 2026-11-23 (Aaron: add it)*: count range = published crude-rate
+  range x GBD population mean (population uncertainty not carried), in
+  output/historical-comparison-2026-11/build_historical_table.R. Rebuilt
+  output/final-summary-pass-2026-11/inputs/historical_gbd2019_table.csv and
+  replaced final_tables/historical.csv.gz locally (Caspar's copy kept as
+  historical_as_delivered_2026-11-22.csv.gz). Checked: 1,845 count rows
+  (204 countries and World, 3 years, 3 measures) gained a range; every mean
+  and every other row unchanged; lower <= mean <= upper everywhere; range /
+  mean equals the crude rate's range / mean to 6e-14. Example: World 2019
+  heat deaths 357,471 (95% range 289,381 to 430,977). Groups other than
+  World stay means only. No rerun on Caspar's side is needed: stage B only
+  copies this file.
+- Vetting: the decided list asked for the median of the climate-model means
+  alongside the lowest and highest; the table has no median column, and
+  the stage B design table does not mention the omission. Vetting only.
+  *Aaron, 2026-11-23: leave it out.*
+- Earlier summary sets still on disk: review/multimodel-2026-11/ (2026-11-06
+  pooling) and review/multimodel-2026-11-wbg/ (2026-11-13, World Bank groups;
+  used by the draft report and the 2026-11-09 slides). The final tables
+  supersede them, except the model-set comparison (common 24 vs paired vs all
+  available models, totals_paired/ and totals_all/), which the decided list
+  says to report from the 2026-11-06 pooling.

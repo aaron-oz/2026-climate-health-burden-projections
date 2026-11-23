@@ -1,0 +1,35 @@
+suppressPackageStartupMessages(library(data.table))
+options(width = 200)
+TB <- commandArgs(TRUE)[1]
+rd <- function(f) fread(cmd = paste("zcat", shQuote(file.path(TB, f))))
+u <- function(x) paste(sort(unique(x)), collapse = " | ")
+desc <- function(d, nm, skip = character()) {
+  cat("\n=====", nm, ":", nrow(d), "rows,", ncol(d), "cols\n")
+  cat("columns:", paste(names(d), collapse = ", "), "\n")
+  for (v in setdiff(intersect(names(d), c("source","scenario","unit_type","period","year","cause","age","sex","measure","metric","model")), skip))
+    cat(" ", v, "(", uniqueN(d[[v]]), "):", if (uniqueN(d[[v]]) <= 40) u(d[[v]]) else paste(range(d[[v]]), collapse = " .. "), "\n")
+  if ("unit" %in% names(d)) cat("  units:", uniqueN(d$unit), " (groups", uniqueN(d[unit_type == "group"]$unit), ")\n")
+  na <- sapply(d, function(x) sum(is.na(x))); na <- na[na > 0]
+  if (length(na)) { cat("  NA counts:\n"); print(na) }
+}
+g <- fread(cmd = paste("zcat", shQuote(file.path(TB, "main/group_World.csv.gz"))))
+l <- fread(cmd = paste("zcat", shQuote(file.path(TB, "main/location_163.csv.gz"))))
+desc(g, "main/group_World (one of 217 per-unit files)")
+cat("  diff columns NA for ssp245 only? ", g[scenario == "ssp245", all(is.na(diff_mean))], g[scenario != "ssp245", any(is.na(diff_mean))], "\n")
+cat("  pop and ihme_deaths vary by slice? pop unique per period:", g[period == "2022-2030" & measure == "deaths_heat", uniqueN(pop)], "\n")
+print(g[scenario == "ssp245" & period == "2022-2030" & measure == "deaths_heat" & cause %in% c("all","cvd_ihd") & sex == "both" & age %in% c("all","80+","a15_64"), .(cause, age, n_years, n_models, n_draws, mean, lower95, upper95, pop, ihme_deaths)])
+cat("  India file rows:", nrow(l), "\n")
+print(l[scenario == "ssp585" & period == "2041-2050" & cause == "all" & age == "all" & sex == "both", .(measure, mean, lower95, upper95, diff_mean, diff_lower95, diff_upper95, pop)])
+
+a <- rd("asr.csv.gz"); desc(a, "asr")
+cat("  ASR rows per unit:", paste(range(a[, .N, by = unit]$N), collapse = "-"), "\n")
+an <- rd("annual.csv.gz"); desc(an, "annual")
+v <- rd("vetting.csv.gz"); desc(v, "vetting")
+print(v[unit == "India" | unit == "163"][scenario == "ssp585" & period == "2041-2050"])
+cr <- rd("crossing.csv.gz"); desc(cr, "crossing")
+cat("  units with any crossing share > 0 (ssp245):", cr[scenario == "ssp245" & share_crossing_within > 0, .N], "; above at start:", cr[scenario == "ssp245" & share_above_at_start > 0.5, .N], "\n")
+print(cr[scenario == "ssp585" & share_crossing_within > 0.3][order(median_crossing_year)][1:10])
+tp <- rd("temperature.csv.gz"); desc(tp, "temperature")
+h <- rd("historical.csv.gz"); desc(h, "historical")
+print(h[, .(n = .N, mean_na = sum(is.na(mean)), lo_na = sum(is.na(lower95))), by = .(unit_type, metric)])
+cat("  historical units:", uniqueN(h$unit), "\n")
