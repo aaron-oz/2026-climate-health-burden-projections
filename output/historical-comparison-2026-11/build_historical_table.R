@@ -12,8 +12,9 @@
 #
 # Output rows (one per unit x year x measure x metric):
 #  - countries and world: crude rate and age-standardized rate per 100,000 and percent of
-#    all deaths, mean and 95% range as published; deaths = crude rate x GBD population
-#    (mean only: the population's own uncertainty is not carried).
+#    all deaths, mean and 95% range as published; deaths = crude rate x GBD population,
+#    mean and 95% range (the published crude-rate range x the population mean; the
+#    population's own uncertainty is not carried; range added 2026-11-23 at Aaron's request).
 #  - World Bank income groups, low and middle income, regions: deaths = sum of country
 #    deaths; crude rate = deaths / group population x 100,000. Means only (ranges cannot
 #    be summed across countries). No age-standardized rate or percent for groups (they
@@ -55,11 +56,13 @@ P <- merge(P, inc[, .(location_id, name)], by = "location_id", all.x = TRUE)
 P[location_id == 1, name := "World"]
 pub <- P[, .(unit_type, unit = name, location_id, year, measure, metric, mean, lower95, upper95)]
 
-# deaths for countries and world: crude rate x population (mean only)
-cr <- merge(P[metric == "rate_crude", .(unit_type, unit = name, location_id, year, measure, rate = mean)],
+# deaths for countries and world: crude rate x population; the range is the published
+# crude-rate range x the population mean (population uncertainty not carried)
+cr <- merge(P[metric == "rate_crude", .(unit_type, unit = name, location_id, year, measure, rate = mean,
+                                        rate_lo = lower95, rate_hi = upper95)],
             pop[, .(location_id, year, pop)], by = c("location_id", "year"))
 dth <- cr[, .(unit_type, unit, location_id, year, measure, metric = "deaths", mean = rate * pop / 1e5,
-              lower95 = NA_real_, upper95 = NA_real_)]
+              lower95 = rate_lo * pop / 1e5, upper95 = rate_hi * pop / 1e5)]
 
 # groups from countries
 gl <- rbind(inc[, .(location_id, group = income)], inc[, .(location_id, group = region)],
