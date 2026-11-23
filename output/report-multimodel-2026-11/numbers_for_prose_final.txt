@@ -1,0 +1,384 @@
+
+===== World, SSP2-4.5, counts and rates 
+       period       measure    mean lower95 upper95  rate        pop     ihme
+       <char>        <char>   <num>   <num>   <num> <num>      <i64>    <num>
+ 1: 2022-2030   deaths_cold 1483670 1302680 1661330 18.06 8215910000 32023900
+ 2: 2022-2050   deaths_cold 1749870 1471420 2040860 19.96 8768760000 37803200
+ 3: 2031-2040   deaths_cold 1740380 1473030 2020120 19.79 8794210000 37383100
+ 4: 2041-2050   deaths_cold 1998940 1602800 2423910 21.63 9240890000 43424800
+ 5: 2022-2030   deaths_heat  431244  328460  570407  5.25 8215910000 32023900
+ 6: 2022-2050   deaths_heat  575333  416947  807078  6.56 8768760000 37803200
+ 7: 2031-2040   deaths_heat  550839  401464  763498  6.26 8794210000 37383100
+ 8: 2041-2050   deaths_heat  729507  499063 1074360  7.89 9240890000 43424800
+ 9: 2022-2030 deaths_nonopt 1914920 1709010 2106890 23.31 8215910000 32023900
+10: 2022-2050 deaths_nonopt 2325200 1968840 2696360 26.52 8768760000 37803200
+11: 2031-2040 deaths_nonopt 2291220 1955570 2640690 26.05 8794210000 37383100
+12: 2041-2050 deaths_nonopt 2728440 2197960 3315940 29.53 9240890000 43424800
+deaths_heat change 2022-30 to 2041-50: 69.2 %
+deaths_cold change 2022-30 to 2041-50: 34.7 %
+2022-2030 heat share of heat+cold: 22.5 %; heat / IHME deaths: 1.35 %; cold / IHME: 4.63 %
+2041-2050 heat share of heat+cold: 26.7 %; heat / IHME deaths: 1.68 %; cold / IHME: 4.6 %
+heat share of heat+cold, every scenario, 2041-2050: ssp126 26; ssp245 26.7; ssp370 26.8; ssp585 29.6 
+
+===== Differences from SSP2-4.5, World 
+      unit scenario    period       measure ratio  diff_mean diff_lower95 diff_upper95 models_above_ref
+    <char>   <char>    <char>        <char> <num>      <num>        <num>        <num>            <int>
+ 1:  World   ssp126 2022-2030   deaths_cold 0.995  -6974.520     -39158.7      27440.6                9
+ 2:  World   ssp126 2031-2040   deaths_cold 0.995  -8021.360     -32357.5      22076.7                8
+ 3:  World   ssp126 2041-2050   deaths_cold 1.003   6724.790     -61797.7      57260.5               13
+ 4:  World   ssp126 2022-2030   deaths_heat 1.019   8319.480     -42672.4      46197.4               17
+ 5:  World   ssp126 2031-2040   deaths_heat 1.016   8979.300     -27089.6      41594.2               19
+ 6:  World   ssp126 2041-2050   deaths_heat 0.964 -26357.500    -106815.0      36835.5                7
+ 7:  World   ssp126 2022-2030 deaths_nonopt 1.001   1344.950     -35348.6      31468.8               12
+ 8:  World   ssp126 2031-2040 deaths_nonopt 1.000    957.938     -30482.4      25969.2               15
+ 9:  World   ssp126 2041-2050 deaths_nonopt 0.993 -19632.700     -76955.7      27715.6                5
+10:  World   ssp370 2022-2030   deaths_cold 1.007   9896.250     -11572.7      36351.7               19
+11:  World   ssp370 2031-2040   deaths_cold 1.006  10208.700     -24715.7      45837.9               16
+12:  World   ssp370 2041-2050   deaths_cold 1.004   7837.610     -53872.0      50422.8               16
+13:  World   ssp370 2022-2030   deaths_heat 0.983  -7170.050     -27938.7      17264.6                7
+14:  World   ssp370 2031-2040   deaths_heat 1.008   4248.060     -43003.4      63395.1               13
+15:  World   ssp370 2041-2050   deaths_heat 1.008   5810.450     -82063.9      86069.3               13
+16:  World   ssp370 2022-2030 deaths_nonopt 1.001   2726.200     -20647.2      29317.0               15
+17:  World   ssp370 2031-2040 deaths_nonopt 1.006  14456.700     -20924.6      52070.7               18
+18:  World   ssp370 2041-2050 deaths_nonopt 1.005  13648.100     -42317.3      64656.8               19
+19:  World   ssp585 2022-2030   deaths_cold 0.997  -4512.090     -39584.3      29930.5                8
+20:  World   ssp585 2031-2040   deaths_cold 0.991 -16091.900     -49507.7      25753.9                5
+21:  World   ssp585 2041-2050   deaths_cold 0.976 -48176.200    -106725.0     -16803.6                0
+22:  World   ssp585 2022-2030   deaths_heat 1.016   6788.050     -33250.9      49548.9               17
+23:  World   ssp585 2031-2040   deaths_heat 1.064  35375.500     -21707.1      88748.4               22
+24:  World   ssp585 2041-2050   deaths_heat 1.127  92441.800      24344.4     206886.0               24
+25:  World   ssp585 2022-2030 deaths_nonopt 1.001   2275.970     -40236.0      33478.4               13
+26:  World   ssp585 2031-2040 deaths_nonopt 1.008  19283.600     -17111.6      60292.7               21
+27:  World   ssp585 2041-2050 deaths_nonopt 1.016  44265.600     -14239.0     141455.0               21
+      unit scenario    period       measure ratio  diff_mean diff_lower95 diff_upper95 models_above_ref
+    <char>   <char>    <char>        <char> <num>      <num>        <num>        <num>            <int>
+countries, heat diff 2041-2050, 95% interval above / below zero:
+   scenario above below
+     <char> <int> <int>
+1:   ssp126     0     1
+2:   ssp370     0     0
+3:   ssp585    39     0
+
+===== Between-model share of variance, World, decades 
+         measure        lo        hi
+          <char>     <num>     <num>
+1:   deaths_heat 0.3930580 0.5428590
+2:   deaths_cold 0.0637494 0.1357100
+3: deaths_nonopt 0.0186478 0.0424778
+heat+cold 2041-50 SSP2-4.5 interval relative to mean: 0.806 1.215 
+
+===== Income groups and regions, SSP2-4.5 2041-2050 
+                                                 unit     measure      mean  rate
+                                               <char>      <char>     <num> <num>
+ 1:                             Europe & Central Asia deaths_cold  457162.0  49.6
+ 2:                                       High income deaths_cold  578047.0  40.2
+ 3:                               East Asia & Pacific deaths_cold  920621.0  39.3
+ 4:                                     North America deaths_cold  154311.0  38.3
+ 5:                               Upper middle income deaths_cold 1094170.0  35.1
+ 6:                                             World deaths_cold 1998940.0  21.6
+ 7:                             Low and middle income deaths_cold 1420890.0  18.2
+ 8: Middle East, North Africa, Afghanistan & Pakistan deaths_cold  179213.0  18.2
+ 9:                         Latin America & Caribbean deaths_cold  105988.0  14.3
+10:                               Lower middle income deaths_cold  264871.0   7.5
+11:                                        South Asia deaths_cold  129926.0   7.1
+12:                                        Low income deaths_cold   61852.1   5.4
+13:                                Sub-Saharan Africa deaths_cold   51714.6   2.6
+14:                                        South Asia deaths_heat  256731.0  14.1
+15: Middle East, North Africa, Afghanistan & Pakistan deaths_heat  110479.0  11.2
+16:                               Lower middle income deaths_heat  380137.0  10.7
+17:                               East Asia & Pacific deaths_heat  201986.0   8.6
+18:                             Low and middle income deaths_heat  670244.0   8.6
+19:                                             World deaths_heat  729507.0   7.9
+20:                               Upper middle income deaths_heat  231191.0   7.4
+21:                                        Low income deaths_heat   58915.9   5.2
+22:                                Sub-Saharan Africa deaths_heat   93058.3   4.6
+23:                                       High income deaths_heat   59262.4   4.1
+24:                                     North America deaths_heat   16665.9   4.1
+25:                         Latin America & Caribbean deaths_heat   29923.5   4.0
+26:                             Europe & Central Asia deaths_heat   20662.9   2.2
+                                                 unit     measure      mean  rate
+                                               <char>      <char>     <num> <num>
+deaths_heat LMIC share of World: 91.9 %
+deaths_cold LMIC share of World: 71.1 %
+                    unit ratio diff_mean
+                  <char> <num>     <num>
+1:           High income 1.109   6446.38
+2: Low and middle income 1.128  85995.50
+3:                 World 1.127  92441.80
+                                                 unit     measure ratio  diff_mean
+                                               <char>      <char> <num>      <num>
+ 1:                             Europe & Central Asia deaths_cold 1.002   1017.340
+ 2:                                     North America deaths_cold 0.996   -618.326
+ 3:                                       High income deaths_cold 0.995  -2883.220
+ 4:                                             World deaths_cold 0.976 -48176.200
+ 5:                                        Low income deaths_cold 0.973  -1694.610
+ 6:                               Upper middle income deaths_cold 0.973 -29096.100
+ 7:                               East Asia & Pacific deaths_cold 0.971 -26301.500
+ 8:                             Low and middle income deaths_cold 0.968 -45293.000
+ 9: Middle East, North Africa, Afghanistan & Pakistan deaths_cold 0.965  -6208.780
+10:                         Latin America & Caribbean deaths_cold 0.961  -4171.640
+11:                               Lower middle income deaths_cold 0.945 -14502.200
+12:                                Sub-Saharan Africa deaths_cold 0.935  -3364.610
+13:                                        South Asia deaths_cold 0.934  -8528.640
+14:                         Latin America & Caribbean deaths_heat 1.206   6161.650
+15:                               East Asia & Pacific deaths_heat 1.171  34514.600
+16:                               Upper middle income deaths_heat 1.168  38829.700
+17:                             Europe & Central Asia deaths_heat 1.167   3459.740
+18:                             Low and middle income deaths_heat 1.128  85995.500
+19:                                             World deaths_heat 1.127  92441.800
+20:                               Lower middle income deaths_heat 1.111  42104.500
+21:                                       High income deaths_heat 1.109   6446.380
+22:                                        South Asia deaths_heat 1.109  27898.400
+23:                                Sub-Saharan Africa deaths_heat 1.098   9089.110
+24:                                     North America deaths_heat 1.091   1517.120
+25: Middle East, North Africa, Afghanistan & Pakistan deaths_heat 1.089   9801.310
+26:                                        Low income deaths_heat 1.086   5061.190
+                                                 unit     measure ratio  diff_mean
+                                               <char>      <char> <num>      <num>
+
+===== Countries 
+     name     measure   mean  lower95 upper95 share
+   <char>      <char>  <num>    <num>   <num> <num>
+1:  India deaths_cold 111580  60560.2  167559   5.6
+2:  India deaths_heat 231555 146386.0  359901  31.7
+3:  China deaths_cold 792478 621344.0  978559  39.6
+4:  China deaths_heat 113009  70114.5  190239  15.5
+       measure  top5                                                             names
+        <char> <num>                                                            <char>
+1: deaths_cold  58.0 China, United States of America, India, Russian Federation, Japan
+2: deaths_heat  58.6                       India, China, Pakistan, Nigeria, Bangladesh
+                   name  rate    lo    hi
+                 <char> <num> <num> <num>
+1:         Saudi Arabia  33.4  18.6  54.1
+2: United Arab Emirates  29.2  14.4  47.6
+3:             Thailand  27.7  14.7  46.3
+4:              Bahrain  25.6  13.3  42.2
+5:                 Oman  24.6  12.4  39.3
+6:             Cambodia  21.3  11.5  34.7
+Key: <unit>
+     unit        2022       2050 ratio
+   <char>       <num>      <num> <num>
+1:    140     2893.86    11912.4  4.12
+2:    145     6620.70    27157.6  4.10
+3:    150     8228.32    35487.9  4.31
+4:    151     2819.21    23125.7  8.20
+5:    152   111193.00   353769.0  3.18
+6:    156    10961.50   116058.0 10.59
+7:  World 30293800.00 46002500.0  1.52
+
+===== Forces of nature: with and without 
+countries whose 95% upper bound moves by > 2%: 8 ; > 10%: 2  ( 114,129 )
+                       group              variant    mean
+                      <char>               <char>   <num>
+1: Latin America & Caribbean           all_causes  135912
+2: Latin America & Caribbean without_inj_disaster  134219
+3:       Lower middle income           all_causes  645009
+4:       Lower middle income without_inj_disaster  642870
+5:                     World           all_causes 2728440
+6:                     World without_inj_disaster 2727440
+
+===== Causes, World, SSP2-4.5, 2041-2050 
+               slice deaths_cold deaths_heat
+              <char>       <num>       <num>
+ 1: all_but_disaster  2000690.00  726746.000
+ 2:   cardiovascular  1185080.00  339443.000
+ 3:          cvd_ihd   562182.00  168892.000
+ 4:       cvd_stroke   413001.00  144203.000
+ 5:  diabetes_kidney   260500.00  131639.000
+ 6:         injuries  -118826.00  104987.000
+ 7:         diabetes    84124.30   85484.800
+ 8:        resp_copd   475014.00   78641.400
+ 9:              lri   197171.00   74795.800
+10:   inj_trans_road   -28758.20   49986.000
+11:              ckd   176376.00   46154.300
+12:          cvd_htn   182882.00   26789.600
+13:      inj_suicide   -36748.20   21798.000
+14:     inj_homicide   -11125.40   14646.600
+15:     inj_drowning   -23603.10    7545.240
+16:         inj_mech    -4722.66    3160.920
+17:     inj_disaster    -1759.14    2760.960
+18:       inj_animal    -4880.68    2526.690
+19:  inj_trans_other    -3609.97    1728.340
+20:  inj_othunintent    -3618.37     834.571
+21:          cvd_cmp    27009.20    -442.015
+               slice deaths_cold deaths_heat
+              <char>       <num>       <num>
+IHD + stroke share of heat: 42.9 %
+sum of nine injuries: heat 104987.3  cold -118825.7 ; all nine cold negative: TRUE 
+World causes whose 95% interval includes zero (of 17):
+       measure incl0
+        <char> <int>
+1: deaths_cold     1
+2: deaths_heat     7
+country x cause, SSP5-8.5, 2041-2050, non-zero cells and share including zero:
+       measure cells incl0
+        <char> <int> <num>
+1: deaths_cold  3452  30.7
+2: deaths_heat  3452  60.2
+country totals including zero, any scenario/decade, deaths:
+         measure max_incl0
+          <char>     <int>
+1:   deaths_cold         2
+2:   deaths_heat         2
+3: deaths_nonopt         0
+
+===== Ages and sexes, World, SSP2-4.5 
+       period     measure      ag         mean    total share
+       <char>      <char>  <char>        <num>    <num> <num>
+ 1: 2022-2030 deaths_cold  a15_49     3558.390  1483670   0.2
+ 2: 2041-2050 deaths_cold  a15_49    -1188.230  1998940  -0.1
+ 3: 2022-2030 deaths_cold  a15_64   182052.400  1483670  12.3
+ 4: 2041-2050 deaths_cold  a15_64   146125.700  1998940   7.3
+ 5: 2022-2030 deaths_cold a65plus  1298973.000  1483670  87.6
+ 6: 2041-2050 deaths_cold a65plus  1853046.000  1998940  92.7
+ 7: 2022-2030 deaths_cold  under5     7234.780  1483670   0.5
+ 8: 2041-2050 deaths_cold  under5     2031.603  1998940   0.1
+ 9: 2022-2030 deaths_heat  a15_49    71105.800   431244  16.5
+10: 2041-2050 deaths_heat  a15_49    78216.200   729507  10.7
+11: 2022-2030 deaths_heat  a15_64   150768.200   431244  35.0
+12: 2041-2050 deaths_heat  a15_64   191992.500   729507  26.3
+13: 2022-2030 deaths_heat a65plus   253424.000   431244  58.8
+14: 2041-2050 deaths_heat a65plus   522143.000   729507  71.6
+15: 2022-2030 deaths_heat  under5    21009.660   431244   4.9
+16: 2041-2050 deaths_heat  under5    10766.100   729507   1.5
+17: 2022-2030    yll_cold  a15_49  -253590.000 17796400  -1.4
+18: 2041-2050    yll_cold  a15_49  -347094.000 23804800  -1.5
+19: 2022-2030    yll_cold  a15_64  3896280.000 17796400  21.9
+20: 2041-2050    yll_cold  a15_64  3311110.000 23804800  13.9
+21: 2022-2030    yll_cold a65plus 13702700.000 17796400  77.0
+22: 2041-2050    yll_cold a65plus 20497630.000 23804800  86.1
+23: 2022-2030    yll_cold  under5   501881.000 17796400   2.8
+24: 2041-2050    yll_cold  under5   150012.500 23804800   0.6
+25: 2022-2030    yll_heat  a15_49  2990176.000  9201210  32.5
+26: 2041-2050    yll_heat  a15_49  3349441.000 12762300  26.2
+27: 2022-2030    yll_heat  a15_64  4784540.000  9201210  52.0
+28: 2041-2050    yll_heat  a15_64  6067560.000 12762300  47.5
+29: 2022-2030    yll_heat a65plus  2663780.000  9201210  29.0
+30: 2041-2050    yll_heat a65plus  5676540.000 12762300  44.5
+31: 2022-2030    yll_heat  under5  1370261.000  9201210  14.9
+32: 2041-2050    yll_heat  under5   721951.000 12762300   5.7
+       period     measure      ag         mean    total share
+       <char>      <char>  <char>        <num>    <num> <num>
+      period       slice     measure     mean   lower95   upper95
+      <char>      <char>      <char>    <num>     <num>     <num>
+1: 2022-2030 a15_49_sex2 deaths_cold  8084.78   6039.63 10422.400
+2: 2022-2030 a15_49_sex1 deaths_cold -4526.39 -10163.70   725.105
+3: 2022-2030 a15_49_sex2 deaths_heat 18678.90  13958.40 25002.600
+4: 2022-2030 a15_49_sex1 deaths_heat 52426.90  39689.50 69712.200
+5: 2041-2050 a15_49_sex2 deaths_cold  5927.69   3349.79  9597.680
+6: 2041-2050 a15_49_sex1 deaths_cold -7115.92 -13181.80  -725.414
+7: 2041-2050 a15_49_sex2 deaths_heat 19106.40  11686.80 30639.000
+8: 2041-2050 a15_49_sex1 deaths_heat 59109.80  40118.60 89141.900
+Key: <period, slice>
+       period        slice deaths_cold deaths_heat   yll_cold yll_heat yll_per_heat yll_per_cold
+       <char>       <char>       <num>       <num>      <num>    <num>        <num>        <num>
+ 1: 2022-2030  a15_49_sex1   -4526.390    52426.90  -501046.0  2166850         41.3        110.7
+ 2: 2022-2030  a15_49_sex2    8084.780    18678.90   247456.0   823326         44.1         30.6
+ 3: 2022-2030  a15_64_sex1  109181.000   102774.00  2009960.0  3262130         31.7         18.4
+ 4: 2022-2030  a15_64_sex2   72871.400    47994.20  1886320.0  1522410         31.7         25.9
+ 5: 2022-2030 a65plus_sex1  646170.000   132274.00  6429140.0  1331750         10.1          9.9
+ 6: 2022-2030 a65plus_sex2  652803.000   121150.00  7273560.0  1332030         11.0         11.1
+ 7: 2022-2030  under5_sex1    3561.760    11092.50   238317.0   701461         63.2         66.9
+ 8: 2022-2030  under5_sex2    3673.020     9917.16   263564.0   668800         67.4         71.8
+ 9: 2041-2050  a15_49_sex1   -7115.920    59109.80  -538743.0  2498830         42.3         75.7
+10: 2041-2050  a15_49_sex2    5927.690    19106.40   191649.0   850611         44.5         32.3
+11: 2041-2050  a15_64_sex1   86321.900   131957.00  1689690.0  4187320         31.7         19.6
+12: 2041-2050  a15_64_sex2   59803.800    60035.50  1621420.0  1880240         31.3         27.1
+13: 2041-2050 a65plus_sex1  902450.000   270661.00  9506930.0  2840210         10.5         10.5
+14: 2041-2050 a65plus_sex2  950596.000   251482.00 10990700.0  2836330         11.3         11.6
+15: 2041-2050  under5_sex1     972.233     5842.87    69370.8   379701         65.0         71.4
+16: 2041-2050  under5_sex2    1059.370     4923.23    80641.7   342250         69.5         76.1
+
+===== YLLs 
+    scenario    period    measure     mean  lower95  upper95 ratio
+      <char>    <char>     <char>    <num>    <num>    <num> <num>
+ 1:   ssp245 2022-2030   yll_cold 17796400 15667500 20065700 1.000
+ 2:   ssp245 2041-2050   yll_cold 23804800 18948300 29396100 1.000
+ 3:   ssp585 2022-2030   yll_cold 17741100 15671300 19958600 0.997
+ 4:   ssp585 2041-2050   yll_cold 23228400 18426200 28780600 0.976
+ 5:   ssp245 2022-2030   yll_heat  9201210  7037620 12125500 1.000
+ 6:   ssp245 2041-2050   yll_heat 12762300  8673090 18920000 1.000
+ 7:   ssp585 2022-2030   yll_heat  9323920  7219970 12028500 1.013
+ 8:   ssp585 2041-2050   yll_heat 14275000  9418990 21685700 1.119
+ 9:   ssp245 2022-2030 yll_nonopt 26997600 23978100 30134500 1.000
+10:   ssp245 2041-2050 yll_nonopt 36567100 29052000 45815100 1.000
+11:   ssp585 2022-2030 yll_nonopt 27065000 24054600 30137600 1.002
+12:   ssp585 2041-2050 yll_nonopt 37503400 29573400 47444800 1.026
+2022-2030 heat share of YLLs: 34.1 % vs of deaths 22.5 %
+2041-2050 heat share of YLLs: 34.9 % vs of deaths 26.7 %
+      period negative incl0
+      <char>    <int> <int>
+1: 2022-2030       21    69
+2: 2031-2040       13    60
+3: 2041-2050        8    54
+       measure     mean
+        <char>    <num>
+1: deaths_cold  114.604
+2:    yll_cold -294.913
+
+===== Age-standardized rates (GBD world standard) 
+    scenario    period     measure     mean  lower95  upper95  diff_mean diff_lower95 diff_upper95
+      <char>    <char>      <char>    <num>    <num>    <num>      <num>        <num>        <num>
+ 1:   ssp245 2022-2030 deaths_cold 15.59110 13.63920 17.46210         NA           NA           NA
+ 2:   ssp245 2022-2050 deaths_cold 12.90680 10.85950 15.08400         NA           NA           NA
+ 3:   ssp245 2031-2040 deaths_cold 13.14480 11.11870 15.28950         NA           NA           NA
+ 4:   ssp245 2041-2050 deaths_cold 11.29830  9.03332 13.78470         NA           NA           NA
+ 5:   ssp585 2022-2030 deaths_cold 15.54370 13.64110 17.36000 -0.0474318   -0.4156880    0.3138850
+ 6:   ssp585 2022-2050 deaths_cold 12.73250 10.71060 14.91020 -0.1742660   -0.3871500    0.0533946
+ 7:   ssp585 2031-2040 deaths_cold 13.02280 10.97990 15.21380 -0.1219990   -0.3774430    0.1998630
+ 8:   ssp585 2041-2050 deaths_cold 11.02070  8.78993 13.50360 -0.2775710   -0.6144670   -0.0949510
+ 9:   ssp245 2022-2030 deaths_heat  4.69358  3.57776  6.18689         NA           NA           NA
+10:   ssp245 2022-2050 deaths_heat  4.83315  3.52086  6.73569         NA           NA           NA
+11:   ssp245 2031-2040 deaths_heat  4.69524  3.43459  6.46613         NA           NA           NA
+12:   ssp245 2041-2050 deaths_heat  4.97505  3.39028  7.33296         NA           NA           NA
+13:   ssp585 2022-2030 deaths_heat  4.76594  3.68673  6.16423  0.0723607   -0.3532420    0.5303810
+14:   ssp585 2022-2050 deaths_heat  5.20317  3.68383  7.34536  0.3700140    0.0499391    0.7480620
+15:   ssp585 2031-2040 deaths_heat  4.98414  3.50448  6.99832  0.2888980   -0.1811490    0.7271950
+16:   ssp585 2041-2050 deaths_heat  5.58503  3.68633  8.43888  0.6099800    0.1577360    1.3755100
+                                                 unit deaths_cold deaths_heat
+                                               <char>       <num>       <num>
+ 1: Middle East, North Africa, Afghanistan & Pakistan    16.43530   10.051300
+ 2:                             Europe & Central Asia    15.47060    0.869668
+ 3:                               Upper middle income    13.39260    3.354190
+ 4:                               East Asia & Pacific    12.82770    3.478440
+ 5:                                     North America    12.33410    1.571960
+ 6:                                             World    11.29830    4.975050
+ 7:                             Low and middle income    11.24930    5.975810
+ 8:                                       High income    11.10990    1.666220
+ 9:                                        Low income    11.07330    8.188620
+10:                         Latin America & Caribbean     6.79845    2.530500
+11:                               Lower middle income     6.41426    9.410250
+12:                                Sub-Saharan Africa     4.98270    7.168120
+13:                                        South Asia     4.48126    9.652620
+
+===== Historical, GBD 2019 round 
+          measure     metric            mean         lower95         upper95
+           <char>     <char>           <num>           <num>           <num>
+ 1:   deaths_cold      count 1332909.8181773 1182563.1430915 1451842.3868945
+ 2:   deaths_cold    percent       2.3583341       2.1122190       2.5580997
+ 3:   deaths_cold   rate_asr      17.5286000      15.5205000      19.1079000
+ 4:   deaths_cold rate_crude      17.2267000      15.2836000      18.7638000
+ 5:   deaths_heat      count  357470.8655737  289381.1768930  430976.7794904
+ 6:   deaths_heat    percent       0.6318096       0.5147402       0.7480927
+ 7:   deaths_heat   rate_asr       4.5900000       3.7200000       5.5600000
+ 8:   deaths_heat rate_crude       4.6200000       3.7400000       5.5700000
+ 9: deaths_nonopt      count 1682256.3458971 1511505.9766009 1822938.9276690
+10: deaths_nonopt    percent       2.9762777       2.6979907       3.1974376
+11: deaths_nonopt   rate_asr      22.0204000      19.6549000      23.8491000
+12: deaths_nonopt rate_crude      21.7417000      19.5349000      23.5599000
+Key: <measure>
+         measure ours_2022  rate  gbd_2019 ratio
+          <char>     <num> <num>     <num> <num>
+1:   deaths_cold   1402770 17.65 1332909.8 1.052
+2:   deaths_heat    395197  4.97  357470.9 1.106
+3: deaths_nonopt   1797970 22.62 1682256.3 1.069
+countries whose 2022 heat+cold mean lies inside GBD's 2019 95% interval: 178 of 204 
+  above: 19  below: 7 
+median ratio ours 2022 / GBD 2019 over countries: 1.036 
+Key: <unit>
+     unit      ours         lo         hi        gbd ratio
+   <char>     <num>      <num>      <num>      <num> <num>
+1:    102 109614.00  98262.427 119416.400 110427.487  0.99
+2:    133   2700.42   1507.305   2694.623   2023.774  1.33
+3:    163 233287.00 180665.351 280000.769 227945.216  1.02
+4:      6 582266.00 424440.745 572523.070 498942.038  1.17

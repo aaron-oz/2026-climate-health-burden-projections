@@ -47,7 +47,7 @@ nested <- function(pos, sz = 1, col = NULL) {
 }
 
 # --- Figure: World by decade, every scenario ---
-d1 <- tot[unit == "World" & measure %in% names(MEAS)]
+d1 <- tot[unit == "World" & measure %in% names(MEAS) & period %in% DEC3]
 d1[, `:=`(M = factor(MEAS[measure], MEAS), S = factor(SC[scenario], SC))]
 save_both("fig_world_decades", function(p) {
   pos <- position_dodge(width = 0.72)
@@ -58,12 +58,18 @@ save_both("fig_world_decades", function(p) {
 }, 6.6, 3.1, 4.7, 2.0)
 
 # --- Figure: World yearly ---
-W <- readRDS(file.path(REV, "world", "world.rds"))$ann; setDT(W)
-W <- W[model %in% common]
-yr <- melt(W, id.vars = c("model", "scenario", "year", "draw"), measure.vars = c("deaths_heat", "deaths_cold"), variable.factor = FALSE)
-ys <- yr[, .(mean = mean(value), lower95 = quantile(value, .025, names = FALSE), upper95 = quantile(value, .975, names = FALSE)), by = .(scenario, year, variable)]
+# from the final annual table when pool_dir is the output of final_to_tidy.R, otherwise
+# pooled here from the per-draw world file
+if (file.exists(file.path(POOL, "world_yearly_final.csv"))) {
+  ys <- fread(file.path(POOL, "world_yearly_final.csv"))
+} else {
+  W <- readRDS(file.path(REV, "world", "world.rds"))$ann; setDT(W)
+  W <- W[model %in% common]
+  yr <- melt(W, id.vars = c("model", "scenario", "year", "draw"), measure.vars = c("deaths_heat", "deaths_cold"), variable.factor = FALSE)
+  ys <- yr[, .(mean = mean(value), lower95 = quantile(value, .025, names = FALSE), upper95 = quantile(value, .975, names = FALSE)), by = .(scenario, year, variable)]
+  fwrite(ys, file.path(POOL, "world_yearly_common24.csv"))
+}
 ys[, `:=`(M = factor(MEAS[variable], MEAS), S = factor(SC[scenario], SC))]
-fwrite(ys, file.path(POOL, "world_yearly_common24.csv"))
 save_both("fig_world_yearly", function(p) {
   ggplot(ys, aes(year, mean, color = S)) +
     geom_ribbon(data = ys[scenario == "ssp245"], aes(ymin = lower95, ymax = upper95), fill = p$sc[2], alpha = 0.13, color = NA) +
@@ -73,7 +79,7 @@ save_both("fig_world_yearly", function(p) {
 }, 6.6, 3.0, 3.9, 1.75)
 
 # --- Figure: difference from SSP2-4.5 (the reference is drawn at zero, no interval) ---
-d3 <- tot[unit == "World" & measure %in% names(MEAS)]
+d3 <- tot[unit == "World" & measure %in% names(MEAS) & period %in% DEC3]
 d3[scenario == "ssp245", (grep("^diff_", names(d3), value = TRUE)) := 0]
 d3[, `:=`(M = factor(MEAS[measure], MEAS), S = factor(SC[scenario], SC))]
 save_both("fig_world_diff", function(p) {
@@ -88,7 +94,7 @@ save_both("fig_world_diff", function(p) {
 }, 6.6, 3.1, 4.7, 2.0)
 
 # --- Figure: causes, World, every scenario, 2041-2050 ---
-d4 <- cau[unit == "World" & period == "2041-2050" & measure %in% c("deaths_heat", "deaths_cold")]
+d4 <- cau[unit == "World" & period == "2041-2050" & measure %in% c("deaths_heat", "deaths_cold") & slice %in% names(CAUSE)]
 ord <- d4[measure == "deaths_cold" & scenario == "ssp245"][order(mean), slice]
 d4[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), C = factor(CAUSE[slice], CAUSE[ord]), S = factor(SC[scenario], rev(SC)))]
 save_both("fig_causes", function(p) {
@@ -107,7 +113,7 @@ save_both("fig_causes", function(p) {
 # (team, 2026-11-09)
 INC5 <- c("High income", "Low and middle income", "Upper middle income", "Lower middle income", "Low income")
 rate_plot <- function(units, lab, xsize = 0.8) {
-  d <- tot[unit %in% units & measure %in% c("deaths_heat", "deaths_cold")]
+  d <- tot[unit %in% units & measure %in% c("deaths_heat", "deaths_cold") & period %in% DEC3]
   for (v in c("mean", "lower95", "upper95", "lower80", "upper80", "lower66", "upper66")) set(d, j = v, value = d[[paste0("rate_", v)]])
   d[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), I = factor(unit, units), S = factor(SC[scenario], SC), period = factor(period, DEC3))]
   function(p) {
@@ -128,7 +134,7 @@ REG <- c("East Asia & Pacific" = "E. Asia\nPacific", "Europe & Central Asia" = "
 if (all(names(REG) %in% tot$unit)) save_both("fig_region_rates", rate_plot(names(REG), function(v) REG[v], xsize = 0.62), 6.6, 4.2, 5.5, 2.25)
 
 # --- Figure: age and sex, every scenario and decade: color = decade, shape = sex ---
-d6 <- age[unit == "World" & measure %in% c("deaths_heat", "deaths_cold")]
+d6 <- age[unit == "World" & measure %in% c("deaths_heat", "deaths_cold") & sub("_sex[12]$", "", slice) %in% c("under5", "a15_49", "a65plus") & period %in% DEC3]
 d6[, `:=`(M = factor(MEAS[measure], MEAS[1:2]), S = factor(SC[scenario], SC), period = factor(period, DEC3),
           A = factor(sub("_sex[12]$", "", slice), c("under5", "a15_49", "a65plus"), c("Under 5", "15-49", "65+")),
           Sex = factor(ifelse(grepl("sex1$", slice), "Male", "Female"), c("Male", "Female")))]
