@@ -1,9 +1,13 @@
 # make_report_tables.R: LaTeX table fragments for the report, and a text digest of the
 # numbers quoted in the prose (numbers_for_prose.txt), all from the pooled tables.
-# Usage: Rscript make_report_tables.R <pool_dir> <tex out dir> <income_groups_by_location.csv> <repo tables dir>
+# Usage: Rscript make_report_tables.R <pool_dir> <tex out dir> <income_groups_by_location.csv> <repo tables dir> [<final tables dir>]
+# With the final tables directory (Caspar's final pass of 2026-11-22, read here for the
+# age-standardized and historical tables), pool_dir is the output of final_to_tidy.R.
 suppressPackageStartupMessages(library(data.table))
 setDTthreads(4)
-a <- commandArgs(TRUE); POOL <- a[1]; OUT <- a[2]; INCF <- a[3]; TAB <- a[4]
+a <- commandArgs(TRUE); POOL <- a[1]; OUT <- a[2]; INCF <- a[3]; TAB <- a[4]; FIN <- if (length(a) >= 5) a[5] else ""
+C17 <- c("ckd", "cvd_cmp", "cvd_htn", "cvd_ihd", "cvd_stroke", "diabetes", "inj_animal", "inj_disaster", "inj_drowning", "inj_homicide", "inj_mech",
+         "inj_othunintent", "inj_suicide", "inj_trans_other", "inj_trans_road", "lri", "resp_copd")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 x <- readRDS(file.path(POOL, "tidy_common.rds")); tot <- x$tot; cau <- x$cau; age <- x$age
 inc <- fread(INCF, encoding = "UTF-8")
@@ -21,10 +25,11 @@ tabular <- function(spec, head, rows, foot = NULL) c(paste0("\\begin{tabular}{",
 # --- World by scenario and decade ---
 W <- tot[unit == "World"]
 g <- function(u, s, p, m) W[unit == u & scenario == s & period == p & measure == m]
-rows <- unlist(lapply(PER, function(p) c(lapply(names(SC), function(s) {
+PER4 <- c(PER, if ("2022-2050" %in% W$period) "2022-2050")
+rows <- unlist(lapply(PER4, function(p) c(lapply(names(SC), function(s) {
   cell <- function(m) { r <- W[scenario == s & period == p & measure == m]; paste0(n0(r$mean), " ", ci(r$lower95, r$upper95)) }
   paste0(if (s == "ssp126") pr(p) else "", " & ", SC[s], " & ", cell("deaths_heat"), " & ", cell("deaths_cold"), " & ", cell("deaths_nonopt"), " \\\\")
-}), if (p != PER[3]) "\\addlinespace")))
+}), if (p != PER4[length(PER4)]) "\\addlinespace")))
 wr(tabular("llccc", "Period & Scenario & Heat deaths & Cold deaths & Heat + cold \\\\", rows), "tab_world.tex")
 
 # --- World, the three interval levels ---
@@ -43,15 +48,22 @@ wr(tabular("llcccccc", "Scenario & Period & \\multicolumn{2}{c}{Heat} & \\multic
 
 # --- Income groups ---
 G <- c("World", "High income", "Low and middle income", "Upper middle income", "Lower middle income", "Low income")
-GT <- tot[unit %in% G]
-nloc <- rbind(inc[, .(unit = income)], inc[income %in% G[4:6], .(unit = "Low and middle income")], inc[, .(unit = "World")])[, .N, by = unit]
-rows <- unlist(lapply(G, function(u) {
+RG <- c("East Asia & Pacific", "Europe & Central Asia", "Latin America & Caribbean", "Middle East, North Africa, Afghanistan & Pakistan", "North America", "South Asia", "Sub-Saharan Africa")
+GT <- tot[unit %in% c(G, RG)]
+nloc <- rbind(inc[, .(unit = income)], inc[, .(unit = region)], inc[income %in% G[4:6], .(unit = rep("Low and middle income", .N))], inc[, .(unit = rep("World", .N))])[, .N, by = unit]
+group_rows <- function(G) unlist(lapply(G, function(u) {
   nc <- nloc[unit == u, N]
   cell <- function(p, m) { r <- GT[unit == u & scenario == "ssp245" & period == p & measure == m]; paste0(n0(r$mean), " & ", sprintf("%.1f", r$rate_mean), " ", ci(r$rate_lower95, r$rate_upper95, function(v) sprintf("%.1f", v))) }
   ra <- function(m) sprintf("%.3f", GT[unit == u & scenario == "ssp585" & period == "2041-2050" & measure == m, ratio])
-  paste0(u, " (", nc, ") & ", cell("2041-2050", "deaths_heat"), " & ", cell("2041-2050", "deaths_cold"), " & ", ra("deaths_heat"), " & ", ra("deaths_cold"), " \\\\")
+  paste0(tex(u), " (", nc, ") & ", cell("2041-2050", "deaths_heat"), " & ", cell("2041-2050", "deaths_cold"), " & ", ra("deaths_heat"), " & ", ra("deaths_cold"), " \\\\")
 }))
-wr(tabular("lcccccc", "Group (countries) & \\multicolumn{2}{c}{Heat, SSP2-4.5} & \\multicolumn{2}{c}{Cold, SSP2-4.5} & \\multicolumn{2}{c}{SSP5-8.5 / SSP2-4.5} \\\\ & Deaths & Rate (95\\%) & Deaths & Rate (95\\%) & Heat & Cold \\\\", rows), "tab_income.tex")
+GH <- "\\multicolumn{2}{c}{Heat, SSP2-4.5} & \\multicolumn{2}{c}{Cold, SSP2-4.5} & \\multicolumn{2}{c}{SSP5-8.5 / SSP2-4.5} \\\\ & Deaths & Rate (95\\%) & Deaths & Rate (95\\%) & Heat & Cold \\\\"
+wr(tabular("lcccccc", paste("Group (countries) &", GH), group_rows(G)), "tab_income.tex")
+if (all(RG %in% tot$unit)) {
+  # the long region name is shortened in the table only; the caption gives it in full
+  rr <- sub("Middle East, North Africa, Afghanistan \\& Pakistan", "Middle East and North Africa$^{\\dagger}$", group_rows(c(RG, "World")), fixed = TRUE)
+  wr(tabular("lcccccc", paste("Region (countries) &", GH), rr), "tab_region.tex")
+}
 
 # --- Causes ---
 CN <- c(cvd_ihd = "Ischemic heart disease", cvd_stroke = "Stroke", resp_copd = "COPD", lri = "Lower respiratory infections", diabetes = "Diabetes",
@@ -69,6 +81,7 @@ wr(tabular("lcrrcrr", "& \\multicolumn{3}{c}{Heat} & \\multicolumn{3}{c}{Cold} \
 
 # --- Age and sex ---
 SL <- c(under5_sex1 = "Under 5, male", under5_sex2 = "Under 5, female", a15_49_sex1 = "15--49, male", a15_49_sex2 = "15--49, female", a65plus_sex1 = "65+, male", a65plus_sex2 = "65+, female")
+if ("a15_64_sex1" %in% age$slice) SL <- c(SL[1:4], a15_64_sex1 = "15--64, male", a15_64_sex2 = "15--64, female", SL[5:6])
 a0 <- age[unit == "World" & scenario == "ssp245" & measure %in% c("deaths_heat", "deaths_cold", "yll_heat", "yll_cold")]
 rows <- unlist(lapply(PER[c(1, 3)], function(p) c(lapply(names(SL), function(k) {
   v <- function(m) a0[period == p & slice == k & measure == m]
@@ -118,9 +131,9 @@ rows <- vapply(seq_len(nrow(nm)), function(i) {
   paste0(tex(nm$name[i]), if (nm$asterisk[i]) "$^{*}$" else "", " & ", IA[nm$income[i]], " & ", nn(h$mean), " ", ci(h$lower95, h$upper95, nn), " & ", sub("^-", "$-$", sprintf("%.1f", h$rate_mean)),
          " & ", nn(c_$mean), " ", ci(c_$lower95, c_$upper95, nn), " & ", sub("^-", "$-$", sprintf("%.1f", c_$rate_mean)), " & ", sub("^-", "$-$", sprintf("%.1f", n_$rate_mean)), " & ", sprintf("%.2f", r$ratio), " \\\\")
 }, "")
-wr(c("\\begin{longtable}{lccrcrrr}", "\\caption{Country totals under SSP2-4.5, 2041--2050, on the 24 common models: mean deaths per year with 95\\% interval, crude rate per 100,000 people per year, and the SSP5-8.5 to SSP2-4.5 ratio of mean heat deaths. Income group: H high, UM upper middle, LM lower middle, L low, -- not classified. An asterisk marks the two countries whose totals carry a disaster-forecast tail.}\\label{tab:country}\\\\",
-     "\\toprule", "Country & Inc. & Heat deaths (95\\%) & Rate & Cold deaths (95\\%) & Rate & Net rate & Ratio \\\\", "\\midrule", "\\endfirsthead",
-     "\\toprule", "Country & Inc. & Heat deaths (95\\%) & Rate & Cold deaths (95\\%) & Rate & Net rate & Ratio \\\\", "\\midrule", "\\endhead", "\\bottomrule", "\\endfoot", rows, "\\end{longtable}"), "tab_app_country.tex")
+wr(c("\\begin{longtable}{lccrcrrr}", "\\caption{Country totals under SSP2-4.5, 2041--2050, on the 24 common models: mean deaths per year with 95\\% interval, crude rate per 100,000 people per year for heat, cold and the two together (total), and the ratio of mean heat deaths under SSP5-8.5 to those under SSP2-4.5. Income group: H high, UM upper middle, LM lower middle, L low. An asterisk marks the two countries whose totals are sensitive to a few draws with very large deaths from forces of nature (Section~\\ref{sec:asterisk}).}\\label{tab:country}\\\\",
+     "\\toprule", "Country & Inc. & Heat deaths (95\\%) & Rate & Cold deaths (95\\%) & Rate & Total rate & Ratio \\\\", "\\midrule", "\\endfirsthead",
+     "\\toprule", "Country & Inc. & Heat deaths (95\\%) & Rate & Cold deaths (95\\%) & Rate & Total rate & Ratio \\\\", "\\midrule", "\\endhead", "\\bottomrule", "\\endfoot", rows, "\\end{longtable}"), "tab_app_country.tex")
 
 # --- Appendix B: country by cause, means, parentheses when the 95% interval includes zero ---
 CA <- c(cvd_ihd = "IHD", cvd_stroke = "Str", resp_copd = "COPD", lri = "LRI", diabetes = "Diab", ckd = "CKD", cvd_htn = "HHD", cvd_cmp = "Card", inj_trans_road = "Road",
@@ -141,6 +154,37 @@ key <- "IHD ischemic heart disease; Str stroke; COPD chronic obstructive pulmona
 app("deaths_heat", paste0("Heat deaths per year by country and cause, SSP2-4.5, 2041--2050, mean over the 24 common models. Parentheses mark cells whose 95\\% interval includes zero. ", key), "tab_app_cause_heat.tex", "tab:causeheat")
 app("deaths_cold", "Cold deaths per year by country and cause, on the same basis and with the same abbreviations as Table~\\ref{tab:causeheat}.", "tab_app_cause_cold.tex", "tab:causecold")
 
+# --- Age-standardized against crude rates, and the GBD 2019-round historical estimates ---
+if (nzchar(FIN)) {
+  zr <- function(f) fread(cmd = paste("zcat", shQuote(file.path(FIN, f))))
+  asr <- zr("asr.csv.gz")[unit_type == "group" & cause == "all" & sex == "both" & scenario == "ssp245" & measure %in% c("deaths_heat", "deaths_cold")]
+  GA <- c("World", G[-1], RG)
+  lab <- function(u) sub("Middle East, North Africa, Afghanistan \\& Pakistan", "Middle East and North Africa$^{\\dagger}$", tex(u), fixed = TRUE)
+  rows <- vapply(GA, function(u) {
+    cell <- function(p, m) {
+      cr <- GT[unit == u & scenario == "ssp245" & period == p & measure == m, rate_mean]
+      as <- asr[unit == u & period == p & measure == m, mean]
+      paste0(sprintf("%.1f", cr), " & ", sprintf("%.1f", as))
+    }
+    paste0(lab(u), " & ", cell("2022-2030", "deaths_heat"), " & ", cell("2022-2030", "deaths_cold"), " & ", cell("2041-2050", "deaths_heat"), " & ", cell("2041-2050", "deaths_cold"), " \\\\",
+           if (u %in% c("World", "Low income")) " \\addlinespace" else "")
+  }, "")
+  wr(tabular("lcccccccc", paste0("& \\multicolumn{4}{c}{2022--2030} & \\multicolumn{4}{c}{2041--2050} \\\\ & \\multicolumn{2}{c}{Heat} & \\multicolumn{2}{c}{Cold} & \\multicolumn{2}{c}{Heat} & \\multicolumn{2}{c}{Cold} \\\\ ",
+                                          "Group & Crude & Std. & Crude & Std. & Crude & Std. & Crude & Std. \\\\"), rows), "tab_asr.tex")
+
+  h <- zr("historical.csv.gz")
+  an <- zr("annual.csv.gz")[scenario == "ssp245" & year == 2022 & measure %in% c("deaths_heat", "deaths_cold", "deaths_nonopt")]
+  an[, rate := mean / pop * 1e5]
+  rows <- vapply(GA, function(u) {
+    hv <- function(m) h[unit == u & period == "2019" & metric == "rate_crude" & measure == m, mean]
+    ov <- function(m) an[unit == u & measure == m, rate]
+    paste0(lab(u), " & ", sprintf("%.1f", hv("deaths_heat")), " & ", sprintf("%.1f", ov("deaths_heat")), " & ", sprintf("%.2f", ov("deaths_heat") / hv("deaths_heat")),
+           " & ", sprintf("%.1f", hv("deaths_cold")), " & ", sprintf("%.1f", ov("deaths_cold")), " & ", sprintf("%.2f", ov("deaths_cold") / hv("deaths_cold")), " \\\\",
+           if (u %in% c("World", "Low income")) " \\addlinespace" else "")
+  }, "")
+  wr(tabular("lcccccc", "& \\multicolumn{3}{c}{Heat} & \\multicolumn{3}{c}{Cold} \\\\ Group & GBD 2019 & Ours 2022 & Ratio & GBD 2019 & Ours 2022 & Ratio \\\\", rows), "tab_historical.tex")
+}
+
 # --- digest ---
 sink(file.path(dirname(OUT), "numbers_for_prose.txt"))
 options(width = 170, datatable.print.nrows = 300)
@@ -152,8 +196,8 @@ print(t[location_id %in% c(6, 163)][, .(name, measure, mean = round(mean), share
 print(t[, .(top5_share = round(sum(sort(sh, decreasing = TRUE)[1:5]), 3), top5 = paste(name[order(-sh)][1:5], collapse = ", ")), by = measure])
 cat("Heat ratio growth\n"); print(W[measure %in% c("deaths_heat", "deaths_cold", "deaths_nonopt") & scenario == "ssp245", .(period, measure, mean = round(mean), rate = round(rate_mean, 2))][order(measure, period)])
 cat("Heat share of nonopt\n"); print(dcast(W[measure %in% c("deaths_heat", "deaths_nonopt"), .(scenario, period, measure, mean)], scenario + period ~ measure, value.var = "mean")[, share := round(deaths_heat / deaths_nonopt, 3)][])
-print(cau[unit_type == "group" & measure %in% c("deaths_heat", "deaths_cold") & scenario == "ssp585" & period == "2041-2050", .(incl0 = sum(lower95 < 0 & upper95 > 0)), by = .(unit, measure)][unit %in% c("World", "High income", "Low and middle income")])
-print(cau[unit_type == "group" & measure %in% c("deaths_heat", "deaths_cold") & scenario == "ssp245" & period == "2041-2050", .(incl0 = sum(lower95 < 0 & upper95 > 0)), by = .(unit, measure)][unit %in% c("World", "High income", "Low and middle income")])
+print(cau[slice %in% C17 & unit_type == "group" & measure %in% c("deaths_heat", "deaths_cold") & scenario == "ssp585" & period == "2041-2050", .(incl0 = sum(lower95 < 0 & upper95 > 0)), by = .(unit, measure)][unit %in% c("World", "High income", "Low and middle income")])
+print(cau[slice %in% C17 & unit_type == "group" & measure %in% c("deaths_heat", "deaths_cold") & scenario == "ssp245" & period == "2041-2050", .(incl0 = sum(lower95 < 0 & upper95 > 0)), by = .(unit, measure)][unit %in% c("World", "High income", "Low and middle income")])
 print(tot[unit_type == "location" & measure %in% c("yll_cold") & period == "2041-2050", .(neg = sum(mean < 0)), by = scenario])
 print(tot[unit_type == "location" & measure %in% c("yll_cold"), .(neg = sum(mean < 0), inc0 = sum(lower95 < 0 & upper95 > 0)), by = .(scenario, period)][order(scenario, period)])
 cat("non-ASCII names:", paste(unique(grep("[^ -~]", inc$name, value = TRUE)), collapse = "; "), "\n")
